@@ -12,6 +12,8 @@ LPCTSTR lpszWindowName = L"Window Programming Lab";
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam);
 
+//김경준 왔다감
+
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdParam, int nCmdShow)
 {
 	HWND hWnd;
