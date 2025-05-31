@@ -7,4 +7,3 @@ public:
 	CImage Player[6];
 	CImage mBackGround[5];
 };
-
