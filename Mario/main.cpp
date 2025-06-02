@@ -3,8 +3,9 @@
 #include <random>
 #include <atlimage.h>
 #include <iostream>
+#include <vector>
+
 #pragma comment (lib, "msimg32.lib")
-//#pragma comment(linker, "/entry:WinMainCRTStartup /subsystem:console")
 
 #define LEFT 1
 #define RIGHT 2
@@ -15,6 +16,8 @@
 #define LIZAMONG 4
 
 #define MOVE 10
+#define JUMP_VELOCITY -13
+#define GRAVITY 0.5
 
 HINSTANCE g_hInst;
 LPCTSTR lpszClass = L"Window Class Name";
@@ -22,94 +25,93 @@ LPCTSTR lpszWindowName = L"Window Programming Lab";
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam);
 
-// 티노 이미지 36 * 39
-// 티노 히트박스 25 * 39
-
-// 파이리 이미지 39 * 39
-// 파이리 히트박스 25 * 39 (플레이어 x + 14)
-
-// 리자드 이미지 46 * 45
-
-// 리자몽 이미지 66 * 54 (플레이어 x + 26)
-// 리자몽 히트박스 40 * 50
-
-class Image_
-{
+class Image_ {
 public:
-	bool stage1, hidden, stage2, stage3;
-	int currentStage;
+    bool stage1, hidden, stage2, stage3;
+    int currentStage;
 
-	// move
-	CImage Player_Move_Tino, Player_Move_Pairi, Player_Move_Lizard, Player_Move_Lizamong;
-	// attack
-	CImage Player_Attack_Tino, Player_Attack_Pairi, Player_Attack_Lizamong;
-	// stage
-	CImage mStage1, mStageHidden, mStage2, mStage3;
+    CImage Player_Move_Tino, Player_Move_Pairi, Player_Move_Lizard, Player_Move_Lizamong;
+    CImage Player_Attack_Tino, Player_Attack_Pairi, Player_Attack_Lizamong;
+    CImage mStage1, mStageHidden, mStage2, mStage3;
+    CImage blockImage;
+    CImage questionBlockImage;
+    struct Block {
+        int x, y;
+        int width, height;
+    };
+    struct QuestionBlock {
+        int x, y;
+        int width, height;
+        bool hit;
+    };
+    std::vector<Block> blocks;
+    std::vector<QuestionBlock> questionBlocks;
 
-	void ImageInit();
-	void DrawBackGround(int x, int y);
-	void Destroy();
-	void NextStage();
-	int NowStage() { return currentStage; };
+    void ImageInit();
+    void DrawBackGround(int x, int y, HDC targetDC);
+    void Destroy();
+    void NextStage();
+    int NowStage() { return currentStage; };
 };
 
-class Player_
-{
+class Player_ {
 public:
-	Image_ Pimage;
-	int imageNum;
+    Image_ Pimage;
+    int imageNum;
 
-	void PlayerInit();
-	void ResetPosition();
-	void DrawPlayer();
-	void Move();
-	bool Moving() { return move_; };
+    void PlayerInit();
+    void ResetPosition();
+    void DrawPlayer(HDC targetDC);
+    void Move();
+    bool Moving() { return move_; };
 
-	int State();
+    int State();
 
-	int x() { return x_; };
-	int y() { return y_; };
+    int x() { return x_; };
+    int y() { return y_; };
 
 private:
-	int x_, y_;
-	int direct_;
-	bool move_;
-	bool eatFlower_;
-	bool eatMushroom_;
+    int x_, y_;
+    int direct_;
+    bool move_;
+    bool eatFlower_;
+    bool eatMushroom_;
+    bool isJumping_;
+    float jumpVelocity_;
+    int groundY_;
+    int defaultGroundY_;
+
+    void GetHitbox(int& hitboxX, int& hitboxY, int& hitboxWidth, int& hitboxHeight) {
+        hitboxX = x_;
+        hitboxY = y_;
+        hitboxWidth = 0;
+        hitboxHeight = 0;
+
+        switch (State()) {
+        case TINO:
+            hitboxWidth = 25;
+            hitboxHeight = 39;
+            break;
+        case PAIRI:
+            hitboxX += 14;
+            hitboxWidth = 25;
+            hitboxHeight = 39;
+            break;
+        case LIZAD:
+            hitboxWidth = 46;
+            hitboxHeight = 45;
+            break;
+        case LIZAMONG:
+            hitboxX += 26;
+            hitboxWidth = 40;
+            hitboxHeight = 50;
+            break;
+        default:
+            hitboxWidth = 36;
+            hitboxHeight = 39;
+        }
+    }
 };
-
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdParam, int nCmdShow)
-{
-	HWND hWnd;
-	MSG Message;
-	WNDCLASSEX WndClass;
-	g_hInst = hInstance;
-
-	WndClass.cbSize = sizeof(WndClass);
-	WndClass.style = CS_HREDRAW | CS_VREDRAW;
-	WndClass.lpfnWndProc = (WNDPROC)WndProc;
-	WndClass.cbClsExtra = 0;
-	WndClass.cbWndExtra = 0;
-	WndClass.hInstance = hInstance;
-	WndClass.hIcon = LoadIcon(NULL, IDI_APPLICATION);
-	WndClass.hCursor = LoadCursor(NULL, IDC_ARROW);
-	WndClass.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
-	WndClass.lpszMenuName = NULL;
-	WndClass.lpszClassName = lpszClass;
-	WndClass.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
-	RegisterClassEx(&WndClass);
-
-	hWnd = CreateWindow(lpszClass, lpszWindowName, WS_OVERLAPPEDWINDOW, 0, 0, 800, 600, NULL, (HMENU)NULL, hInstance, NULL);
-
-	ShowWindow(hWnd, nCmdShow);
-	UpdateWindow(hWnd);
-
-	while (GetMessage(&Message, 0, 0, 0)) {
-		TranslateMessage(&Message);
-		DispatchMessage(&Message);
-	}
-	return Message.wParam;
-}
 
 HDC hDC;
 HDC mDC;
@@ -117,301 +119,678 @@ RECT wRect;
 Image_ Images;
 Player_ Player;
 
-LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam) // 콜백으로 등록
-{
-	PAINTSTRUCT ps;
+static int mouseBackgroundX = 0;
+static int mouseBackgroundY = 0;
 
-	COLORREF RGB;
-	static HBITMAP hBitmap;
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdParam, int nCmdShow) {
+    HWND hWnd;
+    MSG Message;
+    WNDCLASSEX WndClass;
+    g_hInst = hInstance;
 
-	//std::mt19937 rd(std::random_device{}());
-	//std::uniform_int_distribution<int>Ran(0, 100);
+    WndClass.cbSize = sizeof(WndClass);
+    WndClass.style = CS_HREDRAW | CS_VREDRAW;
+    WndClass.lpfnWndProc = (WNDPROC)WndProc;
+    WndClass.cbClsExtra = 0;
+    WndClass.cbWndExtra = 0;
+    WndClass.hInstance = hInstance;
+    WndClass.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+    WndClass.hCursor = LoadCursor(NULL, IDC_ARROW);
+    WndClass.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
+    WndClass.lpszMenuName = NULL;
+    WndClass.lpszClassName = lpszClass;
+    WndClass.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+    RegisterClassEx(&WndClass);
 
-	switch (iMessage) {
-	case WM_CREATE: {
-		hDC = GetDC(hWnd);
-		mDC = CreateCompatibleDC(hDC);
-		GetClientRect(hWnd, &wRect);
-		Images.ImageInit();
-		Player.PlayerInit();
-		hBitmap = CreateCompatibleBitmap(hDC, wRect.right, wRect.bottom);
-		SelectObject(mDC, hBitmap);
-		SetTimer(hWnd, 1, 16, NULL);
-		Images.stage1 = true;
-		ReleaseDC(hWnd, hDC);
-		break;
-	}
-	case WM_KEYDOWN: {
-		if (wParam == 'S' || wParam == 's') {
-			Images.NextStage();
-			InvalidateRect(hWnd, NULL, FALSE);
-		}
-		else if (wParam == 'q' || wParam == 'Q') {
-			PostQuitMessage(0);
-		}
-		break;
-	}
-	case WM_TIMER: {
-		switch (wParam) {
-		case 1: {
-			if (Player.Moving()) {
-				if (Player.State() == TINO || Player.State() == LIZAMONG) Player.imageNum = (Player.imageNum + 1) % 3;
-				else if (Player.State() == PAIRI) Player.imageNum = (Player.imageNum + 1) % 6;
-			}
-			Player.Move();
-			break;
-		}
-		}
-		InvalidateRect(hWnd, NULL, FALSE);
-		break;
-	}
-	case WM_PAINT: {
-		hDC = BeginPaint(hWnd, &ps);
-		Images.DrawBackGround(Player.x(), Player.y());
-		Player.DrawPlayer();
-		BitBlt(hDC, 0, 0, wRect.right, wRect.bottom, mDC, 0, 0, SRCCOPY);
-		EndPaint(hWnd, &ps);
-		break;
-	}
-	case WM_DESTROY: {
-		Images.Destroy();
-		DeleteDC(mDC);
-		DeleteObject(hBitmap);
-		ReleaseDC(hWnd, hDC);
-		PostQuitMessage(0);
-		return 0;
-	}
-	}
-	return (DefWindowProc(hWnd, iMessage, wParam, lParam)); // 항상 얘를 호출 후 종료해야 함
+    hWnd = CreateWindow(lpszClass, lpszWindowName, WS_OVERLAPPEDWINDOW, 0, 0, 800, 600, NULL, (HMENU)NULL, hInstance, NULL);
+
+    ShowWindow(hWnd, nCmdShow);
+    UpdateWindow(hWnd);
+
+    while (GetMessage(&Message, 0, 0, 0)) {
+        TranslateMessage(&Message);
+        DispatchMessage(&Message);
+    }
+    return Message.wParam;
+}
+
+LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam) {
+    PAINTSTRUCT ps;
+    static HBITMAP hBitmap;
+
+    switch (iMessage) {
+    case WM_CREATE: {
+        hDC = GetDC(hWnd);
+        mDC = CreateCompatibleDC(hDC);
+        GetClientRect(hWnd, &wRect);
+        Images.ImageInit();
+        Player.PlayerInit();
+        hBitmap = CreateCompatibleBitmap(hDC, wRect.right, wRect.bottom);
+        SelectObject(mDC, hBitmap);
+        SetTimer(hWnd, 1, 16, NULL);
+        Images.stage1 = true;
+        ReleaseDC(hWnd, hDC);
+        break;
+    }
+    case WM_KEYDOWN: {
+        if (wParam == 'S' || wParam == 's') {
+            Images.NextStage();
+            InvalidateRect(hWnd, NULL, FALSE);
+        }
+        else if (wParam == 'q' || wParam == 'Q') {
+            PostQuitMessage(0);
+        }
+        break;
+    }
+    case WM_MOUSEMOVE: {
+        int mouseX = LOWORD(lParam);
+        int mouseY = HIWORD(lParam);
+
+        int cameraX = Player.x() - 400;
+        if (cameraX < 0) cameraX = 0;
+        int stageWidth = (Images.NowStage() == 1 ? Images.mStage1.GetWidth() :
+            Images.NowStage() == 2 ? Images.mStageHidden.GetWidth() :
+            Images.NowStage() == 3 ? Images.mStage2.GetWidth() :
+            Images.NowStage() == 4 ? Images.mStage3.GetWidth() : 0);
+        if (stageWidth <= wRect.right) {
+            cameraX = 0;
+        }
+        else if (cameraX > stageWidth - wRect.right) {
+            cameraX = stageWidth - wRect.right;
+        }
+
+        mouseBackgroundX = mouseX + cameraX;
+        mouseBackgroundY = mouseY;
+
+        InvalidateRect(hWnd, NULL, FALSE);
+        break;
+    }
+    case WM_TIMER: {
+        switch (wParam) {
+        case 1: {
+            if (Player.Moving()) {
+                if (Player.State() == TINO || Player.State() == LIZAMONG || Player.State() == LIZAD) Player.imageNum = (Player.imageNum + 1) % 3;
+                else if (Player.State() == PAIRI) Player.imageNum = (Player.imageNum + 1) % 6;
+            }
+            Player.Move();
+            break;
+        }
+        }
+        InvalidateRect(hWnd, NULL, FALSE);
+        break;
+    }
+    case WM_PAINT: {
+        hDC = BeginPaint(hWnd, &ps);
+        HBRUSH whiteBrush = CreateSolidBrush(RGB(255, 255, 255));
+        FillRect(mDC, &wRect, whiteBrush);
+        DeleteObject(whiteBrush);
+
+        Images.DrawBackGround(Player.x(), Player.y(), mDC);
+        Player.DrawPlayer(mDC);
+
+        WCHAR buffer[100];
+        wsprintf(buffer, L"Mouse: (%d, %d)", mouseBackgroundX, mouseBackgroundY);
+        SetTextColor(mDC, RGB(255, 255, 255));
+        SetBkMode(mDC, TRANSPARENT);
+        TextOut(mDC, 10, 10, buffer, lstrlen(buffer));
+
+        BitBlt(hDC, 0, 0, wRect.right, wRect.bottom, mDC, 0, 0, SRCCOPY);
+        EndPaint(hWnd, &ps);
+        break;
+    }
+    case WM_DESTROY: {
+        Images.Destroy();
+        DeleteDC(mDC);
+        DeleteObject(hBitmap);
+        ReleaseDC(hWnd, hDC);
+        PostQuitMessage(0);
+        return 0;
+    }
+    }
+    return (DefWindowProc(hWnd, iMessage, wParam, lParam));
 }
 
 void Player_::PlayerInit() {
-	x_ = 10;
-	y_ = 447;
-	direct_ = RIGHT;
-	move_ = false;
-	eatFlower_ = false;
-	eatMushroom_ = false;
-	imageNum = 0;
-	Pimage = Images; // 전역 Images 객체로 초기화
+    x_ = 10;
+    y_ = 447;
+    direct_ = RIGHT;
+    move_ = false;
+    eatFlower_ = false;
+    eatMushroom_ = false;
+    imageNum = 0;
+    isJumping_ = false;
+    jumpVelocity_ = 0.0f;
+    groundY_ = 447;
+    defaultGroundY_ = 447;
+    Pimage = Images;
 }
 
 void Player_::ResetPosition() {
-	if (Images.NowStage() == 1) x_ = 10, y_ = 447;
-	else if (Images.NowStage() == 2) x_ = 50, y_ = 435;
-	else if (Images.NowStage() == 3) x_ = 30, y_ = 447;
-	else if (Images.NowStage() == 4) x_ = 5, y_ = 223;
+    if (Images.NowStage() == 1) {
+        x_ = 10;
+        y_ = 447;
+        groundY_ = 447;
+        defaultGroundY_ = 447;
+    }
+    else if (Images.NowStage() == 2) {
+        x_ = 50;
+        y_ = 435;
+        groundY_ = 435;
+        defaultGroundY_ = 435;
+    }
+    else if (Images.NowStage() == 3) {
+        x_ = 30;
+        y_ = 447;
+        groundY_ = 447;
+        defaultGroundY_ = 447;
+    }
+    else if (Images.NowStage() == 4) {
+        x_ = 5;
+        y_ = 223;
+        groundY_ = 223;
+        defaultGroundY_ = 223;
+    }
 
-	direct_ = RIGHT;
-	move_ = false;
-	eatFlower_ = false;
-	eatMushroom_ = false;
+    direct_ = RIGHT;
+    move_ = false;
+    eatFlower_ = false;
+    eatMushroom_ = false;
+    isJumping_ = false;
+    jumpVelocity_ = 0.0f;
 }
 
-void Player_::DrawPlayer() {
-	if (!Pimage.Player_Move_Pairi.IsNull()) {
-		int cameraX = x_ - 400; // 플레이어 중심
-		if (cameraX < 0) cameraX = 0;
-		int stageWidth = (Images.NowStage() == 1 ? Pimage.mStage1.GetWidth() :
-			Images.NowStage() == 2 ? Pimage.mStageHidden.GetWidth() :
-			Images.NowStage() == 3 ? Pimage.mStage2.GetWidth() :
-			Images.NowStage() == 4 ? Pimage.mStage3.GetWidth() : 0);
+void Player_::DrawPlayer(HDC targetDC) {
+    if (!Pimage.Player_Move_Pairi.IsNull()) {
+        int cameraX = x_ - 400;
+        if (cameraX < 0) cameraX = 0;
+        int stageWidth = (Images.NowStage() == 1 ? Pimage.mStage1.GetWidth() :
+            Images.NowStage() == 2 ? Pimage.mStageHidden.GetWidth() :
+            Images.NowStage() == 3 ? Pimage.mStage2.GetWidth() :
+            Images.NowStage() == 4 ? Pimage.mStage3.GetWidth() : 0);
 
-		// 카메라 경계 처리
-		if (stageWidth <= wRect.right) {
-			cameraX = 0; // 스테이지가 창보다 작으면 카메라 고정
-		}
-		else if (cameraX > stageWidth - wRect.right) {
-			cameraX = stageWidth - wRect.right; // 카메라 오른쪽 끝 고정
-		}
+        if (stageWidth <= wRect.right) {
+            cameraX = 0;
+        }
+        else if (cameraX > stageWidth - wRect.right) {
+            cameraX = stageWidth - wRect.right;
+        }
 
-		// 플레이어 너비 계산
-		int playerWidth = 0;
-		switch (State()) {
-		case TINO: playerWidth = 36; break;
-		case PAIRI: playerWidth = 39; break;
-		case LIZAD: playerWidth = 46; break;
-		case LIZAMONG: playerWidth = 66; break;
-		default: playerWidth = 36;
-		}
+        int playerWidth = 0;
+        switch (State()) {
+        case TINO: playerWidth = 36; break;
+        case PAIRI: playerWidth = 39; break;
+        case LIZAD: playerWidth = 46; break;
+        case LIZAMONG: playerWidth = 66; break;
+        default: playerWidth = 36;
+        }
 
-		// 화면상 플레이어 위치
-		int offsetX = x_ - cameraX;
-		// offsetX가 화면 밖으로 나가지 않도록 제한
-		if (offsetX + playerWidth > wRect.right) {
-			offsetX = wRect.right - playerWidth; // 화면 오른쪽 끝에 고정
-		}
-		if (offsetX < 0) {
-			offsetX = 0; // 화면 왼쪽 끝에 고정
-		}
+        int offsetX = x_ - cameraX;
+        if (offsetX + playerWidth > wRect.right) {
+            offsetX = wRect.right - playerWidth;
+        }
+        if (offsetX < 0) {
+            offsetX = 0;
+        }
 
-		if (move_) {
-			if (!eatFlower_) {
-				if (!eatMushroom_) {
-					if (direct_ == LEFT)
-						Pimage.Player_Move_Tino.TransparentBlt(mDC, offsetX, y_, 36, 39, imageNum * 56 + 10, 10, 36, 39, RGB(0, 255, 0));
-					else
-						Pimage.Player_Move_Tino.TransparentBlt(mDC, offsetX, y_, 36, 39, imageNum * 56 + 10, 10, 36, 39, RGB(0, 255, 0));
-				}
-			}
-			else {
-				if (direct_ == LEFT)
-					Pimage.Player_Move_Pairi.TransparentBlt(mDC, offsetX, y_, 39, 39, imageNum * 40, 75, 39, 39, RGB(199, 225, 209));
-				else
-					Pimage.Player_Move_Pairi.TransparentBlt(mDC, offsetX + 39, y_, 39, 39, imageNum * 40, 75, 39, 39, RGB(199, 225, 209));
-			}
-		}
-		else {
-			if (!eatFlower_) {
-				if (!eatMushroom_) {
-					if (direct_ == LEFT)
-						Pimage.Player_Move_Tino.TransparentBlt(mDC, offsetX, y_, 36, 39, imageNum * 56 + 10, 69, 36, 39, RGB(0, 255, 0));
-					else
-						Pimage.Player_Move_Tino.TransparentBlt(mDC, offsetX, y_, 36, 39, imageNum * 56 + 10, 69, 36, 39, RGB(0, 255, 0));
-				}
-				else {
-
-				}
-			}
-			else {
-				if (direct_ == LEFT)
-					Pimage.Player_Move_Pairi.TransparentBlt(mDC, offsetX, y_, 39, 39, 0, 0, 39, 39, RGB(199, 225, 209));
-				else
-					Pimage.Player_Move_Pairi.TransparentBlt(mDC, offsetX + 39, y_, 39, 39, 0, 0, 39, 39, RGB(199, 225, 209));
-			}
-		}
-	}
-	else {
-		OutputDebugString(L"Player_Move_Pairi is NULL\n");
-	}
+        if (move_) {
+            if (!eatFlower_) {
+                if (!eatMushroom_) {
+                    if (direct_ == LEFT)
+                        Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, imageNum * 56 + 10, 10, 36, 39, RGB(0, 255, 0));
+                    else
+                        Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, imageNum * 56 + 10, 10, 36, 39, RGB(0, 255, 0));
+                }
+                else {
+                    if (direct_ == LEFT)
+                        Pimage.Player_Move_Lizard.TransparentBlt(targetDC, offsetX, y_, 46, 45, imageNum * 46, 0, 46, 45, RGB(255, 255, 255));
+                    else
+                        Pimage.Player_Move_Lizard.TransparentBlt(targetDC, offsetX, y_, 46, 45, imageNum * 46, 0, 46, 45, RGB(255, 255, 255));
+                }
+            }
+            else {
+                if (direct_ == LEFT)
+                    Pimage.Player_Move_Pairi.TransparentBlt(targetDC, offsetX, y_, 39, 39, imageNum * 40, 75, 39, 39, RGB(199, 225, 209));
+                else
+                    Pimage.Player_Move_Pairi.TransparentBlt(targetDC, offsetX + 39, y_, 39, 39, imageNum * 40, 75, 39, 39, RGB(199, 225, 209));
+            }
+        }
+        else {
+            if (!eatFlower_) {
+                if (!eatMushroom_) {
+                    if (direct_ == LEFT)
+                        Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, imageNum * 56 + 10, 69, 36, 39, RGB(0, 255, 0));
+                    else
+                        Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, imageNum * 56 + 10, 69, 36, 39, RGB(0, 255, 0));
+                }
+                else {
+                    if (direct_ == LEFT)
+                        Pimage.Player_Move_Lizard.TransparentBlt(targetDC, offsetX, y_, 46, 45, 0, 0, 46, 45, RGB(255, 255, 255));
+                    else
+                        Pimage.Player_Move_Lizard.TransparentBlt(targetDC, offsetX, y_, 46, 45, 0, 0, 46, 45, RGB(255, 255, 255));
+                }
+            }
+            else {
+                if (direct_ == LEFT)
+                    Pimage.Player_Move_Pairi.TransparentBlt(targetDC, offsetX, y_, 39, 39, 0, 0, 39, 39, RGB(199, 225, 209));
+                else
+                    Pimage.Player_Move_Pairi.TransparentBlt(targetDC, offsetX + 39, y_, 39, 39, 0, 0, 39, 39, RGB(199, 225, 209));
+            }
+        }
+    }
+    else {
+        OutputDebugString(L"Player_Move_Pairi is NULL\n");
+    }
 }
 
 void Player_::Move() {
-	bool moved = false;
-	if (GetAsyncKeyState(VK_LEFT) & 0x8000) {
-		direct_ = LEFT;
-		x_ -= MOVE;
-		move_ = true;
-		moved = true;
-	}
-	else if (GetAsyncKeyState(VK_RIGHT) & 0x8000) {
-		direct_ = RIGHT;
-		x_ += MOVE;
-		move_ = true;
-		moved = true;
-	}
-	else {
-		move_ = false;
-		imageNum = 0;
-	}
+    bool moved = false;
 
-	// 스테이지 너비 계산
-	int stageWidth = (Images.NowStage() == 1 ? Pimage.mStage1.GetWidth() :
-		Images.NowStage() == 2 ? Pimage.mStageHidden.GetWidth() :
-		Images.NowStage() == 3 ? Pimage.mStage2.GetWidth() :
-		Images.NowStage() == 4 ? Pimage.mStage3.GetWidth() : 0);
+    int prevX = x_;
+    int prevY = y_;
 
-	// 플레이어 너비 계산
-	int playerWidth = 0;
-	switch (State()) {
-	case TINO: playerWidth = 36; break;
-	case PAIRI: playerWidth = 39; break;
-	case LIZAD: playerWidth = 46; break;
-	case LIZAMONG: playerWidth = 66; break;
-	default: playerWidth = 36;
-	}
+    int playerHitboxX, playerHitboxY, playerHitboxWidth, playerHitboxHeight;
+    GetHitbox(playerHitboxX, playerHitboxY, playerHitboxWidth, playerHitboxHeight);
 
-	// 경계 체크
-	if (x_ < 0) {
-		x_ = 0;
-	}
-	if (x_ + playerWidth > stageWidth) {
-		x_ = stageWidth - playerWidth; // 오른쪽 끝에 고정
-	}
+    int newX = x_;
+    if (GetAsyncKeyState(VK_LEFT) & 0x8000) {
+        direct_ = LEFT;
+        newX -= MOVE;
+        move_ = true;
+        moved = true;
+    }
+    if (GetAsyncKeyState(VK_RIGHT) & 0x8000) {
+        direct_ = RIGHT;
+        newX += MOVE;
+        move_ = true;
+        moved = true;
+    }
+
+    int tempHitboxX = newX;
+    if (State() == PAIRI) tempHitboxX += 14;
+    else if (State() == LIZAMONG) tempHitboxX += 26;
+
+    bool canMoveHorizontally = true;
+    for (const auto& block : Pimage.blocks) {
+        int blockLeft = block.x;
+        int blockRight = block.x + block.width;
+        int blockTop = block.y;
+        int blockBottom = block.y + block.height;
+
+        int newPlayerLeft = tempHitboxX;
+        int newPlayerRight = tempHitboxX + playerHitboxWidth;
+        int playerTop = playerHitboxY;
+        int playerBottom = playerHitboxY + playerHitboxHeight;
+
+        bool overlapX = newPlayerRight > blockLeft && newPlayerLeft < blockRight;
+        bool overlapY = playerBottom > blockTop && playerTop < blockBottom;
+
+        if (overlapX && overlapY) {
+            canMoveHorizontally = false;
+            if (newX < x_) {
+                x_ = blockRight - (playerHitboxX - x_);
+            }
+            else if (newX > x_) {
+                x_ = blockLeft - playerHitboxWidth - (playerHitboxX - x_);
+            }
+            break;
+        }
+    }
+
+    if (canMoveHorizontally) {
+        for (const auto& qblock : Pimage.questionBlocks) {
+            int qblockLeft = qblock.x;
+            int qblockRight = qblock.x + qblock.width;
+            int qblockTop = qblock.y;
+            int qblockBottom = qblock.y + qblock.height;
+
+            int newPlayerLeft = tempHitboxX;
+            int newPlayerRight = tempHitboxX + playerHitboxWidth;
+            int playerTop = playerHitboxY;
+            int playerBottom = playerHitboxY + playerHitboxHeight;
+
+            bool overlapX = newPlayerRight > qblockLeft && newPlayerLeft < qblockRight;
+            bool overlapY = playerBottom > qblockTop && playerTop < qblockBottom;
+
+            if (overlapX && overlapY) {
+                canMoveHorizontally = false;
+                if (newX < x_) {
+                    x_ = qblockRight - (playerHitboxX - x_);
+                }
+                else if (newX > x_) {
+                    x_ = qblockLeft - playerHitboxWidth - (playerHitboxX - x_);
+                }
+                break;
+            }
+        }
+    }
+
+    if (canMoveHorizontally) {
+        x_ = newX;
+    }
+
+    if (GetAsyncKeyState(VK_UP) & 0x8000 && !isJumping_) {
+        isJumping_ = true;
+        jumpVelocity_ = JUMP_VELOCITY;
+    }
+
+    if (isJumping_) {
+        y_ += static_cast<int>(jumpVelocity_);
+        jumpVelocity_ += GRAVITY;
+    }
+
+    GetHitbox(playerHitboxX, playerHitboxY, playerHitboxWidth, playerHitboxHeight);
+
+    bool onBlock = false;
+    int newGroundY = defaultGroundY_;
+
+    // Check collisions with Blocks (vertical)
+    for (const auto& block : Pimage.blocks) {
+        int blockLeft = block.x;
+        int blockRight = block.x + block.width;
+        int blockTop = block.y;
+        int blockBottom = block.y + block.height;
+
+        int playerLeft = playerHitboxX;
+        int playerRight = playerHitboxX + playerHitboxWidth;
+        int playerTop = playerHitboxY;
+        int playerBottom = playerHitboxY + playerHitboxHeight;
+
+        bool overlapX = playerRight > blockLeft && playerLeft < blockRight;
+        bool overlapY = playerBottom > blockTop && playerTop < blockBottom;
+
+        if (overlapX && overlapY) {
+            int prevPlayerBottom = prevY + playerHitboxHeight;
+            int prevPlayerTop = prevY;
+
+            if (prevPlayerBottom <= blockTop && jumpVelocity_ > 0) {
+                y_ = blockTop - playerHitboxHeight;
+                isJumping_ = false;
+                jumpVelocity_ = 0.0f;
+                onBlock = true;
+                newGroundY = blockTop - playerHitboxHeight;
+            }
+            else if (prevPlayerTop >= blockBottom && jumpVelocity_ < 0 && (State() == TINO || State() == LIZAD)) {
+                y_ = blockBottom;
+                jumpVelocity_ = 0.0f;
+            }
+        }
+    }
+
+    // Check collisions with QuestionBlocks (vertical)
+    if (!onBlock) {
+        for (auto& qblock : Pimage.questionBlocks) {
+            int qblockLeft = qblock.x;
+            int qblockRight = qblock.x + qblock.width;
+            int qblockTop = qblock.y;
+            int qblockBottom = qblock.y + qblock.height;
+
+            int playerLeft = playerHitboxX;
+            int playerRight = playerHitboxX + playerHitboxWidth;
+            int playerTop = playerHitboxY;
+            int playerBottom = playerHitboxY + playerHitboxHeight;
+
+            bool overlapX = playerRight > qblockLeft && playerLeft < qblockRight;
+            bool overlapY = playerBottom > qblockTop && playerTop < qblockBottom;
+
+            if (overlapX && overlapY) {
+                int prevPlayerBottom = prevY + playerHitboxHeight;
+                int prevPlayerTop = prevY;
+
+                if (prevPlayerBottom <= qblockTop && jumpVelocity_ > 0) {
+                    y_ = qblockTop - playerHitboxHeight;
+                    isJumping_ = false;
+                    jumpVelocity_ = 0.0f;
+                    onBlock = true;
+                    newGroundY = qblockTop - playerHitboxHeight;
+                }
+                else if (prevPlayerTop >= qblockBottom && jumpVelocity_ < 0) {
+                    if (!qblock.hit && State() == TINO) {
+                        qblock.hit = true;
+                        eatMushroom_ = true; // Change to Lizard
+                    }
+                    if (State() == TINO || State() == LIZAD) {
+                        y_ = qblockBottom;
+                        jumpVelocity_ = 0.0f;
+                    }
+                }
+            }
+        }
+    }
+
+    // Check if player is still on a block after moving
+    if (groundY_ != defaultGroundY_) {
+        bool stillOnBlock = false;
+
+        for (const auto& block : Pimage.blocks) {
+            int blockLeft = block.x;
+            int blockRight = block.x + block.width;
+            int blockTop = block.y;
+
+            int playerLeft = playerHitboxX;
+            int playerRight = playerHitboxX + playerHitboxWidth;
+            bool overlapX = playerRight > blockLeft && playerLeft < blockRight;
+
+            if (overlapX && groundY_ == blockTop - playerHitboxHeight) {
+                stillOnBlock = true;
+                break;
+            }
+        }
+
+        if (!stillOnBlock) {
+            for (const auto& qblock : Pimage.questionBlocks) {
+                int qblockLeft = qblock.x;
+                int qblockRight = qblock.x + qblock.width;
+                int qblockTop = qblock.y;
+
+                int playerLeft = playerHitboxX;
+                int playerRight = playerHitboxX + playerHitboxWidth;
+                bool overlapX = playerRight > qblockLeft && playerLeft < qblockRight;
+
+                if (overlapX && groundY_ == qblockTop - playerHitboxHeight) {
+                    stillOnBlock = true;
+                    break;
+                }
+            }
+        }
+
+        if (!stillOnBlock) {
+            groundY_ = defaultGroundY_;
+            if (y_ < defaultGroundY_) {
+                isJumping_ = true;
+            }
+        }
+    }
+
+    if (onBlock) {
+        groundY_ = newGroundY;
+    }
+
+    if (!onBlock && y_ >= defaultGroundY_) {
+        y_ = defaultGroundY_;
+        isJumping_ = false;
+        jumpVelocity_ = 0.0f;
+    }
+
+    int stageWidth = (Images.NowStage() == 1 ? Pimage.mStage1.GetWidth() :
+        Images.NowStage() == 2 ? Pimage.mStageHidden.GetWidth() :
+        Images.NowStage() == 3 ? Pimage.mStage2.GetWidth() :
+        Images.NowStage() == 4 ? Pimage.mStage3.GetWidth() : 0);
+
+    int playerWidth = 0;
+    switch (State()) {
+    case TINO: playerWidth = 36; break;
+    case PAIRI: playerWidth = 39; break;
+    case LIZAD: playerWidth = 46; break;
+    case LIZAMONG: playerWidth = 66; break;
+    default: playerWidth = 36;
+    }
+
+    if (x_ < 0) {
+        x_ = 0;
+    }
+    if (x_ + playerWidth > stageWidth) {
+        x_ = stageWidth - playerWidth;
+    }
+
+    if (!moved) {
+        move_ = false;
+        imageNum = 0;
+    }
 }
 
 int Player_::State() {
-	if (!eatFlower_) return TINO;
-	else if (eatFlower_) {
-		if (!eatMushroom_) return PAIRI;
-		else if (eatMushroom_) return LIZAMONG;
-	}
+    if (!eatFlower_) {
+        if (!eatMushroom_) return TINO;
+        else return LIZAD;
+    }
+    else {
+        if (!eatMushroom_) return PAIRI;
+        else return LIZAMONG;
+    }
 }
 
 void Image_::ImageInit() {
-	Player_Move_Tino.Load(TEXT("Image/티노 스프라이트.png"));
-	Player_Move_Pairi.Load(TEXT("Image/파이리 스프라이트.png"));
-	Player_Move_Lizard.Load(TEXT("Image/리자드 스프라이트.png"));
-	Player_Move_Lizamong.Load(TEXT("Image/리자몽 스프라이트.png"));
+    Player_Move_Tino.Load(TEXT("Image/티노 스프라이트.png"));
+    Player_Move_Pairi.Load(TEXT("Image/파이리 스프라이트.png"));
+    Player_Move_Lizard.Load(TEXT("Image/리자드 스프라이트.png"));
+    Player_Move_Lizamong.Load(TEXT("Image/리자몽 스프라이트.png"));
 
-	Player_Attack_Tino.Load(TEXT("Image/티노 스프라이트.png"));
-	Player_Attack_Pairi.Load(TEXT("Image/파이리 스프라이트.png"));
-	Player_Attack_Lizamong.Load(TEXT("Image/리자몽 스프라이트.png"));
+    Player_Attack_Tino.Load(TEXT("Image/티노 스프라이트.png"));
+    Player_Attack_Pairi.Load(TEXT("Image/파이리 스프라이트.png"));
+    Player_Attack_Lizamong.Load(TEXT("Image/리자몽 스프라이트.png"));
 
-	mStage1.Load(TEXT("Image/월드 1.png"));
-	mStageHidden.Load(TEXT("Image/히든 스테이지.png"));
-	mStage2.Load(TEXT("Image/월드 2.png"));
-	mStage3.Load(TEXT("Image/월드 3.png"));
+    mStage1.Load(TEXT("Image/월드 1.png"));
+    mStageHidden.Load(TEXT("Image/히든 스테이지.png"));
+    mStage2.Load(TEXT("Image/월드 2.png"));
+    mStage3.Load(TEXT("Image/월드 3.png"));
 
-	stage1 = hidden = stage2 = stage3 = false;
-	currentStage = 1;
+    blockImage.Load(TEXT("Image/BrickBlockBrown.png"));
+    questionBlockImage.Load(TEXT("Image/QuestionBlock.gif"));
+    Block block1 = { 320, 335, 16, 32 };
+    Block block2 = { 352, 335, 16, 32 };
+    Block block3 = { 384, 335, 16, 32 };
+    Block block4 = { 256, 335, 16, 42 };
+    Block block5 = { 352, 185, 16, 42 };
+    Block block6 = { 1280, 185, 130, 42 };
+    Block block7 = { 1232, 335, 16, 32 };
+    Block block8 = { 1264, 335, 16, 32 };
+    Block block9 = { 1456, 185, 16, 32 };
+    Block block10 = { 1472, 185, 16, 32 };
+    Block block11 = { 1488, 185, 16, 32 };
+    Block block12 = { 1600, 335, 16, 32 };
+    Block block13 = { 1616, 335, 16, 32 };
+    Block block14 = { 1744, 185, 16, 42};
+    Block block15 = { 1888, 335, 16, 42 };
+    blocks.push_back(block1);
+    blocks.push_back(block2);
+    blocks.push_back(block3);
+    blocks.push_back(block4);
+    blocks.push_back(block5);
+    blocks.push_back(block6);
+    blocks.push_back(block7);
+    blocks.push_back(block8);
+    blocks.push_back(block9);
+    blocks.push_back(block10);
+    blocks.push_back(block11);
+    blocks.push_back(block12);
+    blocks.push_back(block13);
+    blocks.push_back(block14);
+    blocks.push_back(block15);
+    QuestionBlock qblock1 = { 336, 335, 16, 42, false };
+    QuestionBlock qblock2 = { 368, 335, 16, 42, false };
+    QuestionBlock qblock3 = { 1248, 335, 16, 42, false };
+    QuestionBlock qblock4 = { 1504, 335, 16, 42, false };
+    QuestionBlock qblock5 = { 1504, 185, 16, 42, false };
+    QuestionBlock qblock6 = { 1696, 335, 16, 42, false };
+    QuestionBlock qblock7 = { 1744, 335, 16, 42, false };
+    QuestionBlock qblock8 = { 1792, 335, 16, 42, false };
+    questionBlocks.push_back(qblock1);
+    questionBlocks.push_back(qblock2);
+    questionBlocks.push_back(qblock3);
+    questionBlocks.push_back(qblock4);
+    questionBlocks.push_back(qblock5);
+    questionBlocks.push_back(qblock6);
+    questionBlocks.push_back(qblock7);
+    questionBlocks.push_back(qblock8);
+
+    stage1 = hidden = stage2 = stage3 = false;
+    currentStage = 1;
 }
 
-void Image_::DrawBackGround(int x, int y) {
-	int cameraX = x - 400; // 플레이어 중심
-	if (cameraX < 0) cameraX = 0;
+void Image_::DrawBackGround(int x, int y, HDC targetDC) {
+    int cameraX = x - 400;
+    if (cameraX < 0) cameraX = 0;
 
-	int srcWidth = (stage1 ? mStage1.GetWidth() : stage2 ? mStage2.GetWidth() :
-		stage3 ? mStage3.GetWidth() : mStageHidden.GetWidth());
-	int srcHeight = (stage1 ? mStage1.GetHeight() : stage2 ? mStage2.GetHeight() :
-		stage3 ? mStage3.GetHeight() : mStageHidden.GetHeight());
+    int srcWidth = (stage1 ? mStage1.GetWidth() : stage2 ? mStage2.GetWidth() :
+        stage3 ? mStage3.GetWidth() : mStageHidden.GetWidth());
+    int srcHeight = (stage1 ? mStage1.GetHeight() : stage2 ? mStage2.GetHeight() :
+        stage3 ? mStage3.GetHeight() : mStageHidden.GetHeight());
 
-	// 카메라 경계 처리
-	if (srcWidth <= wRect.right) {
-		cameraX = 0; // 스테이지가 창보다 작으면 카메라 고정
-	}
-	else if (cameraX > srcWidth - wRect.right) {
-		cameraX = srcWidth - wRect.right; // 오른쪽 끝 고정
-	}
+    if (srcWidth <= wRect.right) {
+        cameraX = 0;
+    }
+    else if (cameraX > srcWidth - wRect.right) {
+        cameraX = srcWidth - wRect.right;
+    }
 
-	int destWidth = wRect.right;
-	int destHeight = wRect.bottom;
+    int destWidth = wRect.right;
+    int destHeight = wRect.bottom;
 
-	if (stage1 && !mStage1.IsNull()) {
-		mStage1.StretchBlt(mDC, 0, 0, destWidth, destHeight, cameraX, 0, wRect.right, srcHeight, SRCCOPY);
-	}
-	else if (stage2 && !mStage2.IsNull()) {
-		mStage2.StretchBlt(mDC, 0, 0, destWidth, destHeight, cameraX, 0, wRect.right, srcHeight, SRCCOPY);
-	}
-	else if (stage3 && !mStage3.IsNull()) {
-		mStage3.StretchBlt(mDC, 0, 0, destWidth, destHeight, cameraX, 0, wRect.right, srcHeight, SRCCOPY);
-	}
-	else if (hidden && !mStageHidden.IsNull()) {
-		mStageHidden.StretchBlt(mDC, 0, 0, destWidth, destHeight, cameraX, 0, wRect.right, srcHeight, SRCCOPY);
-	}
-	else {
-		OutputDebugString(L"No valid background image\n");
-	}
+    if (stage1 && !mStage1.IsNull()) {
+        mStage1.StretchBlt(targetDC, 0, 0, destWidth, destHeight, cameraX, 0, wRect.right, srcHeight, SRCCOPY);
+    }
+    else if (stage2 && !mStage2.IsNull()) {
+        mStage2.StretchBlt(targetDC, 0, 0, destWidth, destHeight, cameraX, 0, wRect.right, srcHeight, SRCCOPY);
+    }
+    else if (stage3 && !mStage3.IsNull()) {
+        mStage3.StretchBlt(targetDC, 0, 0, destWidth, destHeight, cameraX, 0, wRect.right, srcHeight, SRCCOPY);
+    }
+    else if (hidden && !mStageHidden.IsNull()) {
+        mStageHidden.StretchBlt(targetDC, 0, 0, destWidth, destHeight, cameraX, 0, wRect.right, srcHeight, SRCCOPY);
+    }
+    else {
+        OutputDebugString(L"No valid background image\n");
+    }
+
+    if (!blockImage.IsNull()) {
+        for (const auto& block : blocks) {
+            int offsetX = block.x - cameraX;
+            if (offsetX + block.width > 0 && offsetX < wRect.right) {
+                blockImage.StretchBlt(targetDC, offsetX, block.y, block.width, block.height, 0, 0, blockImage.GetWidth(), blockImage.GetHeight(), SRCCOPY);
+            }
+        }
+    }
+
+    if (!questionBlockImage.IsNull()) {
+        for (const auto& qblock : questionBlocks) {
+            int offsetX = qblock.x - cameraX;
+            if (offsetX + qblock.width > 0 && offsetX < wRect.right) {
+                questionBlockImage.StretchBlt(targetDC, offsetX, qblock.y, qblock.width, qblock.height, 0, 0, questionBlockImage.GetWidth(), questionBlockImage.GetHeight(), SRCCOPY);
+            }
+        }
+    }
 }
 
 void Image_::NextStage() {
-	currentStage++;
-	if (currentStage > 4) currentStage = 1;
-	stage1 = (currentStage == 1);
-	hidden = (currentStage == 2);
-	stage2 = (currentStage == 3);
-	stage3 = (currentStage == 4);
-	Player.ResetPosition(); // 스테이지 전환 시 플레이어 위치 초기화
+    currentStage++;
+    if (currentStage > 4) currentStage = 1;
+    stage1 = (currentStage == 1);
+    hidden = (currentStage == 2);
+    stage2 = (currentStage == 3);
+    stage3 = (currentStage == 4);
+    Player.ResetPosition();
 }
 
 void Image_::Destroy() {
-	Player_Move_Pairi.Destroy();
-	Player_Move_Lizard.Destroy();
-	Player_Move_Lizamong.Destroy();
-	Player_Attack_Pairi.Destroy();
-	Player_Attack_Lizamong.Destroy();
-	mStage1.Destroy();
-	mStageHidden.Destroy();
-	mStage2.Destroy();
-	mStage3.Destroy();
+    Player_Move_Pairi.Destroy();
+    Player_Move_Lizard.Destroy();
+    Player_Move_Lizamong.Destroy();
+    Player_Attack_Pairi.Destroy();
+    Player_Attack_Lizamong.Destroy();
+    mStage1.Destroy();
+    mStageHidden.Destroy();
+    mStage2.Destroy();
+    mStage3.Destroy();
+    blockImage.Destroy();
+    questionBlockImage.Destroy();
 }
