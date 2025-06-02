@@ -32,32 +32,32 @@ public:
 	bool stage1, hidden, stage2, stage3;
 	int currentStage;
 
-    CImage Player_Move_Tino, Player_Move_Pairi, Player_Move_Lizard, Player_Move_Lizamong;
-    CImage Player_Attack_Tino, Player_Attack_Pairi, Player_Attack_Lizamong;
-    CImage mStage1, mStageHidden, mStage2, mStage3;
-    CImage blockImage;
-    CImage questionBlockImage;
-    struct Block {
-        int x, y;
-        int width, height;
-    };
-    struct QuestionBlock {
-        int x, y;
-        int width, height;
-        bool hit;
-    };
-    struct TBlock {
-        int x, y;
-        int width, height;
-    };
-    struct Hole {
-        int x, y;
-        int width, height;
-    };
-    std::vector<Block> blocks;
-    std::vector<QuestionBlock> questionBlocks;
-    std::vector<TBlock> tBlocks;
-    std::vector<Hole> holes;
+	CImage Player_Move_Tino, Player_Move_Pairi, Player_Move_Lizard, Player_Move_Lizamong;
+	CImage Player_Attack_Tino, Player_Attack_Pairi, Player_Attack_Lizamong;
+	CImage mStage1, mStageHidden, mStage2, mStage3;
+	CImage blockImage;
+	CImage questionBlockImage;
+	struct Block {
+		int x, y;
+		int width, height;
+	};
+	struct QuestionBlock {
+		int x, y;
+		int width, height;
+		bool hit;
+	};
+	struct TBlock {
+		int x, y;
+		int width, height;
+	};
+	struct Hole {
+		int x, y;
+		int width, height;
+	};
+	std::vector<Block> blocks;
+	std::vector<QuestionBlock> questionBlocks;
+	std::vector<TBlock> tBlocks;
+	std::vector<Hole> holes;
 
 	void ImageInit();
 	void DrawBackGround(int x, int y, HDC targetDC);
@@ -71,7 +71,7 @@ class Player_ {
 public:
 	Image_ Pimage;
 	int imageNum;
-	
+
 
 	void PlayerInit();
 	void ResetPosition();
@@ -86,17 +86,17 @@ public:
 	int y() { return y_; };
 
 private:
-    int x_, y_;
-    int direct_;
-    bool move_;
-    bool eatFlower_;
-    bool eatMushroom_;
-    bool isJumping_;
-    float jumpVelocity_;
-    int groundY_;
-    int defaultGroundY_;
-    bool isFallingIntoHole;
-    float fallProgress;
+	int x_, y_;
+	int direct_;
+	bool move_;
+	bool eatFlower_;
+	bool eatMushroom_;
+	bool isJumping_;
+	float jumpVelocity_;
+	int groundY_;
+	int defaultGroundY_;
+	bool isFallingIntoHole;
+	float fallProgress;
 	RECT hitbox_;
 
 	void GetHitbox(int& hitboxX, int& hitboxY, int& hitboxWidth, int& hitboxHeight) {
@@ -107,22 +107,26 @@ private:
 
 		switch (State()) {
 		case TINO:
-			hitboxX += 14;
-			hitboxWidth = 23;
+			if(direct_ == RIGHT) hitboxX += 14;
+			else hitboxX = x_;
+			hitboxWidth = 18;
 			hitboxHeight = 39;
 			break;
 		case PAIRI:
-			hitboxX += 14;
-			hitboxWidth = 23;
+			if (direct_ == RIGHT) hitboxX += 14;
+			else hitboxX = x_;
+			hitboxWidth = 18;
 			hitboxHeight = 39;
 			break;
 		case LIZAD:
-			hitboxX += 26;
+			if (direct_ == RIGHT) hitboxX += 26;
+			else hitboxX = x_;
 			hitboxWidth = 44;
 			hitboxHeight = 45;
 			break;
 		case LIZAMONG:
-			hitboxX += 26;
+			if (direct_ == RIGHT) hitboxX += 26;
+			else hitboxX = x_;
 			hitboxWidth = 30;
 			hitboxHeight = 51;
 			break;
@@ -290,20 +294,20 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 }
 
 void Player_::PlayerInit() {
-    x_ = 10;
-    y_ = 447;
-    direct_ = RIGHT;
-    move_ = false;
-    eatFlower_ = false;
-    eatMushroom_ = false;
-    imageNum = 0;
-    isJumping_ = false;
-    jumpVelocity_ = 0.0f;
-    groundY_ = 447;
-    defaultGroundY_ = 447;
-    isFallingIntoHole = false;
-    fallProgress = 0.0f;
-    Pimage = Images;
+	x_ = 10;
+	y_ = 447;
+	direct_ = RIGHT;
+	move_ = false;
+	eatFlower_ = false;
+	eatMushroom_ = false;
+	imageNum = 0;
+	isJumping_ = false;
+	jumpVelocity_ = 0.0f;
+	groundY_ = 447;
+	defaultGroundY_ = 447;
+	isFallingIntoHole = false;
+	fallProgress = 0.0f;
+	Pimage = Images;
 	hitbox_ = { x_ + 14, y_, x_ + 39, y_ + 39 };
 }
 
@@ -452,20 +456,20 @@ void Player_::DrawPlayer(HDC targetDC) {
 }
 
 void Player_::Move() {
-    // If player is falling into a hole, continue the falling animation
-    if (isFallingIntoHole) {
-        const float fallSpeed = 5.0f; // Adjust this to control falling speed (pixels per frame)
-        fallProgress += fallSpeed;
-        y_ += static_cast<int>(fallSpeed); // Increase y_ to simulate falling
+	// If player is falling into a hole, continue the falling animation
+	if (isFallingIntoHole) {
+		const float fallSpeed = 5.0f; // Adjust this to control falling speed (pixels per frame)
+		fallProgress += fallSpeed;
+		y_ += static_cast<int>(fallSpeed); // Increase y_ to simulate falling
 
-        // Check if falling is complete (fallen by 100 units)
-        if (fallProgress >= 100.0f) {
-            PostQuitMessage(0); // Terminate the program (game over)
-        }
-        return; // Skip normal movement logic while falling
-    }
+		// Check if falling is complete (fallen by 100 units)
+		if (fallProgress >= 100.0f) {
+			PostQuitMessage(0); // Terminate the program (game over)
+		}
+		return; // Skip normal movement logic while falling
+	}
 
-    bool moved = false;
+	bool moved = false;
 
 	int prevX = x_;
 	int prevY = y_;
@@ -538,46 +542,46 @@ void Player_::Move() {
 			bool overlapX = newPlayerRight > qblockLeft && newPlayerLeft < qblockRight;
 			bool overlapY = playerBottom > qblockTop && playerTop < qblockBottom;
 
-            if (overlapX && overlapY) {
-                canMoveHorizontally = false;
-                if (newX < x_) {
-                    x_ = qblockRight - (playerHitboxX - x_);
-                }
-                else if (newX > x_) {
-                    x_ = qblockLeft - playerHitboxWidth - (playerHitboxX - x_);
-                }
-                break;
-            }
-        }
-    }
+			if (overlapX && overlapY) {
+				canMoveHorizontally = false;
+				if (newX < x_) {
+					x_ = qblockRight - (playerHitboxX - x_);
+				}
+				else if (newX > x_) {
+					x_ = qblockLeft - playerHitboxWidth - (playerHitboxX - x_);
+				}
+				break;
+			}
+		}
+	}
 
-    if (canMoveHorizontally) {
-        for (const auto& tblock : Pimage.tBlocks) {
-            int tblockLeft = tblock.x;
-            int tblockRight = tblock.x + tblock.width;
-            int tblockTop = tblock.y;
-            int tblockBottom = tblock.y + tblock.height;
+	if (canMoveHorizontally) {
+		for (const auto& tblock : Pimage.tBlocks) {
+			int tblockLeft = tblock.x;
+			int tblockRight = tblock.x + tblock.width;
+			int tblockTop = tblock.y;
+			int tblockBottom = tblock.y + tblock.height;
 
-            int newPlayerLeft = tempHitboxX;
-            int newPlayerRight = tempHitboxX + playerHitboxWidth;
-            int playerTop = playerHitboxY;
-            int playerBottom = playerHitboxY + playerHitboxHeight;
+			int newPlayerLeft = tempHitboxX;
+			int newPlayerRight = tempHitboxX + playerHitboxWidth;
+			int playerTop = playerHitboxY;
+			int playerBottom = playerHitboxY + playerHitboxHeight;
 
-            bool overlapX = newPlayerRight > tblockLeft && newPlayerLeft < tblockRight;
-            bool overlapY = playerBottom > tblockTop && playerTop < tblockBottom;
+			bool overlapX = newPlayerRight > tblockLeft && newPlayerLeft < tblockRight;
+			bool overlapY = playerBottom > tblockTop && playerTop < tblockBottom;
 
-            if (overlapX && overlapY) {
-                canMoveHorizontally = false;
-                if (newX < x_) {
-                    x_ = tblockRight - (playerHitboxX - x_);
-                }
-                else if (newX > x_) {
-                    x_ = tblockLeft - playerHitboxWidth - (playerHitboxX - x_);
-                }
-                break;
-            }
-        }
-    }
+			if (overlapX && overlapY) {
+				canMoveHorizontally = false;
+				if (newX < x_) {
+					x_ = tblockRight - (playerHitboxX - x_);
+				}
+				else if (newX > x_) {
+					x_ = tblockLeft - playerHitboxWidth - (playerHitboxX - x_);
+				}
+				break;
+			}
+		}
+	}
 
 	if (canMoveHorizontally) {
 		x_ = newX;
@@ -658,113 +662,111 @@ void Player_::Move() {
 					playerBottom, qblockTop, y_);
 				OutputDebugString(debug);
 
-                if (prevPlayerBottom <= qblockTop && jumpVelocity_ > 0) {
-                    y_ = qblockTop - playerHitboxHeight;
-                    isJumping_ = false;
-                    jumpVelocity_ = 0.0f;
-                    onBlock = true;
-                    newGroundY = qblockTop - playerHitboxHeight;
-                }
-                else if (prevPlayerTop >= qblockBottom && jumpVelocity_ < 0) {
-                    if (!qblock.hit && State() == TINO) {
-                        qblock.hit = true;
-                        eatMushroom_ = true;
-                    }
-                    if (State() == TINO || State() == LIZAD) {
-                        y_ = qblockBottom;
-                        jumpVelocity_ = 0.0f;
-                    }
-                }
-            }
-        }
-    }
+				if (prevPlayerBottom <= qblockTop && jumpVelocity_ > 0) {
+					y_ = qblockTop - playerHitboxHeight;
+					isJumping_ = false;
+					jumpVelocity_ = 0.0f;
+					onBlock = true;
+					newGroundY = qblockTop - playerHitboxHeight;
+				}
+				else if (prevPlayerTop >= qblockBottom && jumpVelocity_ < 0) {
+					if (!qblock.hit) {
+						qblock.hit = true;
+						eatFlower_ = true;
+					}
+					y_ = qblockBottom;
+					jumpVelocity_ = 0.0f;
+				}
+			}
+		}
+	}
 
-    // Check collisions with TBlocks (vertical)
-    if (!onBlock) {
-        for (const auto& tblock : Pimage.tBlocks) {
-            int tblockLeft = tblock.x;
-            int tblockRight = tblock.x + tblock.width;
-            int tblockTop = tblock.y;
-            int tblockBottom = tblock.y + tblock.height;
+	// Check collisions with TBlocks (vertical)
+	if (!onBlock) {
+		for (const auto& tblock : Pimage.tBlocks) {
+			int tblockLeft = tblock.x;
+			int tblockRight = tblock.x + tblock.width;
+			int tblockTop = tblock.y;
+			int tblockBottom = tblock.y + tblock.height;
 
-            int playerLeft = playerHitboxX;
-            int playerRight = playerHitboxX + playerHitboxWidth;
-            int playerTop = playerHitboxY;
-            int playerBottom = playerHitboxY + playerHitboxHeight;
+			int playerLeft = playerHitboxX;
+			int playerRight = playerHitboxX + playerHitboxWidth;
+			int playerTop = playerHitboxY;
+			int playerBottom = playerHitboxY + playerHitboxHeight;
 
-            bool overlapX = playerRight > tblockLeft && playerLeft < tblockRight;
-            bool overlapY = playerBottom > tblockTop && playerTop < tblockBottom;
+			bool overlapX = playerRight > tblockLeft && playerLeft < tblockRight;
+			bool overlapY = playerBottom > tblockTop && playerTop < tblockBottom;
 
-            if (overlapX && overlapY) {
-                int prevPlayerBottom = prevY + playerHitboxHeight;
-                int prevPlayerTop = prevY;
+			if (overlapX && overlapY) {
+				int prevPlayerBottom = prevY + playerHitboxHeight;
+				int prevPlayerTop = prevY;
 
-                if (prevPlayerBottom <= tblockTop && jumpVelocity_ > 0) {
-                    y_ = tblockTop - playerHitboxHeight;
-                    isJumping_ = false;
-                    jumpVelocity_ = 0.0f;
-                    onBlock = true;
-                    newGroundY = tblockTop - playerHitboxHeight;
-                }
-                else if (prevPlayerTop >= tblockBottom && jumpVelocity_ < 0 && (State() == TINO || State() == LIZAD)) {
-                    y_ = tblockBottom;
-                    jumpVelocity_ = 0.0f;
-                }
-            }
-        }
-    }
+				if (prevPlayerBottom <= tblockTop && jumpVelocity_ > 0) {
+					y_ = tblockTop - playerHitboxHeight;
+					isJumping_ = false;
+					jumpVelocity_ = 0.0f;
+					onBlock = true;
+					newGroundY = tblockTop - playerHitboxHeight;
+				}
+				else if (prevPlayerTop >= tblockBottom && jumpVelocity_ < 0) {
+					y_ = tblockBottom;
+					jumpVelocity_ = 0.0f;
+				}
+			}
+		}
+	}
 
-    // Check if player is on a Hole (vertical)
-    if (!onBlock) {
-        for (const auto& hole : Pimage.holes) {
-            int holeLeft = hole.x;
-            int holeRight = hole.x + hole.width;
-            int holeTop = hole.y;
-            int holeBottom = hole.y + hole.height;
+	// Check if player is on a Hole (vertical)
+	if (!onBlock) {
+		for (const auto& hole : Pimage.holes) {
+			int holeLeft = hole.x;
+			int holeRight = hole.x + hole.width;
+			int holeTop = hole.y;
+			int holeBottom = hole.y + hole.height;
 
-            int playerLeft = playerHitboxX;
-            int playerRight = playerHitboxX + playerHitboxWidth;
-            int playerTop = playerHitboxY;
-            int playerBottom = playerHitboxY + playerHitboxHeight;
+			int playerLeft = playerHitboxX;
+			int playerRight = playerHitboxX + playerHitboxWidth;
+			int playerTop = playerHitboxY;
+			int playerBottom = playerHitboxY + playerHitboxHeight;
 
-            bool overlapX = playerRight > holeLeft && playerLeft < holeRight;
-            bool overlapY = playerBottom > holeTop && playerTop < holeBottom;
+			bool overlapX = playerRight > holeLeft && playerLeft < holeRight;
+			bool overlapY = playerBottom > holeTop && playerTop < holeBottom;
 
-            if (overlapX && overlapY) {
-                int prevPlayerBottom = prevY + playerHitboxHeight;
-                if (prevPlayerBottom <= holeTop && jumpVelocity_ > 0) {
-                    // Player lands on the hole, start falling
-                    isFallingIntoHole = true;
-                    fallProgress = 0.0f;
-                    y_ = holeTop - playerHitboxHeight; // Snap to hole top initially
-                    break; // Exit loop to start falling animation
-                }
-            }
-        }
-    }
+			if (overlapX && overlapY) {
+				int prevPlayerBottom = prevY + playerHitboxHeight;
+				if (prevPlayerBottom <= holeTop && jumpVelocity_ > 0) {
+					// Player lands on the hole, start falling
+					isFallingIntoHole = true;
+					fallProgress = 0.0f;
+					y_ = holeTop - playerHitboxHeight; // Snap to hole top initially
+					break; // Exit loop to start falling animation
+				}
+			}
+		}
+	}
 
-    // Check if player is on TBlock4 and down key is pressed to enter hidden stage
-    if (!isFallingIntoHole && !Pimage.tBlocks.empty() && Pimage.tBlocks.size() >= 4) { // Ensure TBlock4 exists
-        const auto& tblock4 = Pimage.tBlocks[3]; // TBlock4 is at index 3 (0-based)
-        int tblockLeft = tblock4.x;
-        int tblockRight = tblock4.x + tblock4.width;
-        int tblockTop = tblock4.y;
+	// Check if player is on TBlock4 and down key is pressed to enter hidden stage
+	if (!isFallingIntoHole && !Pimage.tBlocks.empty() && Pimage.tBlocks.size() >= 4) { // Ensure TBlock4 exists
+		const auto& tblock4 = Pimage.tBlocks[3]; // TBlock4 is at index 3 (0-based)
+		int tblockLeft = tblock4.x;
+		int tblockRight = tblock4.x + tblock4.width;
+		int tblockTop = tblock4.y;
 
-        int playerLeft = playerHitboxX;
-        int playerRight = playerHitboxX + playerHitboxWidth;
-        bool overlapX = playerRight > tblockLeft && playerLeft < tblockRight;
+		int playerLeft = playerHitboxX;
+		int playerRight = playerHitboxX + playerHitboxWidth;
+		bool overlapX = playerRight > tblockLeft && playerLeft < tblockRight;
 
-        // Check if player is standing on TBlock4 and down key is pressed
-        if (overlapX && y_ == tblockTop - playerHitboxHeight && GetAsyncKeyState(VK_DOWN) & 0x8000) {
-           
-            Pimage.currentStage = 2; // Reset to stage 1 first to ensure NextStage moves to hidden
+		// Check if player is standing on TBlock4 and down key is pressed
+		if (overlapX && y_ == tblockTop - playerHitboxHeight && GetAsyncKeyState(VK_DOWN) & 0x8000) {
+
+			Pimage.currentStage = 2; // Reset to stage 1 first to ensure NextStage moves to hidden
 			Images.NextStage();
-        }
-    }
+		}
+	}
 
-    // Check if player is still on a block after moving
-    if (!isFallingIntoHole && groundY_ != defaultGroundY_) {
-        bool stillOnBlock = false;
+	// Check if player is still on a block after moving
+	if (!isFallingIntoHole && groundY_ != defaultGroundY_) {
+		bool stillOnBlock = false;
 
 		for (const auto& block : Pimage.blocks) {
 			int blockLeft = block.x;
@@ -798,40 +800,40 @@ void Player_::Move() {
 			}
 		}
 
-        if (!stillOnBlock) {
-            for (const auto& tblock : Pimage.tBlocks) {
-                int tblockLeft = tblock.x;
-                int tblockRight = tblock.x + tblock.width;
-                int tblockTop = tblock.y;
+		if (!stillOnBlock) {
+			for (const auto& tblock : Pimage.tBlocks) {
+				int tblockLeft = tblock.x;
+				int tblockRight = tblock.x + tblock.width;
+				int tblockTop = tblock.y;
 
-                int playerLeft = playerHitboxX;
-                int playerRight = playerHitboxX + playerHitboxWidth;
-                bool overlapX = playerRight > tblockLeft && playerLeft < tblockRight;
+				int playerLeft = playerHitboxX;
+				int playerRight = playerHitboxX + playerHitboxWidth;
+				bool overlapX = playerRight > tblockLeft && playerLeft < tblockRight;
 
-                if (overlapX && groundY_ == tblockTop - playerHitboxHeight) {
-                    stillOnBlock = true;
-                    break;
-                }
-            }
-        }
+				if (overlapX && groundY_ == tblockTop - playerHitboxHeight) {
+					stillOnBlock = true;
+					break;
+				}
+			}
+		}
 
-        if (!stillOnBlock) {
-            groundY_ = defaultGroundY_;
-            if (y_ < defaultGroundY_) {
-                isJumping_ = true;
-            }
-        }
-    }
+		if (!stillOnBlock) {
+			groundY_ = defaultGroundY_;
+			if (y_ < defaultGroundY_) {
+				isJumping_ = true;
+			}
+		}
+	}
 
 	if (onBlock) {
 		groundY_ = newGroundY;
 	}
 
-    if (!onBlock && !isFallingIntoHole && y_ >= defaultGroundY_) {
-        y_ = defaultGroundY_;
-        isJumping_ = false;
-        jumpVelocity_ = 0.0f;
-    }
+	if (!onBlock && !isFallingIntoHole && y_ >= defaultGroundY_) {
+		y_ = defaultGroundY_;
+		isJumping_ = false;
+		jumpVelocity_ = 0.0f;
+	}
 
 	int stageWidth = (Images.NowStage() == 1 ? Pimage.mStage1.GetWidth() :
 		Images.NowStage() == 2 ? Pimage.mStageHidden.GetWidth() :
@@ -858,20 +860,13 @@ void Player_::Move() {
 		move_ = false;
 		imageNum = 0;
 	}
-
-	// 디버깅: 히트박스 출력
-	WCHAR debug[100];
-	wsprintf(debug, L"Player Hitbox: (%d, %d, %d, %d), State=%d\n",
-		hitbox_.left, hitbox_.top, hitbox_.right, hitbox_.bottom, State());
-	OutputDebugString(debug);
-
-	State();
 }
 
 int Player_::State() {
 	if (!eatFlower_) {
 		return TINO;
-			}	else {
+	}
+	else {
 		if (!eatMushroom_) return PAIRI;
 		else return LIZAMONG;
 	}
@@ -892,153 +887,153 @@ void Image_::ImageInit() {
 	mStage2.Load(TEXT("Image/월드 2.png"));
 	mStage3.Load(TEXT("Image/월드 3.png"));
 
-    blockImage.Load(TEXT("Image/BrickBlockBrown.png"));
-    questionBlockImage.Load(TEXT("Image/QuestionBlock.gif"));
-    Block block1 = { 320, 335, 16, 32 };
-    Block block2 = { 352, 335, 16, 32 };
-    Block block3 = { 384, 335, 16, 32 };
-    Block block4 = { 256, 335, 16, 42 };
-    Block block5 = { 352, 185, 16, 42 };
-    Block block6 = { 1280, 185, 130, 42 };
-    Block block7 = { 1232, 335, 16, 32 };
-    Block block8 = { 1264, 335, 16, 32 };
-    Block block9 = { 1456, 185, 16, 32 };
-    Block block10 = { 1472, 185, 16, 32 };
-    Block block11 = { 1488, 185, 16, 32 };
-    Block block12 = { 1600, 335, 16, 32 };
-    Block block13 = { 1616, 335, 16, 32 };
-    Block block14 = { 1744, 185, 16, 42 };
-    Block block15 = { 1888, 335, 16, 42 };
-    Block block16 = { 1936, 185, 16, 42 };
-    Block block17 = { 1952, 185, 16, 42 };
-    Block block18 = { 1968, 185, 16, 42 };
-    Block block19 = { 2048, 185, 16, 32 };
-    Block block20 = { 2096, 185, 16, 32 };
-    Block block21 = { 2064, 335, 16, 42 };
-    Block block22 = { 2080, 335, 16, 42 };
-    Block block23 = { 2688, 335, 16, 32 };
-    Block block24 = { 2704, 335, 16, 32 };
-    Block block25 = { 2736, 335, 16, 32 };
-    blocks.push_back(block1);
-    blocks.push_back(block2);
-    blocks.push_back(block3);
-    blocks.push_back(block4);
-    blocks.push_back(block5);
-    blocks.push_back(block6);
-    blocks.push_back(block7);
-    blocks.push_back(block8);
-    blocks.push_back(block9);
-    blocks.push_back(block10);
-    blocks.push_back(block11);
-    blocks.push_back(block12);
-    blocks.push_back(block13);
-    blocks.push_back(block14);
-    blocks.push_back(block15);
-    blocks.push_back(block16);
-    blocks.push_back(block17);
-    blocks.push_back(block18);
-    blocks.push_back(block19);
-    blocks.push_back(block20);
-    blocks.push_back(block21);
-    blocks.push_back(block22);
-    blocks.push_back(block23);
-    blocks.push_back(block24);
-    blocks.push_back(block25);
-    QuestionBlock qblock1 = { 336, 335, 16, 42, false };
-    QuestionBlock qblock2 = { 368, 335, 16, 42, false };
-    QuestionBlock qblock3 = { 1248, 335, 16, 42, false };
-    QuestionBlock qblock4 = { 1504, 335, 16, 42, false };
-    QuestionBlock qblock5 = { 1504, 185, 16, 42, false };
-    QuestionBlock qblock6 = { 1696, 335, 16, 42, false };
-    QuestionBlock qblock7 = { 1744, 335, 16, 42, false };
-    QuestionBlock qblock8 = { 1792, 335, 16, 42, false };
-    QuestionBlock qblock9 = { 2064, 185, 16, 42, false };
-    QuestionBlock qblock10 = { 2080, 185, 16, 42, false };
-    QuestionBlock qblock11 = { 2720, 335, 16, 42, false };
-    questionBlocks.push_back(qblock1);
-    questionBlocks.push_back(qblock2);
-    questionBlocks.push_back(qblock3);
-    questionBlocks.push_back(qblock4);
-    questionBlocks.push_back(qblock5);
-    questionBlocks.push_back(qblock6);
-    questionBlocks.push_back(qblock7);
-    questionBlocks.push_back(qblock8);
-    questionBlocks.push_back(qblock9);
-    questionBlocks.push_back(qblock10);
-    questionBlocks.push_back(qblock11);
+	blockImage.Load(TEXT("Image/BrickBlockBrown.png"));
+	questionBlockImage.Load(TEXT("Image/QuestionBlock.gif"));
+	Block block1 = { 320, 335, 16, 32 };
+	Block block2 = { 352, 335, 16, 32 };
+	Block block3 = { 384, 335, 16, 32 };
+	Block block4 = { 256, 335, 16, 42 };
+	Block block5 = { 352, 185, 16, 42 };
+	Block block6 = { 1280, 185, 130, 42 };
+	Block block7 = { 1232, 335, 16, 32 };
+	Block block8 = { 1264, 335, 16, 32 };
+	Block block9 = { 1456, 185, 16, 32 };
+	Block block10 = { 1472, 185, 16, 32 };
+	Block block11 = { 1488, 185, 16, 32 };
+	Block block12 = { 1600, 335, 16, 32 };
+	Block block13 = { 1616, 335, 16, 32 };
+	Block block14 = { 1744, 185, 16, 42 };
+	Block block15 = { 1888, 335, 16, 42 };
+	Block block16 = { 1936, 185, 16, 42 };
+	Block block17 = { 1952, 185, 16, 42 };
+	Block block18 = { 1968, 185, 16, 42 };
+	Block block19 = { 2048, 185, 16, 32 };
+	Block block20 = { 2096, 185, 16, 32 };
+	Block block21 = { 2064, 335, 16, 42 };
+	Block block22 = { 2080, 335, 16, 42 };
+	Block block23 = { 2688, 335, 16, 32 };
+	Block block24 = { 2704, 335, 16, 32 };
+	Block block25 = { 2736, 335, 16, 32 };
+	blocks.push_back(block1);
+	blocks.push_back(block2);
+	blocks.push_back(block3);
+	blocks.push_back(block4);
+	blocks.push_back(block5);
+	blocks.push_back(block6);
+	blocks.push_back(block7);
+	blocks.push_back(block8);
+	blocks.push_back(block9);
+	blocks.push_back(block10);
+	blocks.push_back(block11);
+	blocks.push_back(block12);
+	blocks.push_back(block13);
+	blocks.push_back(block14);
+	blocks.push_back(block15);
+	blocks.push_back(block16);
+	blocks.push_back(block17);
+	blocks.push_back(block18);
+	blocks.push_back(block19);
+	blocks.push_back(block20);
+	blocks.push_back(block21);
+	blocks.push_back(block22);
+	blocks.push_back(block23);
+	blocks.push_back(block24);
+	blocks.push_back(block25);
+	QuestionBlock qblock1 = { 336, 335, 16, 42, false };
+	QuestionBlock qblock2 = { 368, 335, 16, 42, false };
+	QuestionBlock qblock3 = { 1248, 335, 16, 42, false };
+	QuestionBlock qblock4 = { 1504, 335, 16, 42, false };
+	QuestionBlock qblock5 = { 1504, 185, 16, 42, false };
+	QuestionBlock qblock6 = { 1696, 335, 16, 42, false };
+	QuestionBlock qblock7 = { 1744, 335, 16, 42, false };
+	QuestionBlock qblock8 = { 1792, 335, 16, 42, false };
+	QuestionBlock qblock9 = { 2064, 185, 16, 42, false };
+	QuestionBlock qblock10 = { 2080, 185, 16, 42, false };
+	QuestionBlock qblock11 = { 2720, 335, 16, 42, false };
+	questionBlocks.push_back(qblock1);
+	questionBlocks.push_back(qblock2);
+	questionBlocks.push_back(qblock3);
+	questionBlocks.push_back(qblock4);
+	questionBlocks.push_back(qblock5);
+	questionBlocks.push_back(qblock6);
+	questionBlocks.push_back(qblock7);
+	questionBlocks.push_back(qblock8);
+	questionBlocks.push_back(qblock9);
+	questionBlocks.push_back(qblock10);
+	questionBlocks.push_back(qblock11);
 
-    TBlock tblock1 = { 442, 413, 32, 76 };
-    TBlock tblock2 = { 602, 375, 32, 110 };
-    TBlock tblock3 = { 730, 336, 32, 150 };  // 파이프들
-    TBlock tblock4 = { 912, 336, 32, 150 };
+	TBlock tblock1 = { 442, 413, 32, 76 };
+	TBlock tblock2 = { 602, 375, 32, 110 };
+	TBlock tblock3 = { 730, 336, 32, 150 };  // 파이프들
+	TBlock tblock4 = { 912, 336, 32, 150 };
 
-    TBlock tblock5 = { 2140, 448, 59, 38 };
-    TBlock tblock6 = { 2156, 410, 43, 38 };
-    TBlock tblock7 = { 2172, 372, 27, 38 }; // 첫번째 계단
-    TBlock tblock8 = { 2188, 334, 11, 38 };
+	TBlock tblock5 = { 2140, 448, 59, 38 };
+	TBlock tblock6 = { 2156, 410, 43, 38 };
+	TBlock tblock7 = { 2172, 372, 27, 38 }; // 첫번째 계단
+	TBlock tblock8 = { 2188, 334, 11, 38 };
 
-    TBlock tblock9 = { 2238, 334, 16, 38 };
-    TBlock tblock10 = { 2238, 372, 32, 38 }; // 두번째 계단
-    TBlock tblock11 = { 2238, 410, 48, 38 };
-    TBlock tblock12 = { 2238, 448, 64, 38 };
+	TBlock tblock9 = { 2238, 334, 16, 38 };
+	TBlock tblock10 = { 2238, 372, 32, 38 }; // 두번째 계단
+	TBlock tblock11 = { 2238, 410, 48, 38 };
+	TBlock tblock12 = { 2238, 448, 64, 38 };
 
-    TBlock tblock13 = { 2366, 448, 75, 38 };
-    TBlock tblock14 = { 2382, 410, 59, 38 };
-    TBlock tblock15 = { 2398, 372, 43, 38 };  // 세번째 계단
-    TBlock tblock16 = { 2414, 334, 27, 38 };
+	TBlock tblock13 = { 2366, 448, 75, 38 };
+	TBlock tblock14 = { 2382, 410, 59, 38 };
+	TBlock tblock15 = { 2398, 372, 43, 38 };  // 세번째 계단
+	TBlock tblock16 = { 2414, 334, 27, 38 };
 
-    TBlock tblock17 = { 2480, 334, 16, 38 };
-    TBlock tblock18 = { 2480, 372, 32, 38 };  // 네번째 계단
-    TBlock tblock19 = { 2480, 410, 48, 38 };
-    TBlock tblock20 = { 2480, 448, 64, 38 };
+	TBlock tblock17 = { 2480, 334, 16, 38 };
+	TBlock tblock18 = { 2480, 372, 32, 38 };  // 네번째 계단
+	TBlock tblock19 = { 2480, 410, 48, 38 };
+	TBlock tblock20 = { 2480, 448, 64, 38 };
 
-    TBlock tblock21 = { 2602, 413, 32, 76 }; // 파이프
-    TBlock tblock22 = { 2864, 413, 32, 76 };
+	TBlock tblock21 = { 2602, 413, 32, 76 }; // 파이프
+	TBlock tblock22 = { 2864, 413, 32, 76 };
 
-    TBlock tblock23 = { 2896, 448, 144, 38 };
-    TBlock tblock24 = { 2912, 410, 128, 38 };
-    TBlock tblock25 = { 2928, 372, 112, 38 };
-    TBlock tblock26 = { 2944, 334, 96, 38 };
-    TBlock tblock27 = { 2960, 296, 80, 38 };  // 마지막 계단
-    TBlock tblock28 = { 2976, 258, 64, 38 };
-    TBlock tblock29 = { 2992, 220, 48, 38 };
-    TBlock tblock30 = { 3008, 182, 32, 38 };
-    tBlocks.push_back(tblock1);
-    tBlocks.push_back(tblock2);
-    tBlocks.push_back(tblock3);
-    tBlocks.push_back(tblock4);
-    tBlocks.push_back(tblock5);
-    tBlocks.push_back(tblock6);
-    tBlocks.push_back(tblock7);
-    tBlocks.push_back(tblock8);
-    tBlocks.push_back(tblock9);
-    tBlocks.push_back(tblock10);
-    tBlocks.push_back(tblock11);
-    tBlocks.push_back(tblock12);
-    tBlocks.push_back(tblock13);
-    tBlocks.push_back(tblock14);
-    tBlocks.push_back(tblock15);
-    tBlocks.push_back(tblock16);
-    tBlocks.push_back(tblock17);
-    tBlocks.push_back(tblock18);
-    tBlocks.push_back(tblock19);
-    tBlocks.push_back(tblock20);
-    tBlocks.push_back(tblock21);
-    tBlocks.push_back(tblock22);
-    tBlocks.push_back(tblock23);
-    tBlocks.push_back(tblock24);
-    tBlocks.push_back(tblock25);
-    tBlocks.push_back(tblock26);
-    tBlocks.push_back(tblock27);
-    tBlocks.push_back(tblock28);
-    tBlocks.push_back(tblock29);
-    tBlocks.push_back(tblock30);
+	TBlock tblock23 = { 2896, 448, 144, 38 };
+	TBlock tblock24 = { 2912, 410, 128, 38 };
+	TBlock tblock25 = { 2928, 372, 112, 38 };
+	TBlock tblock26 = { 2944, 334, 96, 38 };
+	TBlock tblock27 = { 2960, 296, 80, 38 };  // 마지막 계단
+	TBlock tblock28 = { 2976, 258, 64, 38 };
+	TBlock tblock29 = { 2992, 220, 48, 38 };
+	TBlock tblock30 = { 3008, 182, 32, 38 };
+	tBlocks.push_back(tblock1);
+	tBlocks.push_back(tblock2);
+	tBlocks.push_back(tblock3);
+	tBlocks.push_back(tblock4);
+	tBlocks.push_back(tblock5);
+	tBlocks.push_back(tblock6);
+	tBlocks.push_back(tblock7);
+	tBlocks.push_back(tblock8);
+	tBlocks.push_back(tblock9);
+	tBlocks.push_back(tblock10);
+	tBlocks.push_back(tblock11);
+	tBlocks.push_back(tblock12);
+	tBlocks.push_back(tblock13);
+	tBlocks.push_back(tblock14);
+	tBlocks.push_back(tblock15);
+	tBlocks.push_back(tblock16);
+	tBlocks.push_back(tblock17);
+	tBlocks.push_back(tblock18);
+	tBlocks.push_back(tblock19);
+	tBlocks.push_back(tblock20);
+	tBlocks.push_back(tblock21);
+	tBlocks.push_back(tblock22);
+	tBlocks.push_back(tblock23);
+	tBlocks.push_back(tblock24);
+	tBlocks.push_back(tblock25);
+	tBlocks.push_back(tblock26);
+	tBlocks.push_back(tblock27);
+	tBlocks.push_back(tblock28);
+	tBlocks.push_back(tblock29);
+	tBlocks.push_back(tblock30);
 
-    Hole hole1 = { 1100, 486, 34, 74 };
-    holes.push_back(hole1);
+	Hole hole1 = { 1100, 486, 34, 74 };
+	holes.push_back(hole1);
 
-    stage1 = hidden = stage2 = stage3 = false;
-    currentStage = 1;
+	stage1 = hidden = stage2 = stage3 = false;
+	currentStage = 1;
 }
 
 void Image_::DrawBackGround(int x, int y, HDC targetDC) {
@@ -1085,15 +1080,15 @@ void Image_::DrawBackGround(int x, int y, HDC targetDC) {
 		}
 	}
 
-    if (!questionBlockImage.IsNull()) {
-        for (const auto& qblock : questionBlocks) {
-            int offsetX = qblock.x - cameraX;
-            if (offsetX + qblock.width > 0 && offsetX < wRect.right) {
-                questionBlockImage.StretchBlt(targetDC, offsetX, qblock.y, qblock.width, qblock.height, 0, 0, questionBlockImage.GetWidth(), questionBlockImage.GetHeight(), SRCCOPY);
-            }
-        }
-    }
-    // TBlocks are not rendered as they are invisible
+	if (!questionBlockImage.IsNull()) {
+		for (const auto& qblock : questionBlocks) {
+			int offsetX = qblock.x - cameraX;
+			if (offsetX + qblock.width > 0 && offsetX < wRect.right) {
+				questionBlockImage.StretchBlt(targetDC, offsetX, qblock.y, qblock.width, qblock.height, 0, 0, questionBlockImage.GetWidth(), questionBlockImage.GetHeight(), SRCCOPY);
+			}
+		}
+	}
+	// TBlocks are not rendered as they are invisible
 }
 
 void Image_::NextStage() {
