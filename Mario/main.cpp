@@ -71,6 +71,7 @@ class Player_ {
 public:
 	Image_ Pimage;
 	int imageNum;
+	
 
 	void PlayerInit();
 	void ResetPosition();
@@ -96,6 +97,7 @@ private:
     int defaultGroundY_;
     bool isFallingIntoHole;
     float fallProgress;
+	RECT hitbox_;
 
 	void GetHitbox(int& hitboxX, int& hitboxY, int& hitboxWidth, int& hitboxHeight) {
 		hitboxX = x_;
@@ -302,6 +304,7 @@ void Player_::PlayerInit() {
     isFallingIntoHole = false;
     fallProgress = 0.0f;
     Pimage = Images;
+	hitbox_ = { x_ + 14, y_, x_ + 39, y_ + 39 };
 }
 
 void Player_::ResetPosition() {
@@ -649,6 +652,7 @@ void Player_::Move() {
 
 			if (overlapX && overlapY) {
 				int prevPlayerBottom = prevY + playerHitboxHeight;
+				int prevPlayerTop = prevY;
 				WCHAR debug[100];
 				wsprintf(debug, L"QBlock Collision: playerBottom=%d, qblockTop=%d, y_=%d\n",
 					playerBottom, qblockTop, y_);
@@ -752,9 +756,9 @@ void Player_::Move() {
 
         // Check if player is standing on TBlock4 and down key is pressed
         if (overlapX && y_ == tblockTop - playerHitboxHeight && GetAsyncKeyState(VK_DOWN) & 0x8000) {
-            // Set stage to hidden stage (currentStage == 2)
-            Pimage.currentStage = 1; // Reset to stage 1 first to ensure NextStage moves to hidden
-            Pimage.NextStage(); // Moves to hidden stage (stage 2)
+           
+            Pimage.currentStage = 2; // Reset to stage 1 first to ensure NextStage moves to hidden
+			Images.NextStage();
         }
     }
 
