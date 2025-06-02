@@ -48,9 +48,14 @@ public:
         int x, y;
         int width, height;
     };
+    struct Hole {
+        int x, y;
+        int width, height;
+    };
     std::vector<Block> blocks;
     std::vector<QuestionBlock> questionBlocks;
     std::vector<TBlock> tBlocks;
+    std::vector<Hole> holes;
 
     void ImageInit();
     void DrawBackGround(int x, int y, HDC targetDC);
@@ -85,6 +90,8 @@ private:
     float jumpVelocity_;
     int groundY_;
     int defaultGroundY_;
+    bool isFallingIntoHole;
+    float fallProgress;
 
     void GetHitbox(int& hitboxX, int& hitboxY, int& hitboxWidth, int& hitboxHeight) {
         hitboxX = x_;
@@ -267,6 +274,8 @@ void Player_::PlayerInit() {
     jumpVelocity_ = 0.0f;
     groundY_ = 447;
     defaultGroundY_ = 447;
+    isFallingIntoHole = false;
+    fallProgress = 0.0f;
     Pimage = Images;
 }
 
@@ -388,6 +397,19 @@ void Player_::DrawPlayer(HDC targetDC) {
 }
 
 void Player_::Move() {
+    // If player is falling into a hole, continue the falling animation
+    if (isFallingIntoHole) {
+        const float fallSpeed = 5.0f; // Adjust this to control falling speed (pixels per frame)
+        fallProgress += fallSpeed;
+        y_ += static_cast<int>(fallSpeed); // Increase y_ to simulate falling
+
+        // Check if falling is complete (fallen by 100 units)
+        if (fallProgress >= 100.0f) {
+            PostQuitMessage(0); // Terminate the program (game over)
+        }
+        return; // Skip normal movement logic while falling
+    }
+
     bool moved = false;
 
     int prevX = x_;
@@ -625,8 +647,37 @@ void Player_::Move() {
         }
     }
 
+    // Check if player is on a Hole (vertical)
+    if (!onBlock) {
+        for (const auto& hole : Pimage.holes) {
+            int holeLeft = hole.x;
+            int holeRight = hole.x + hole.width;
+            int holeTop = hole.y;
+            int holeBottom = hole.y + hole.height;
+
+            int playerLeft = playerHitboxX;
+            int playerRight = playerHitboxX + playerHitboxWidth;
+            int playerTop = playerHitboxY;
+            int playerBottom = playerHitboxY + playerHitboxHeight;
+
+            bool overlapX = playerRight > holeLeft && playerLeft < holeRight;
+            bool overlapY = playerBottom > holeTop && playerTop < holeBottom;
+
+            if (overlapX && overlapY) {
+                int prevPlayerBottom = prevY + playerHitboxHeight;
+                if (prevPlayerBottom <= holeTop && jumpVelocity_ > 0) {
+                    // Player lands on the hole, start falling
+                    isFallingIntoHole = true;
+                    fallProgress = 0.0f;
+                    y_ = holeTop - playerHitboxHeight; // Snap to hole top initially
+                    break; // Exit loop to start falling animation
+                }
+            }
+        }
+    }
+
     // Check if player is on TBlock4 and down key is pressed to enter hidden stage
-    if (!Pimage.tBlocks.empty() && Pimage.tBlocks.size() >= 4) { // Ensure TBlock4 exists
+    if (!isFallingIntoHole && !Pimage.tBlocks.empty() && Pimage.tBlocks.size() >= 4) { // Ensure TBlock4 exists
         const auto& tblock4 = Pimage.tBlocks[3]; // TBlock4 is at index 3 (0-based)
         int tblockLeft = tblock4.x;
         int tblockRight = tblock4.x + tblock4.width;
@@ -639,13 +690,13 @@ void Player_::Move() {
         // Check if player is standing on TBlock4 and down key is pressed
         if (overlapX && y_ == tblockTop - playerHitboxHeight && GetAsyncKeyState(VK_DOWN) & 0x8000) {
             // Set stage to hidden stage (currentStage == 2)
-            Images.NextStage();
+            Pimage.currentStage = 1; // Reset to stage 1 first to ensure NextStage moves to hidden
+            Pimage.NextStage(); // Moves to hidden stage (stage 2)
         }
-        
     }
 
     // Check if player is still on a block after moving
-    if (groundY_ != defaultGroundY_) {
+    if (!isFallingIntoHole && groundY_ != defaultGroundY_) {
         bool stillOnBlock = false;
 
         for (const auto& block : Pimage.blocks) {
@@ -709,7 +760,7 @@ void Player_::Move() {
         groundY_ = newGroundY;
     }
 
-    if (!onBlock && y_ >= defaultGroundY_) {
+    if (!onBlock && !isFallingIntoHole && y_ >= defaultGroundY_) {
         y_ = defaultGroundY_;
         isJumping_ = false;
         jumpVelocity_ = 0.0f;
@@ -741,6 +792,7 @@ void Player_::Move() {
         imageNum = 0;
     }
 }
+
 int Player_::State() {
     if (!eatFlower_) {
         if (!eatMushroom_) return TINO;
@@ -844,30 +896,40 @@ void Image_::ImageInit() {
 
     TBlock tblock1 = { 442, 413, 32, 76 };
     TBlock tblock2 = { 602, 375, 32, 110 };
-    TBlock tblock3 = { 730, 336, 32, 150 };
+    TBlock tblock3 = { 730, 336, 32, 150 };  // 파이프들
     TBlock tblock4 = { 912, 336, 32, 150 };
 
-    TBlock tblock5 = { 2140, 448, 64, 38 };
-    TBlock tblock6 = { 2156, 410, 48, 38 };
-    TBlock tblock7 = { 2172, 372, 32, 38 };
-    TBlock tblock8 = { 2188, 334, 16, 38 };
+    TBlock tblock5 = { 2140, 448, 59, 38 };
+    TBlock tblock6 = { 2156, 410, 43, 38 };
+    TBlock tblock7 = { 2172, 372, 27, 38 }; // 첫번째 계단
+    TBlock tblock8 = { 2188, 334, 11, 38 };
 
     TBlock tblock9 = { 2238, 334, 16, 38 };
-    TBlock tblock10 = { 2238, 372, 32, 38 };
+    TBlock tblock10 = { 2238, 372, 32, 38 }; // 두번째 계단
     TBlock tblock11 = { 2238, 410, 48, 38 };
     TBlock tblock12 = { 2238, 448, 64, 38 };
 
-    TBlock tblock13 = { 2366, 448, 80, 38 };
-    TBlock tblock14 = { 2382, 410, 64, 38 };
-    TBlock tblock15 = { 2398, 372, 48, 38 };
-    TBlock tblock16 = { 2414, 334, 32, 38 };
+    TBlock tblock13 = { 2366, 448, 75, 38 };
+    TBlock tblock14 = { 2382, 410, 59, 38 };
+    TBlock tblock15 = { 2398, 372, 43, 38 };  // 세번째 계단
+    TBlock tblock16 = { 2414, 334, 27, 38 };
 
     TBlock tblock17 = { 2480, 334, 16, 38 };
-    TBlock tblock18 = { 2480, 372, 32, 38 };
+    TBlock tblock18 = { 2480, 372, 32, 38 };  // 네번째 계단
     TBlock tblock19 = { 2480, 410, 48, 38 };
     TBlock tblock20 = { 2480, 448, 64, 38 };
 
-    TBlock tblock21 = { 2602, 413, 32, 76 };
+    TBlock tblock21 = { 2602, 413, 32, 76 }; // 파이프
+    TBlock tblock22 = { 2864, 413, 32, 76 };
+
+    TBlock tblock23 = { 2896, 448, 144, 38 };
+    TBlock tblock24 = { 2912, 410, 128, 38 };
+    TBlock tblock25 = { 2928, 372, 112, 38 };
+    TBlock tblock26 = { 2944, 334, 96, 38 };
+    TBlock tblock27 = { 2960, 296, 80, 38 };  // 마지막 계단
+    TBlock tblock28 = { 2976, 258, 64, 38 };
+    TBlock tblock29 = { 2992, 220, 48, 38 };
+    TBlock tblock30 = { 3008, 182, 32, 38 };
     tBlocks.push_back(tblock1);
     tBlocks.push_back(tblock2);
     tBlocks.push_back(tblock3);
@@ -889,8 +951,18 @@ void Image_::ImageInit() {
     tBlocks.push_back(tblock19);
     tBlocks.push_back(tblock20);
     tBlocks.push_back(tblock21);
-    
-    
+    tBlocks.push_back(tblock22);
+    tBlocks.push_back(tblock23);
+    tBlocks.push_back(tblock24);
+    tBlocks.push_back(tblock25);
+    tBlocks.push_back(tblock26);
+    tBlocks.push_back(tblock27);
+    tBlocks.push_back(tblock28);
+    tBlocks.push_back(tblock29);
+    tBlocks.push_back(tblock30);
+
+    Hole hole1 = { 1100, 486, 34, 74 };
+    holes.push_back(hole1);
 
     stage1 = hidden = stage2 = stage3 = false;
     currentStage = 1;
