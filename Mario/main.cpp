@@ -15,7 +15,7 @@
 #define LIZAD 3
 #define LIZAMONG 4
 
-#define MOVE 10
+#define MOVE 7
 #define JUMP_VELOCITY -13
 #define GRAVITY 0.5
 
@@ -44,8 +44,13 @@ public:
         int width, height;
         bool hit;
     };
+    struct TBlock {
+        int x, y;
+        int width, height;
+    };
     std::vector<Block> blocks;
     std::vector<QuestionBlock> questionBlocks;
+    std::vector<TBlock> tBlocks;
 
     void ImageInit();
     void DrawBackGround(int x, int y, HDC targetDC);
@@ -465,6 +470,34 @@ void Player_::Move() {
     }
 
     if (canMoveHorizontally) {
+        for (const auto& tblock : Pimage.tBlocks) {
+            int tblockLeft = tblock.x;
+            int tblockRight = tblock.x + tblock.width;
+            int tblockTop = tblock.y;
+            int tblockBottom = tblock.y + tblock.height;
+
+            int newPlayerLeft = tempHitboxX;
+            int newPlayerRight = tempHitboxX + playerHitboxWidth;
+            int playerTop = playerHitboxY;
+            int playerBottom = playerHitboxY + playerHitboxHeight;
+
+            bool overlapX = newPlayerRight > tblockLeft && newPlayerLeft < tblockRight;
+            bool overlapY = playerBottom > tblockTop && playerTop < tblockBottom;
+
+            if (overlapX && overlapY) {
+                canMoveHorizontally = false;
+                if (newX < x_) {
+                    x_ = tblockRight - (playerHitboxX - x_);
+                }
+                else if (newX > x_) {
+                    x_ = tblockLeft - playerHitboxWidth - (playerHitboxX - x_);
+                }
+                break;
+            }
+        }
+    }
+
+    if (canMoveHorizontally) {
         x_ = newX;
     }
 
@@ -546,7 +579,7 @@ void Player_::Move() {
                 else if (prevPlayerTop >= qblockBottom && jumpVelocity_ < 0) {
                     if (!qblock.hit && State() == TINO) {
                         qblock.hit = true;
-                        eatMushroom_ = true; // Change to Lizard
+                        eatMushroom_ = true;
                     }
                     if (State() == TINO || State() == LIZAD) {
                         y_ = qblockBottom;
@@ -555,6 +588,60 @@ void Player_::Move() {
                 }
             }
         }
+    }
+
+    // Check collisions with TBlocks (vertical)
+    if (!onBlock) {
+        for (const auto& tblock : Pimage.tBlocks) {
+            int tblockLeft = tblock.x;
+            int tblockRight = tblock.x + tblock.width;
+            int tblockTop = tblock.y;
+            int tblockBottom = tblock.y + tblock.height;
+
+            int playerLeft = playerHitboxX;
+            int playerRight = playerHitboxX + playerHitboxWidth;
+            int playerTop = playerHitboxY;
+            int playerBottom = playerHitboxY + playerHitboxHeight;
+
+            bool overlapX = playerRight > tblockLeft && playerLeft < tblockRight;
+            bool overlapY = playerBottom > tblockTop && playerTop < tblockBottom;
+
+            if (overlapX && overlapY) {
+                int prevPlayerBottom = prevY + playerHitboxHeight;
+                int prevPlayerTop = prevY;
+
+                if (prevPlayerBottom <= tblockTop && jumpVelocity_ > 0) {
+                    y_ = tblockTop - playerHitboxHeight;
+                    isJumping_ = false;
+                    jumpVelocity_ = 0.0f;
+                    onBlock = true;
+                    newGroundY = tblockTop - playerHitboxHeight;
+                }
+                else if (prevPlayerTop >= tblockBottom && jumpVelocity_ < 0 && (State() == TINO || State() == LIZAD)) {
+                    y_ = tblockBottom;
+                    jumpVelocity_ = 0.0f;
+                }
+            }
+        }
+    }
+
+    // Check if player is on TBlock4 and down key is pressed to enter hidden stage
+    if (!Pimage.tBlocks.empty() && Pimage.tBlocks.size() >= 4) { // Ensure TBlock4 exists
+        const auto& tblock4 = Pimage.tBlocks[3]; // TBlock4 is at index 3 (0-based)
+        int tblockLeft = tblock4.x;
+        int tblockRight = tblock4.x + tblock4.width;
+        int tblockTop = tblock4.y;
+
+        int playerLeft = playerHitboxX;
+        int playerRight = playerHitboxX + playerHitboxWidth;
+        bool overlapX = playerRight > tblockLeft && playerLeft < tblockRight;
+
+        // Check if player is standing on TBlock4 and down key is pressed
+        if (overlapX && y_ == tblockTop - playerHitboxHeight && GetAsyncKeyState(VK_DOWN) & 0x8000) {
+            // Set stage to hidden stage (currentStage == 2)
+            Images.NextStage();
+        }
+        
     }
 
     // Check if player is still on a block after moving
@@ -587,6 +674,23 @@ void Player_::Move() {
                 bool overlapX = playerRight > qblockLeft && playerLeft < qblockRight;
 
                 if (overlapX && groundY_ == qblockTop - playerHitboxHeight) {
+                    stillOnBlock = true;
+                    break;
+                }
+            }
+        }
+
+        if (!stillOnBlock) {
+            for (const auto& tblock : Pimage.tBlocks) {
+                int tblockLeft = tblock.x;
+                int tblockRight = tblock.x + tblock.width;
+                int tblockTop = tblock.y;
+
+                int playerLeft = playerHitboxX;
+                int playerRight = playerHitboxX + playerHitboxWidth;
+                bool overlapX = playerRight > tblockLeft && playerLeft < tblockRight;
+
+                if (overlapX && groundY_ == tblockTop - playerHitboxHeight) {
                     stillOnBlock = true;
                     break;
                 }
@@ -637,7 +741,6 @@ void Player_::Move() {
         imageNum = 0;
     }
 }
-
 int Player_::State() {
     if (!eatFlower_) {
         if (!eatMushroom_) return TINO;
@@ -679,8 +782,18 @@ void Image_::ImageInit() {
     Block block11 = { 1488, 185, 16, 32 };
     Block block12 = { 1600, 335, 16, 32 };
     Block block13 = { 1616, 335, 16, 32 };
-    Block block14 = { 1744, 185, 16, 42};
+    Block block14 = { 1744, 185, 16, 42 };
     Block block15 = { 1888, 335, 16, 42 };
+    Block block16 = { 1936, 185, 16, 42 };
+    Block block17 = { 1952, 185, 16, 42 };
+    Block block18 = { 1968, 185, 16, 42 };
+    Block block19 = { 2048, 185, 16, 32 };
+    Block block20 = { 2096, 185, 16, 32 };
+    Block block21 = { 2064, 335, 16, 42 };
+    Block block22 = { 2080, 335, 16, 42 };
+    Block block23 = { 2688, 335, 16, 32 };
+    Block block24 = { 2704, 335, 16, 32 };
+    Block block25 = { 2736, 335, 16, 32 };
     blocks.push_back(block1);
     blocks.push_back(block2);
     blocks.push_back(block3);
@@ -696,6 +809,16 @@ void Image_::ImageInit() {
     blocks.push_back(block13);
     blocks.push_back(block14);
     blocks.push_back(block15);
+    blocks.push_back(block16);
+    blocks.push_back(block17);
+    blocks.push_back(block18);
+    blocks.push_back(block19);
+    blocks.push_back(block20);
+    blocks.push_back(block21);
+    blocks.push_back(block22);
+    blocks.push_back(block23);
+    blocks.push_back(block24);
+    blocks.push_back(block25);
     QuestionBlock qblock1 = { 336, 335, 16, 42, false };
     QuestionBlock qblock2 = { 368, 335, 16, 42, false };
     QuestionBlock qblock3 = { 1248, 335, 16, 42, false };
@@ -704,6 +827,9 @@ void Image_::ImageInit() {
     QuestionBlock qblock6 = { 1696, 335, 16, 42, false };
     QuestionBlock qblock7 = { 1744, 335, 16, 42, false };
     QuestionBlock qblock8 = { 1792, 335, 16, 42, false };
+    QuestionBlock qblock9 = { 2064, 185, 16, 42, false };
+    QuestionBlock qblock10 = { 2080, 185, 16, 42, false };
+    QuestionBlock qblock11 = { 2720, 335, 16, 42, false };
     questionBlocks.push_back(qblock1);
     questionBlocks.push_back(qblock2);
     questionBlocks.push_back(qblock3);
@@ -712,6 +838,59 @@ void Image_::ImageInit() {
     questionBlocks.push_back(qblock6);
     questionBlocks.push_back(qblock7);
     questionBlocks.push_back(qblock8);
+    questionBlocks.push_back(qblock9);
+    questionBlocks.push_back(qblock10);
+    questionBlocks.push_back(qblock11);
+
+    TBlock tblock1 = { 442, 413, 32, 76 };
+    TBlock tblock2 = { 602, 375, 32, 110 };
+    TBlock tblock3 = { 730, 336, 32, 150 };
+    TBlock tblock4 = { 912, 336, 32, 150 };
+
+    TBlock tblock5 = { 2140, 448, 64, 38 };
+    TBlock tblock6 = { 2156, 410, 48, 38 };
+    TBlock tblock7 = { 2172, 372, 32, 38 };
+    TBlock tblock8 = { 2188, 334, 16, 38 };
+
+    TBlock tblock9 = { 2238, 334, 16, 38 };
+    TBlock tblock10 = { 2238, 372, 32, 38 };
+    TBlock tblock11 = { 2238, 410, 48, 38 };
+    TBlock tblock12 = { 2238, 448, 64, 38 };
+
+    TBlock tblock13 = { 2366, 448, 80, 38 };
+    TBlock tblock14 = { 2382, 410, 64, 38 };
+    TBlock tblock15 = { 2398, 372, 48, 38 };
+    TBlock tblock16 = { 2414, 334, 32, 38 };
+
+    TBlock tblock17 = { 2480, 334, 16, 38 };
+    TBlock tblock18 = { 2480, 372, 32, 38 };
+    TBlock tblock19 = { 2480, 410, 48, 38 };
+    TBlock tblock20 = { 2480, 448, 64, 38 };
+
+    TBlock tblock21 = { 2602, 413, 32, 76 };
+    tBlocks.push_back(tblock1);
+    tBlocks.push_back(tblock2);
+    tBlocks.push_back(tblock3);
+    tBlocks.push_back(tblock4);
+    tBlocks.push_back(tblock5);
+    tBlocks.push_back(tblock6);
+    tBlocks.push_back(tblock7);
+    tBlocks.push_back(tblock8);
+    tBlocks.push_back(tblock9);
+    tBlocks.push_back(tblock10);
+    tBlocks.push_back(tblock11);
+    tBlocks.push_back(tblock12);
+    tBlocks.push_back(tblock13);
+    tBlocks.push_back(tblock14);
+    tBlocks.push_back(tblock15);
+    tBlocks.push_back(tblock16);
+    tBlocks.push_back(tblock17);
+    tBlocks.push_back(tblock18);
+    tBlocks.push_back(tblock19);
+    tBlocks.push_back(tblock20);
+    tBlocks.push_back(tblock21);
+    
+    
 
     stage1 = hidden = stage2 = stage3 = false;
     currentStage = 1;
@@ -769,6 +948,7 @@ void Image_::DrawBackGround(int x, int y, HDC targetDC) {
             }
         }
     }
+    // TBlocks are not rendered as they are invisible
 }
 
 void Image_::NextStage() {
