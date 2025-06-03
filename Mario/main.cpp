@@ -104,31 +104,35 @@ private:
         hitboxWidth = 0;
         hitboxHeight = 0;
 
-        switch (State()) {
-        case TINO:
-            hitboxX += 14;
-            hitboxWidth = 18;
-            hitboxHeight = 39;
-            break;
-        case PAIRI:
-            hitboxX += 14;
-            hitboxWidth = 18;
-            hitboxHeight = 39;
-            break;
-        case LIZAD:
-            hitboxX += 26;
-            hitboxWidth = 44;
-            hitboxHeight = 45;
-            break;
-        case LIZAMONG:
-            hitboxX += 26;
-            hitboxWidth = 30;
-            hitboxHeight = 51;
-            break;
-        default:
-            hitboxWidth = 36;
-            hitboxHeight = 39;
-        }
+		switch (State()) {
+		case TINO:
+			if(direct_ == RIGHT) hitboxX += 14;
+			else hitboxX = x_;
+			hitboxWidth = 18;
+			hitboxHeight = 39;
+			break;
+		case PAIRI:
+			if (direct_ == RIGHT) hitboxX += 14;
+			else hitboxX = x_;
+			hitboxWidth = 18;
+			hitboxHeight = 39;
+			break;
+		case LIZAD:
+			if (direct_ == RIGHT) hitboxX += 26;
+			else hitboxX = x_;
+			hitboxWidth = 44;
+			hitboxHeight = 45;
+			break;
+		case LIZAMONG:
+			if (direct_ == RIGHT) hitboxX += 26;
+			else hitboxX = x_;
+			hitboxWidth = 30;
+			hitboxHeight = 51;
+			break;
+		default:
+			hitboxWidth = 36;
+			hitboxHeight = 39;
+		}
 
         hitbox_.left = hitboxX;
         hitbox_.top = hitboxY;
@@ -290,21 +294,21 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 }
 
 void Player_::PlayerInit() {
-    x_ = 10;
-    y_ = 447;
-    direct_ = RIGHT;
-    move_ = false;
-    eatFlower_ = false;
-    eatMushroom_ = true;
-    imageNum = 0;
-    isJumping_ = false;
-    jumpVelocity_ = 0.0f;
-    groundY_ = 447;
-    defaultGroundY_ = 447;
-    isFallingIntoHole = false;
-    fallProgress = 0.0f;
-    Pimage = Images;
-    hitbox_ = { x_ + 14, y_, x_ + 39, y_ + 39 };
+	x_ = 10;
+	y_ = 447;
+	direct_ = RIGHT;
+	move_ = false;
+	eatFlower_ = false;
+	eatMushroom_ = false;
+	imageNum = 0;
+	isJumping_ = false;
+	jumpVelocity_ = 0.0f;
+	groundY_ = 447;
+	defaultGroundY_ = 447;
+	isFallingIntoHole = false;
+	fallProgress = 0.0f;
+	Pimage = Images;
+	hitbox_ = { x_ + 14, y_, x_ + 39, y_ + 39 };
 }
 
 void Player_::ResetPosition() {
@@ -451,7 +455,7 @@ void Player_::Move() {
         return;
     }
 
-    bool moved = false;
+	bool moved = false;
 
     int prevX = x_;
     int prevY = y_;
@@ -524,18 +528,18 @@ void Player_::Move() {
             bool overlapX = newPlayerRight > qblockLeft && newPlayerLeft < qblockRight;
             bool overlapY = playerBottom > qblockTop && playerTop < qblockBottom;
 
-            if (overlapX && overlapY) {
-                canMoveHorizontally = false;
-                if (newX < x_) {
-                    x_ = qblockRight - (playerHitboxX - x_);
-                }
-                else if (newX > x_) {
-                    x_ = qblockLeft - playerHitboxWidth - (playerHitboxX - x_);
-                }
-                break;
-            }
-        }
-    }
+			if (overlapX && overlapY) {
+				canMoveHorizontally = false;
+				if (newX < x_) {
+					x_ = qblockRight - (playerHitboxX - x_);
+				}
+				else if (newX > x_) {
+					x_ = qblockLeft - playerHitboxWidth - (playerHitboxX - x_);
+				}
+				break;
+			}
+		}
+	}
 
     if (canMoveHorizontally) {
         for (const auto& tblock : Pimage.tBlocks[Pimage.currentStage - 1]) {
@@ -544,26 +548,26 @@ void Player_::Move() {
             int tblockTop = tblock.y;
             int tblockBottom = tblock.y + tblock.height;
 
-            int newPlayerLeft = tempHitboxX;
-            int newPlayerRight = tempHitboxX + playerHitboxWidth;
-            int playerTop = playerHitboxY;
-            int playerBottom = playerHitboxY + playerHitboxHeight;
+			int newPlayerLeft = tempHitboxX;
+			int newPlayerRight = tempHitboxX + playerHitboxWidth;
+			int playerTop = playerHitboxY;
+			int playerBottom = playerHitboxY + playerHitboxHeight;
 
-            bool overlapX = newPlayerRight > tblockLeft && newPlayerLeft < tblockRight;
-            bool overlapY = playerBottom > tblockTop && playerTop < tblockBottom;
+			bool overlapX = newPlayerRight > tblockLeft && newPlayerLeft < tblockRight;
+			bool overlapY = playerBottom > tblockTop && playerTop < tblockBottom;
 
-            if (overlapX && overlapY) {
-                canMoveHorizontally = false;
-                if (newX < x_) {
-                    x_ = tblockRight - (playerHitboxX - x_);
-                }
-                else if (newX > x_) {
-                    x_ = tblockLeft - playerHitboxWidth - (playerHitboxX - x_);
-                }
-                break;
-            }
-        }
-    }
+			if (overlapX && overlapY) {
+				canMoveHorizontally = false;
+				if (newX < x_) {
+					x_ = tblockRight - (playerHitboxX - x_);
+				}
+				else if (newX > x_) {
+					x_ = tblockLeft - playerHitboxWidth - (playerHitboxX - x_);
+				}
+				break;
+			}
+		}
+	}
 
     if (canMoveHorizontally) {
         x_ = newX;
@@ -661,39 +665,40 @@ void Player_::Move() {
         }
     }
 
-    if (!onBlock) {
-        for (const auto& tblock : Pimage.tBlocks[Pimage.currentStage - 1]) {
-            int tblockLeft = tblock.x;
-            int tblockRight = tblock.x + tblock.width;
-            int tblockTop = tblock.y;
-            int tblockBottom = tblock.y + tblock.height;
+	// Check collisions with TBlocks (vertical)
+	if (!onBlock) {
+		for (const auto& tblock : Pimage.tBlocks) {
+			int tblockLeft = tblock.x;
+			int tblockRight = tblock.x + tblock.width;
+			int tblockTop = tblock.y;
+			int tblockBottom = tblock.y + tblock.height;
 
-            int playerLeft = playerHitboxX;
-            int playerRight = playerHitboxX + playerHitboxWidth;
-            int playerTop = playerHitboxY;
-            int playerBottom = playerHitboxY + playerHitboxHeight;
+			int playerLeft = playerHitboxX;
+			int playerRight = playerHitboxX + playerHitboxWidth;
+			int playerTop = playerHitboxY;
+			int playerBottom = playerHitboxY + playerHitboxHeight;
 
-            bool overlapX = playerRight > tblockLeft && playerLeft < tblockRight;
-            bool overlapY = playerBottom > tblockTop && playerTop < tblockBottom;
+			bool overlapX = playerRight > tblockLeft && playerLeft < tblockRight;
+			bool overlapY = playerBottom > tblockTop && playerTop < tblockBottom;
 
-            if (overlapX && overlapY) {
-                int prevPlayerBottom = prevY + playerHitboxHeight;
-                int prevPlayerTop = prevY;
+			if (overlapX && overlapY) {
+				int prevPlayerBottom = prevY + playerHitboxHeight;
+				int prevPlayerTop = prevY;
 
-                if (prevPlayerBottom <= tblockTop && jumpVelocity_ > 0) {
-                    y_ = tblockTop - playerHitboxHeight;
-                    isJumping_ = false;
-                    jumpVelocity_ = 0.0f;
-                    onBlock = true;
-                    newGroundY = tblockTop - playerHitboxHeight;
-                }
-                else if (prevPlayerTop >= tblockBottom && jumpVelocity_ < 0 && (State() == TINO || State() == LIZAD)) {
-                    y_ = tblockBottom;
-                    jumpVelocity_ = 0.0f;
-                }
-            }
-        }
-    }
+				if (prevPlayerBottom <= tblockTop && jumpVelocity_ > 0) {
+					y_ = tblockTop - playerHitboxHeight;
+					isJumping_ = false;
+					jumpVelocity_ = 0.0f;
+					onBlock = true;
+					newGroundY = tblockTop - playerHitboxHeight;
+				}
+				else if (prevPlayerTop >= tblockBottom && jumpVelocity_ < 0) {
+					y_ = tblockBottom;
+					jumpVelocity_ = 0.0f;
+				}
+			}
+		}
+	}
 
     if (!onBlock) {
         for (const auto& hole : Pimage.holes[Pimage.currentStage - 1]) {
@@ -724,9 +729,9 @@ void Player_::Move() {
         int tblockRight = tblock4.x + tblock4.width;
         int tblockTop = tblock4.y;
 
-        int playerLeft = playerHitboxX;
-        int playerRight = playerHitboxX + playerHitboxWidth;
-        bool overlapX = playerRight > tblockLeft && playerLeft < tblockRight;
+		int playerLeft = playerHitboxX;
+		int playerRight = playerHitboxX + playerHitboxWidth;
+		bool overlapX = playerRight > tblockLeft && playerLeft < tblockRight;
 
         if (overlapX && y_ == tblockTop - playerHitboxHeight && GetAsyncKeyState(VK_DOWN) & 0x8000) {
             Pimage.currentStage = 2;
@@ -775,34 +780,34 @@ void Player_::Move() {
                 int tblockRight = tblock.x + tblock.width;
                 int tblockTop = tblock.y;
 
-                int playerLeft = playerHitboxX;
-                int playerRight = playerHitboxX + playerHitboxWidth;
-                bool overlapX = playerRight > tblockLeft && playerLeft < tblockRight;
+				int playerLeft = playerHitboxX;
+				int playerRight = playerHitboxX + playerHitboxWidth;
+				bool overlapX = playerRight > tblockLeft && playerLeft < tblockRight;
 
-                if (overlapX && groundY_ == tblockTop - playerHitboxHeight) {
-                    stillOnBlock = true;
-                    break;
-                }
-            }
-        }
+				if (overlapX && groundY_ == tblockTop - playerHitboxHeight) {
+					stillOnBlock = true;
+					break;
+				}
+			}
+		}
 
-        if (!stillOnBlock) {
-            groundY_ = defaultGroundY_;
-            if (y_ < defaultGroundY_) {
-                isJumping_ = true;
-            }
-        }
-    }
+		if (!stillOnBlock) {
+			groundY_ = defaultGroundY_;
+			if (y_ < defaultGroundY_) {
+				isJumping_ = true;
+			}
+		}
+	}
 
     if (onBlock) {
         groundY_ = newGroundY;
     }
 
-    if (!onBlock && !isFallingIntoHole && y_ >= defaultGroundY_) {
-        y_ = defaultGroundY_;
-        isJumping_ = false;
-        jumpVelocity_ = 0.0f;
-    }
+	if (!onBlock && !isFallingIntoHole && y_ >= defaultGroundY_) {
+		y_ = defaultGroundY_;
+		isJumping_ = false;
+		jumpVelocity_ = 0.0f;
+	}
 
     int stageWidth = (Images.NowStage() == 1 ? Pimage.mStage1.GetWidth() :
         Images.NowStage() == 2 ? Pimage.mStageHidden.GetWidth() :
@@ -1029,8 +1034,8 @@ void Image_::ImageInit() {
 
     
 
-    stage1 = hidden = stage2 = stage3 = false;
-    currentStage = 1;
+	stage1 = hidden = stage2 = stage3 = false;
+	currentStage = 1;
 }
 
 void Image_::DrawBackGround(int x, int y, HDC targetDC) {
