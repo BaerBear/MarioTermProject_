@@ -35,130 +35,130 @@ int GetCameraX(int playerX, int stageWidth);
 
 class Image_ {
 public:
-	bool stage1, hidden, stage2, stage3;
-	int currentStage;
+    bool stage1, hidden, stage2, stage3;
+    int currentStage;
 
-	CImage Player_Move_Tino, Player_Move_Pairi, Player_Move_Lizard, Player_Move_Lizamong;
-	CImage Player_Attack_Tino, Player_Attack_Pairi, Player_Attack_Lizamong;
-	CImage mStage1, mStageHidden, mStage2, mStage3;
-	CImage blockImage;
-	CImage questionBlockImage;
-	struct Block {
-		int x, y;
-		int width, height;
-	};
-	struct QuestionBlock {
-		int x, y;
-		int width, height;
-		bool hit;
-	};
-	struct TBlock {
-		int x, y;
-		int width, height;
-	};
-	struct Hole {
-		int x, y;
-		int width, height;
-	};
-	std::vector<Block> blocks[4]{};
-	std::vector<QuestionBlock> questionBlocks[4]{};
-	std::vector<TBlock> tBlocks[4]{};
-	std::vector<Hole> holes[4]{};
+    CImage Player_Move_Tino, Player_Move_Pairi, Player_Move_Lizard, Player_Move_Lizamong;
+    CImage Player_Attack_Tino, Player_Attack_Pairi, Player_Attack_Lizamong;
+    CImage mStage1, mStageHidden, mStage2, mStage3;
+    CImage blockImage;
+    CImage questionBlockImage;
+    struct Block {
+        int x, y;
+        int width, height;
+    };
+    struct QuestionBlock {
+        int x, y;
+        int width, height;
+        bool hit;
+    };
+    struct TBlock {
+        int x, y;
+        int width, height;
+    };
+    struct Hole {
+        int x, y;
+        int width, height;
+    };
+    std::vector<Block> blocks[4]{};
+    std::vector<QuestionBlock> questionBlocks[4]{};
+    std::vector<TBlock> tBlocks[4]{};
+    std::vector<Hole> holes[4]{};
 
-	Image_() {
-		for (int i = 0; i < 4;++i) {
-			blocks[i].clear();
-			questionBlocks[i].clear();
-			tBlocks[i].clear();
-			holes[i].clear();
-		}
-		currentStage = 1;
-	};
-	~Image_() {};
+    Image_() {
+        for (int i = 0; i < 4; ++i) {
+            blocks[i].clear();
+            questionBlocks[i].clear();
+            tBlocks[i].clear();
+            holes[i].clear();
+        }
+        currentStage = 1;
+    };
+    ~Image_() {};
 
-	void ImageInit();
-	void BlockInit();
-	void DrawBackGround(int x, int y, HDC targetDC);
-	void Destroy();
-	void NextStage();
-	int NowStage() { return currentStage; };
-	void DrawHitBox(HDC targetDC);
+    void ImageInit();
+    void BlockInit();
+    void DrawBackGround(int x, int y, HDC targetDC);
+    void Destroy();
+    void NextStage();
+    int NowStage() { return currentStage; };
+    void DrawHitBox(HDC targetDC);
 };
 
 class Player_ {
 public:
-	Image_ Pimage;
-	int imageNum;
+    Image_ Pimage;
+    int imageNum;
 
-	void PlayerInit();
-	void ResetPosition();
-	void DrawPlayer(HDC targetDC);
-	void Move();
-	void Attack();
-	bool Moving() { return move_; };
-	void DrawHitbox(HDC targetDC);
+    void PlayerInit();
+    void ResetPosition();
+    void DrawPlayer(HDC targetDC);
+    void Move();
+    void Attack();
+    bool Moving() { return move_; };
+    void DrawHitbox(HDC targetDC);
 
-	int State();
+    int State();
 
-	int x() { return x_; };
-	int y() { return y_; };
+    int x() { return x_; };
+    int y() { return y_; };
 
 private:
-	int x_, y_;
-	int direct_;
-	bool move_;
-	bool eatFlower_;
-	bool eatMushroom_;
-	bool isJumping_;
-	float jumpVelocity_;
-	int groundY_;
-	int defaultGroundY_;
-	bool isFallingIntoHole;
-	float fallProgress;
-	RECT hitbox_;
+    int x_, y_;
+    int direct_;
+    bool move_;
+    bool eatFlower_;
+    bool eatMushroom_;
+    bool isJumping_;
+    float jumpVelocity_;
+    int groundY_;
+    int defaultGroundY_;
+    bool isFallingIntoHole;
+    float fallProgress;
+    RECT hitbox_;
 
-	void GetHitbox(int& hitboxX, int& hitboxY, int& hitboxWidth, int& hitboxHeight) {
-		hitboxX = x_;
-		hitboxY = y_;
-		hitboxWidth = 0;
-		hitboxHeight = 0;
+    void GetHitbox(int& hitboxX, int& hitboxY, int& hitboxWidth, int& hitboxHeight) {
+        hitboxX = x_;
+        hitboxY = y_;
+        hitboxWidth = 0;
+        hitboxHeight = 0;
 
-		switch (State()) {
-		case TINO:
-		case LARGETINO:
-			if (direct_ == RIGHT) hitboxX += 12;
-			else hitboxX += 8;
-			hitboxWidth = 18;
-			hitboxHeight = 39;
-			break;
-		case PAIRI:
-			if (direct_ == RIGHT) hitboxX += 21;
-			else hitboxX = x_;
-			hitboxWidth = 18;
-			hitboxHeight = 39;
-			break;
-		case LIZAD:
-			if (direct_ == RIGHT) hitboxX += 26;
-			else hitboxX = x_;
-			hitboxWidth = 44;
-			hitboxHeight = 45;
-			break;
-		case LIZAMONG:
-			if (direct_ == RIGHT) hitboxX += 26;
-			else hitboxX = x_;
-			hitboxWidth = 30;
-			hitboxHeight = 51;
-			break;
-		default:
-			hitboxWidth = 36;
-			hitboxHeight = 39;
-		}
+        switch (State()) {
+        case TINO:
+        case LARGETINO:
+            if (direct_ == RIGHT) hitboxX += 12;
+            else hitboxX += 8;
+            hitboxWidth = 18;
+            hitboxHeight = 39;
+            break;
+        case PAIRI:
+            if (direct_ == RIGHT) hitboxX += 21;
+            else hitboxX = x_;
+            hitboxWidth = 18;
+            hitboxHeight = 39;
+            break;
+        case LIZAD:
+            if (direct_ == RIGHT) hitboxX += 26;
+            else hitboxX = x_;
+            hitboxWidth = 44;
+            hitboxHeight = 45;
+            break;
+        case LIZAMONG:
+            if (direct_ == RIGHT) hitboxX += 26;
+            else hitboxX = x_;
+            hitboxWidth = 30;
+            hitboxHeight = 51;
+            break;
+        default:
+            hitboxWidth = 36;
+            hitboxHeight = 39;
+        }
 
-		hitbox_.left = hitboxX;
-		hitbox_.top = hitboxY;
-		hitbox_.right = hitboxX + hitboxWidth;
-		hitbox_.bottom = hitboxY + hitboxHeight;
-	}
+        hitbox_.left = hitboxX;
+        hitbox_.top = hitboxY;
+        hitbox_.right = hitboxX + hitboxWidth;
+        hitbox_.bottom = hitboxY + hitboxHeight;
+    }
 };
 
 HDC hDC;
@@ -173,983 +173,1118 @@ static int mouseBackgroundX = 0;
 static int mouseBackgroundY = 0;
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdParam, int nCmdShow) {
-	HWND hWnd;
-	MSG Message;
-	WNDCLASSEX WndClass;
-	g_hInst = hInstance;
+    HWND hWnd;
+    MSG Message;
+    WNDCLASSEX WndClass;
+    g_hInst = hInstance;
 
-	WndClass.cbSize = sizeof(WndClass);
-	WndClass.style = CS_HREDRAW | CS_VREDRAW;
-	WndClass.lpfnWndProc = (WNDPROC)WndProc;
-	WndClass.cbClsExtra = 0;
-	WndClass.cbWndExtra = 0;
-	WndClass.hInstance = hInstance;
-	WndClass.hIcon = LoadIcon(NULL, IDI_APPLICATION);
-	WndClass.hCursor = LoadCursor(NULL, IDC_ARROW);
-	WndClass.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
-	WndClass.lpszMenuName = NULL;
-	WndClass.lpszClassName = lpszClass;
-	WndClass.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
-	RegisterClassEx(&WndClass);
+    WndClass.cbSize = sizeof(WndClass);
+    WndClass.style = CS_HREDRAW | CS_VREDRAW;
+    WndClass.lpfnWndProc = (WNDPROC)WndProc;
+    WndClass.cbClsExtra = 0;
+    WndClass.cbWndExtra = 0;
+    WndClass.hInstance = hInstance;
+    WndClass.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+    WndClass.hCursor = LoadCursor(NULL, IDC_ARROW);
+    WndClass.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
+    WndClass.lpszMenuName = NULL;
+    WndClass.lpszClassName = lpszClass;
+    WndClass.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+    RegisterClassEx(&WndClass);
 
-	hWnd = CreateWindow(lpszClass, lpszWindowName, WS_OVERLAPPEDWINDOW, 0, 0, 800, 600, NULL, (HMENU)NULL, hInstance, NULL);
+    hWnd = CreateWindow(lpszClass, lpszWindowName, WS_OVERLAPPEDWINDOW, 0, 0, 800, 600, NULL, (HMENU)NULL, hInstance, NULL);
 
-	ShowWindow(hWnd, nCmdShow);
-	UpdateWindow(hWnd);
+    ShowWindow(hWnd, nCmdShow);
+    UpdateWindow(hWnd);
 
-	while (GetMessage(&Message, 0, 0, 0)) {
-		TranslateMessage(&Message);
-		DispatchMessage(&Message);
-	}
-	return Message.wParam;
+    while (GetMessage(&Message, 0, 0, 0)) {
+        TranslateMessage(&Message);
+        DispatchMessage(&Message);
+    }
+    return Message.wParam;
 }
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam) {
-	PAINTSTRUCT ps;
-	static HBITMAP hBitmap;
+    PAINTSTRUCT ps;
+    static HBITMAP hBitmap;
 
-	switch (iMessage) {
-	case WM_CREATE: {
-		hDC = GetDC(hWnd);
-		mDC = CreateCompatibleDC(hDC);
-		GetClientRect(hWnd, &wRect);
-		Images.ImageInit();
-		Player.PlayerInit();
-		hBitmap = CreateCompatibleBitmap(hDC, wRect.right, wRect.bottom);
-		SelectObject(mDC, hBitmap);
-		SetTimer(hWnd, 1, 16, NULL);
-		Images.stage1 = true;
-		Images.BlockInit();
-		ReleaseDC(hWnd, hDC);
-		break;
-	}
-	case WM_KEYDOWN: {
-		if (wParam == 'S' || wParam == 's') {
-			Images.NextStage();
-			InvalidateRect(hWnd, NULL, FALSE);
-		}
-		else if (wParam == 'q' || wParam == 'Q') {
-			PostQuitMessage(0);
-		}
-		else if (wParam == 'h' || wParam == 'H') {
-			DrawAllHitBox = !DrawAllHitBox;
-		}
-		break;
-	}
-	case WM_MOUSEMOVE: {
-		int mouseX = LOWORD(lParam);
-		int mouseY = HIWORD(lParam);
+    switch (iMessage) {
+    case WM_CREATE: {
+        hDC = GetDC(hWnd);
+        mDC = CreateCompatibleDC(hDC);
+        GetClientRect(hWnd, &wRect);
+        Images.ImageInit();
+        Player.PlayerInit();
+        hBitmap = CreateCompatibleBitmap(hDC, wRect.right, wRect.bottom);
+        SelectObject(mDC, hBitmap);
+        SetTimer(hWnd, 1, 16, NULL);
+        Images.stage1 = true;
+        Images.BlockInit();
+        ReleaseDC(hWnd, hDC);
+        break;
+    }
+    case WM_KEYDOWN: {
+        if (wParam == 'S' || wParam == 's') {
+            Images.NextStage();
+            InvalidateRect(hWnd, NULL, FALSE);
+        }
+        else if (wParam == 'q' || wParam == 'Q') {
+            PostQuitMessage(0);
+        }
+        else if (wParam == 'h' || wParam == 'H') {
+            DrawAllHitBox = !DrawAllHitBox;
+        }
+        break;
+    }
+    case WM_MOUSEMOVE: {
+        int mouseX = LOWORD(lParam);
+        int mouseY = HIWORD(lParam);
 
-		int cameraX = Player.x() - 400;
-		if (cameraX < 0) cameraX = 0;
-		int stageWidth = (Images.NowStage() == STAGE1 ? Images.mStage1.GetWidth() :
-			Images.NowStage() == HIDDEN ? Images.mStageHidden.GetWidth() :
-			Images.NowStage() == STAGE2 ? Images.mStage2.GetWidth() :
-			Images.NowStage() == STAGE3 ? Images.mStage3.GetWidth() : 0);
-		if (stageWidth <= wRect.right) {
-			cameraX = 0;
-		}
-		else if (cameraX > stageWidth - wRect.right) {
-			cameraX = stageWidth - wRect.right;
-		}
+        int cameraX = Player.x() - 400;
+        if (cameraX < 0) cameraX = 0;
+        int stageWidth = (Images.NowStage() == STAGE1 ? Images.mStage1.GetWidth() :
+            Images.NowStage() == HIDDEN ? Images.mStageHidden.GetWidth() :
+            Images.NowStage() == STAGE2 ? Images.mStage2.GetWidth() :
+            Images.NowStage() == STAGE3 ? Images.mStage3.GetWidth() : 0);
+        if (stageWidth <= wRect.right) {
+            cameraX = 0;
+        }
+        else if (cameraX > stageWidth - wRect.right) {
+            cameraX = stageWidth - wRect.right;
+        }
 
-		mouseBackgroundX = mouseX + cameraX;
-		mouseBackgroundY = mouseY;
+        mouseBackgroundX = mouseX + cameraX;
+        mouseBackgroundY = mouseY;
 
-		InvalidateRect(hWnd, NULL, FALSE);
-		break;
-	}
-	case WM_TIMER: {
-		switch (wParam) {
-		case 1: {
-			Player.Move();
-			break;
-		}
-		}
-		InvalidateRect(hWnd, NULL, FALSE);
-		break;
-	}
-	case WM_PAINT: {
-		hDC = BeginPaint(hWnd, &ps);
-		HBRUSH whiteBrush = CreateSolidBrush(RGB(255, 255, 255));
-		FillRect(mDC, &wRect, whiteBrush);
-		DeleteObject(whiteBrush);
+        InvalidateRect(hWnd, NULL, FALSE);
+        break;
+    }
+    case WM_TIMER: {
+        switch (wParam) {
+        case 1: {
+            Player.Move();
+            break;
+        }
+        }
+        InvalidateRect(hWnd, NULL, FALSE);
+        break;
+    }
+    case WM_PAINT: {
+        hDC = BeginPaint(hWnd, &ps);
+        HBRUSH whiteBrush = CreateSolidBrush(RGB(255, 255, 255));
+        FillRect(mDC, &wRect, whiteBrush);
+        DeleteObject(whiteBrush);
 
-		Images.DrawBackGround(Player.x(), Player.y(), mDC);
-		Player.DrawPlayer(mDC);
+        Images.DrawBackGround(Player.x(), Player.y(), mDC);
+        Player.DrawPlayer(mDC);
 
-		WCHAR buffer[100];
-		wsprintf(buffer, L"Mouse: (%d, %d)", mouseBackgroundX, mouseBackgroundY);
-		SetTextColor(mDC, RGB(255, 255, 255));
-		SetBkMode(mDC, TRANSPARENT);
-		TextOut(mDC, 10, 10, buffer, lstrlen(buffer));
+        WCHAR buffer[100];
+        wsprintf(buffer, L"Mouse: (%d, %d)", mouseBackgroundX, mouseBackgroundY);
+        SetTextColor(mDC, RGB(255, 255, 255));
+        SetBkMode(mDC, TRANSPARENT);
+        TextOut(mDC, 10, 10, buffer, lstrlen(buffer));
 
-		if (DrawAllHitBox) {
-			Player.DrawHitbox(mDC);
-			Images.DrawHitBox(mDC);
-		}
+        if (DrawAllHitBox) {
+            Player.DrawHitbox(mDC);
+            Images.DrawHitBox(mDC);
+        }
 
-		BitBlt(hDC, 0, 0, wRect.right, wRect.bottom, mDC, 0, 0, SRCCOPY);
-		EndPaint(hWnd, &ps);
-		break;
-	}
-	case WM_DESTROY: {
-		Images.Destroy();
-		DeleteDC(mDC);
-		DeleteObject(hBitmap);
-		ReleaseDC(hWnd, hDC);
-		PostQuitMessage(0);
-		return 0;
-	}
-	}
-	return (DefWindowProc(hWnd, iMessage, wParam, lParam));
+        BitBlt(hDC, 0, 0, wRect.right, wRect.bottom, mDC, 0, 0, SRCCOPY);
+        EndPaint(hWnd, &ps);
+        break;
+    }
+    case WM_DESTROY: {
+        Images.Destroy();
+        DeleteDC(mDC);
+        DeleteObject(hBitmap);
+        ReleaseDC(hWnd, hDC);
+        PostQuitMessage(0);
+        return 0;
+    }
+    }
+    return (DefWindowProc(hWnd, iMessage, wParam, lParam));
 }
 
 void Player_::PlayerInit() {
-	x_ = 10;
-	y_ = 447;
-	direct_ = RIGHT;
-	move_ = false;
-	eatFlower_ = true;
-	eatMushroom_ = true;
-	imageNum = 0;
-	isJumping_ = false;
-	jumpVelocity_ = 0.0f;
-	groundY_ = 447;
-	defaultGroundY_ = 447;
-	isFallingIntoHole = false;
-	fallProgress = 0.0f;
-	Pimage = Images;
-	hitbox_ = { x_ + 14, y_, x_ + 39, y_ + 39 };
+    x_ = 10;
+    y_ = 447;
+    direct_ = RIGHT;
+    move_ = false;
+    eatFlower_ = true;
+    eatMushroom_ = true;
+    imageNum = 0;
+    isJumping_ = false;
+    jumpVelocity_ = 0.0f;
+    groundY_ = 447;
+    defaultGroundY_ = 447;
+    isFallingIntoHole = false;
+    fallProgress = 0.0f;
+    Pimage = Images;
+    hitbox_ = { x_ + 14, y_, x_ + 39, y_ + 39 };
 }
 
 void Player_::ResetPosition() {
-	move_ = false;
-	isJumping_ = false;
-	jumpVelocity_ = 0.0f;
-	isFallingIntoHole = false;
-	direct_ = RIGHT;
-	fallProgress = 0.0f;
-	if (Images.NowStage() == 1) {
-		x_ = 10;
-		y_ = 447;
-		groundY_ = 447;
-		defaultGroundY_ = 447;
-	}
-	else if (Images.NowStage() == 2) {
-		x_ = 50;
-		y_ = 435;
-		groundY_ = 435;
-		defaultGroundY_ = 435;
-	}
-	else if (Images.NowStage() == 3) {
-		x_ = 30;
-		y_ = 447;
-		groundY_ = 447;
-		defaultGroundY_ = 447;
-	}
-	else if (Images.NowStage() == 4) {
-		x_ = 5;
-		y_ = 223;
-		groundY_ = 223;
-		defaultGroundY_ = 447;
-	}
+    move_ = false;
+    isJumping_ = false;
+    jumpVelocity_ = 0.0f;
+    isFallingIntoHole = false;
+    direct_ = RIGHT;
+    fallProgress = 0.0f;
+    if (Images.NowStage() == 1) {
+        x_ = 10;
+        y_ = 447; 
+        groundY_ = 447;
+        defaultGroundY_ = 447;
+    }
+    else if (Images.NowStage() == 2) {
+        x_ = 50;
+        y_ = 447;
+        groundY_ = 435;
+        defaultGroundY_ = 435;
+    }
+    else if (Images.NowStage() == 3) {
+        x_ = 30;
+        y_ = 447;
+        groundY_ = 447;
+        defaultGroundY_ = 447;
+    }
+    else if (Images.NowStage() == 4) {
+        x_ = 5;
+        y_ = 223;
+        groundY_ = 223;
+        defaultGroundY_ = 447;
+    }
 
-	if (Images.NowStage() != 2) {
-		eatFlower_ = false;
-		eatMushroom_ = false;
-	}
+    if (Images.NowStage() != 2) {
+        eatFlower_ = false;
+        eatMushroom_ = false;
+    }
 }
 
 void Player_::DrawPlayer(HDC targetDC) {
-	if (!Pimage.Player_Move_Pairi.IsNull()) {
-		int cameraX = x_ - 400;
-		if (cameraX < 0) cameraX = 0;
-		int stageWidth = (Images.NowStage() == STAGE1 ? Pimage.mStage1.GetWidth() :
-			Images.NowStage() == HIDDEN ? Pimage.mStageHidden.GetWidth() :
-			Images.NowStage() == STAGE2 ? Pimage.mStage2.GetWidth() :
-			Images.NowStage() == STAGE3 ? Pimage.mStage3.GetWidth() : 0);
+    if (!Pimage.Player_Move_Pairi.IsNull()) {
+        int cameraX = x_ - 400;
+        if (cameraX < 0) cameraX = 0;
+        int stageWidth = (Images.NowStage() == STAGE1 ? Pimage.mStage1.GetWidth() :
+            Images.NowStage() == HIDDEN ? Pimage.mStageHidden.GetWidth() :
+            Images.NowStage() == STAGE2 ? Pimage.mStage2.GetWidth() :
+            Images.NowStage() == STAGE3 ? Pimage.mStage3.GetWidth() : 0);
 
-		if (stageWidth <= wRect.right) {
-			cameraX = 0;
-		}
-		else if (cameraX > stageWidth - wRect.right) {
-			cameraX = stageWidth - wRect.right;
-		}
-		int playerWidth = 0;
-		switch (State()) {
-		case TINO: playerWidth = 36; break;
-		case PAIRI: playerWidth = 39; break;
-		case LIZAD: playerWidth = 46; break;
-		case LIZAMONG: playerWidth = 66; break;
-		default: playerWidth = 36;
-		}
+        if (stageWidth <= wRect.right) {
+            cameraX = 0;
+        }
+        else if (cameraX > stageWidth - wRect.right) {
+            cameraX = stageWidth - wRect.right;
+        }
+        int playerWidth = 0;
+        switch (State()) {
+        case TINO: playerWidth = 36; break;
+        case PAIRI: playerWidth = 39; break;
+        case LIZAD: playerWidth = 46; break;
+        case LIZAMONG: playerWidth = 66; break;
+        default: playerWidth = 36;
+        }
 
-		int offsetX = x_ - cameraX;
-		if (offsetX + playerWidth > wRect.right) {
-			offsetX = wRect.right - playerWidth;
-		}
-		if (offsetX < 0) {
-			offsetX = 0;
-		}
+        int offsetX = x_ - cameraX;
+        if (offsetX + playerWidth > wRect.right) {
+            offsetX = wRect.right - playerWidth;
+        }
+        if (offsetX < 0) {
+            offsetX = 0;
+        }
 
-		if (move_) {
-			if (!eatFlower_) {
-				if (!eatMushroom_) { // TINO
-					if (direct_ == LEFT) {
-						if (isJumping_)
-							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, 10, 177, 36, 39, RGB(0, 255, 0));
-						else
-							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, (2 - imageNum) * 56 + 10, 177, 36, 39, RGB(0, 255, 0));
-					}
-					else if (direct_ == RIGHT) {
-						if (isJumping_)
-							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, 2 * 56 + 10, 69, 36, 39, RGB(0, 255, 0));
-						else
-							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, imageNum * 56 + 10, 10, 36, 39, RGB(0, 255, 0));
-					}
-				}
-				else if (eatMushroom_) { // LARGETINO 아직 크기 미구현
-					if (direct_ == LEFT) {
-						if (isJumping_)
-							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, 2 * 56 + 10, 69, 36, 39, RGB(0, 255, 0));
-						else
-							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, imageNum * 56 + 10, 10, 36, 39, RGB(0, 255, 0));
-					}
-					else if (direct_ == RIGHT) {
-						if (isJumping_)
-							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, 2 * 56 + 10, 69, 36, 39, RGB(0, 255, 0));
-						else
-							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, imageNum * 56 + 10, 10, 36, 39, RGB(0, 255, 0));
-					}
-				}
-			}
-			else if (eatFlower_) {
-				if (!eatMushroom_) { // PAIRI
-					if (direct_ == LEFT) {
-						if (isJumping_)
-							Pimage.Player_Move_Pairi.TransparentBlt(targetDC, offsetX, y_, 39, 39, imageNum * 42, 222, 41, 39, RGB(199, 225, 209));
-						else
-							Pimage.Player_Move_Pairi.TransparentBlt(targetDC, offsetX, y_, 39, 39, imageNum * 40, 83, 39, 39, RGB(199, 225, 209));
-					}
-					else if (direct_ == RIGHT) {
-						if (isJumping_)
-							Pimage.Player_Move_Pairi.TransparentBlt(targetDC, offsetX, y_, 39, 39, imageNum * 42 + 5, 268, 41, 39, RGB(199, 225, 209));
-						else
-							Pimage.Player_Move_Pairi.TransparentBlt(targetDC, offsetX, y_, 39, 39, imageNum * 40 + 2, 42, 39, 39, RGB(199, 225, 209));
-					}
-				}
-				else if (eatMushroom_) { // LIZAMONG
-					if (direct_ == LEFT) {
-						if (isJumping_)
-							Pimage.Player_Move_Lizamong.TransparentBlt(targetDC, offsetX, y_, 64, 54, (3 - imageNum) * 75 + 2, 227, 75, 47, RGB(199, 225, 209));
-						else
-							Pimage.Player_Move_Lizamong.TransparentBlt(targetDC, offsetX, y_, 64, 54, (2 - imageNum) * 63 + 1, 54, 65, 54, RGB(199, 225, 209));
-					}
-					else if (direct_ == RIGHT) {
-						if (isJumping_)
-							Pimage.Player_Move_Lizamong.TransparentBlt(targetDC, offsetX, y_, 64, 54, imageNum * 75, 277, 75, 47, RGB(199, 225, 209));
-						else
-							Pimage.Player_Move_Lizamong.TransparentBlt(targetDC, offsetX, y_, 64, 54, imageNum * 62, 0, 65, 54, RGB(199, 225, 209));
-					}
-				}
-			}
-		}
-		else if (!move_) {
-			if (!eatFlower_) {
-				if (!eatMushroom_) { // TINO
-					if (direct_ == LEFT) {
-						if (isJumping_)
-							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, 10, 177, 36, 39, RGB(0, 255, 0));
-						else
-							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, (2 - imageNum) * 56 + 10, 177, 36, 39, RGB(0, 255, 0));
-					}
-					else if (direct_ == RIGHT) {
-						if (isJumping_)
-							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, 2 * 56 + 10, 69, 36, 39, RGB(0, 255, 0));
-						else
-							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, imageNum * 56 + 10, 69, 36, 39, RGB(0, 255, 0));
-					}
-				}
-				else if (eatMushroom_) { // LARGETINO 아직 크기 미구현
-					if (direct_ == LEFT) {
-						if (isJumping_)
-							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, 2 * 56 + 10, 69, 36, 39, RGB(0, 255, 0));
-						else
-							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, imageNum * 56 + 10, 69, 36, 39, RGB(0, 255, 0));
-					}
-					else if (direct_ == RIGHT) {
-						if (isJumping_)
-							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, 2 * 56 + 10, 69, 36, 39, RGB(0, 255, 0));
-						else
-							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, imageNum * 56 + 10, 69, 36, 39, RGB(0, 255, 0));
-					}
-				}
-			}
-			else if (eatFlower_) {
-				if (!eatMushroom_) { // PAIRI
-					if (direct_ == LEFT) {
-						if (isJumping_)
-							Pimage.Player_Move_Pairi.TransparentBlt(targetDC, offsetX, y_, 39, 39, imageNum * 42, 222, 41, 39, RGB(199, 225, 209));
-						else
-							Pimage.Player_Move_Pairi.TransparentBlt(targetDC, offsetX, y_, 39, 39, imageNum * 40, 0, 39, 39, RGB(199, 225, 209));
-					}
-					else if (direct_ == RIGHT) {
-						if (isJumping_)
-							Pimage.Player_Move_Pairi.TransparentBlt(targetDC, offsetX, y_, 39, 39, imageNum * 42 + 5, 268, 41, 39, RGB(199, 225, 209));
-						else
-							Pimage.Player_Move_Pairi.TransparentBlt(targetDC, offsetX, y_, 39, 39, 40, 0, 39, 39, RGB(199, 225, 209));
-					}
-				}
-				else if (eatMushroom_) { // LIZAMONG
-					if (direct_ == LEFT) {
-						if (isJumping_)
-							Pimage.Player_Move_Lizamong.TransparentBlt(targetDC, offsetX, y_, 64, 54, (3 - imageNum) * 75 + 2, 227, 75, 47, RGB(199, 225, 209));
-						else
-							Pimage.Player_Move_Lizamong.TransparentBlt(targetDC, offsetX, y_, 64, 54, 2 * 63 + 1, 54, 65, 54, RGB(199, 225, 209));
-					}
-					else if (direct_ == RIGHT) {
-						if (isJumping_)
-							Pimage.Player_Move_Lizamong.TransparentBlt(targetDC, offsetX, y_, 64, 54, imageNum * 75, 277, 75, 47, RGB(199, 225, 209));
-						else
-							Pimage.Player_Move_Lizamong.TransparentBlt(targetDC, offsetX, y_, 64, 54, imageNum * 62, 0, 65, 54, RGB(199, 225, 209));
-					}
-				}
-			}
-		}
-	}
-	else {
-		OutputDebugString(L"Player_Move_Pairi is NULL\n");
-	}
+        if (move_) {
+            if (!eatFlower_) {
+                if (!eatMushroom_) { // TINO
+                    if (direct_ == LEFT) {
+                        if (isJumping_)
+                            Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, 10, 177, 36, 39, RGB(0, 255, 0));
+                        else
+                            Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, (2 - imageNum) * 56 + 10, 177, 36, 39, RGB(0, 255, 0));
+                    }
+                    else if (direct_ == RIGHT) {
+                        if (isJumping_)
+                            Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, 2 * 56 + 10, 69, 36, 39, RGB(0, 255, 0));
+                        else
+                            Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, imageNum * 56 + 10, 10, 36, 39, RGB(0, 255, 0));
+                    }
+                }
+                else if (eatMushroom_) { // LARGETINO 아직 크기 미구현
+                    if (direct_ == LEFT) {
+                        if (isJumping_)
+                            Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, 2 * 56 + 10, 69, 36, 39, RGB(0, 255, 0));
+                        else
+                            Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, imageNum * 56 + 10, 10, 36, 39, RGB(0, 255, 0));
+                    }
+                    else if (direct_ == RIGHT) {
+                        if (isJumping_)
+                            Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, 2 * 56 + 10, 69, 36, 39, RGB(0, 255, 0));
+                        else
+                            Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, imageNum * 56 + 10, 10, 36, 39, RGB(0, 255, 0));
+                    }
+                }
+            }
+            else if (eatFlower_) {
+                if (!eatMushroom_) { // PAIRI
+                    if (direct_ == LEFT) {
+                        if (isJumping_)
+                            Pimage.Player_Move_Pairi.TransparentBlt(targetDC, offsetX, y_, 39, 39, imageNum * 42, 222, 41, 39, RGB(199, 225, 209));
+                        else
+                            Pimage.Player_Move_Pairi.TransparentBlt(targetDC, offsetX, y_, 39, 39, imageNum * 40, 83, 39, 39, RGB(199, 225, 209));
+                    }
+                    else if (direct_ == RIGHT) {
+                        if (isJumping_)
+                            Pimage.Player_Move_Pairi.TransparentBlt(targetDC, offsetX, y_, 39, 39, imageNum * 42 + 5, 268, 41, 39, RGB(199, 225, 209));
+                        else
+                            Pimage.Player_Move_Pairi.TransparentBlt(targetDC, offsetX, y_, 39, 39, imageNum * 40 + 2, 42, 39, 39, RGB(199, 225, 209));
+                    }
+                }
+                else if (eatMushroom_) { // LIZAMONG
+                    if (direct_ == LEFT) {
+                        if (isJumping_)
+                            Pimage.Player_Move_Lizamong.TransparentBlt(targetDC, offsetX, y_, 64, 54, (3 - imageNum) * 75 + 2, 227, 75, 47, RGB(199, 225, 209));
+                        else
+                            Pimage.Player_Move_Lizamong.TransparentBlt(targetDC, offsetX, y_, 64, 54, (2 - imageNum) * 63 + 1, 54, 65, 54, RGB(199, 225, 209));
+                    }
+                    else if (direct_ == RIGHT) {
+                        if (isJumping_)
+                            Pimage.Player_Move_Lizamong.TransparentBlt(targetDC, offsetX, y_, 64, 54, imageNum * 75, 277, 75, 47, RGB(199, 225, 209));
+                        else
+                            Pimage.Player_Move_Lizamong.TransparentBlt(targetDC, offsetX, y_, 64, 54, imageNum * 62, 0, 65, 54, RGB(199, 225, 209));
+                    }
+                }
+            }
+        }
+        else if (!move_) {
+            if (!eatFlower_) {
+                if (!eatMushroom_) { // TINO
+                    if (direct_ == LEFT) {
+                        if (isJumping_)
+                            Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, 10, 177, 36, 39, RGB(0, 255, 0));
+                        else
+                            Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, (2 - imageNum) * 56 + 10, 177, 36, 39, RGB(0, 255, 0));
+                    }
+                    else if (direct_ == RIGHT) {
+                        if (isJumping_)
+                            Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, 2 * 56 + 10, 69, 36, 39, RGB(0, 255, 0));
+                        else
+                            Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, imageNum * 56 + 10, 69, 36, 39, RGB(0, 255, 0));
+                    }
+                }
+                else if (eatMushroom_) { // LARGETINO 아직 크기 미구현
+                    if (direct_ == LEFT) {
+                        if (isJumping_)
+                            Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, 2 * 56 + 10, 69, 36, 39, RGB(0, 255, 0));
+                        else
+                            Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, imageNum * 56 + 10, 69, 36, 39, RGB(0, 255, 0));
+                    }
+                    else if (direct_ == RIGHT) {
+                        if (isJumping_)
+                            Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, 2 * 56 + 10, 69, 36, 39, RGB(0, 255, 0));
+                        else
+                            Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, imageNum * 56 + 10, 69, 36, 39, RGB(0, 255, 0));
+                    }
+                }
+            }
+            else if (eatFlower_) {
+                if (!eatMushroom_) { // PAIRI
+                    if (direct_ == LEFT) {
+                        if (isJumping_)
+                            Pimage.Player_Move_Pairi.TransparentBlt(targetDC, offsetX, y_, 39, 39, imageNum * 42, 222, 41, 39, RGB(199, 225, 209));
+                        else
+                            Pimage.Player_Move_Pairi.TransparentBlt(targetDC, offsetX, y_, 39, 39, imageNum * 40, 0, 39, 39, RGB(199, 225, 209));
+                    }
+                    else if (direct_ == RIGHT) {
+                        if (isJumping_)
+                            Pimage.Player_Move_Pairi.TransparentBlt(targetDC, offsetX, y_, 39, 39, imageNum * 42 + 5, 268, 41, 39, RGB(199, 225, 209));
+                        else
+                            Pimage.Player_Move_Pairi.TransparentBlt(targetDC, offsetX, y_, 39, 39, 40, 0, 39, 39, RGB(199, 225, 209));
+                    }
+                }
+                else if (eatMushroom_) { // LIZAMONG
+                    if (direct_ == LEFT) {
+                        if (isJumping_)
+                            Pimage.Player_Move_Lizamong.TransparentBlt(targetDC, offsetX, y_, 64, 54, (3 - imageNum) * 75 + 2, 227, 75, 47, RGB(199, 225, 209));
+                        else
+                            Pimage.Player_Move_Lizamong.TransparentBlt(targetDC, offsetX, y_, 64, 54, 2 * 63 + 1, 54, 65, 54, RGB(199, 225, 209));
+                    }
+                    else if (direct_ == RIGHT) {
+                        if (isJumping_)
+                            Pimage.Player_Move_Lizamong.TransparentBlt(targetDC, offsetX, y_, 64, 54, imageNum * 75, 277, 75, 47, RGB(199, 225, 209));
+                        else
+                            Pimage.Player_Move_Lizamong.TransparentBlt(targetDC, offsetX, y_, 64, 54, imageNum * 62, 0, 65, 54, RGB(199, 225, 209));
+                    }
+                }
+            }
+        }
+    }
+    else {
+        OutputDebugString(L"Player_Move_Pairi is NULL\n");
+    }
 }
 
 void Player_::Move() {
-	if (isFallingIntoHole) {
-		const float fallSpeed = 3.0f;
-		fallProgress += fallSpeed;
-		y_ += static_cast<int>(fallSpeed);
+    if (isFallingIntoHole) {
+        const float fallSpeed = 3.0f;
+        fallProgress += fallSpeed;
+        y_ += static_cast<int>(fallSpeed);
 
-		if (fallProgress >= 100.0f) {
-			PostQuitMessage(0);
-		}
-		return;
-	}
+        if (fallProgress >= 100.0f) {
+            PostQuitMessage(0);
+        }
+        return;
+    }
 
-	bool moved = false;
-	int prevX = x_;
-	int prevY = y_;
-	int playerHitboxX, playerHitboxY, playerHitboxWidth, playerHitboxHeight;
-	GetHitbox(playerHitboxX, playerHitboxY, playerHitboxWidth, playerHitboxHeight);
+    bool moved = false;
+    int prevX = x_;
+    int prevY = y_;
+    int playerHitboxX, playerHitboxY, playerHitboxWidth, playerHitboxHeight;
+    GetHitbox(playerHitboxX, playerHitboxY, playerHitboxWidth, playerHitboxHeight);
 
-	int newX = x_;
-	bool intendToMoveLeft = false;
-	bool intendToMoveRight = false;
+    int newX = x_;
+    bool intendToMoveLeft = false;
+    bool intendToMoveRight = false;
 
-	if (GetAsyncKeyState(VK_LEFT) & 0x8000) {
-		direct_ = LEFT;
-		intendToMoveLeft = true;
-		move_ = true;
-		moved = true;
-	}
-	if (GetAsyncKeyState(VK_RIGHT) & 0x8000) {
-		direct_ = RIGHT;
-		intendToMoveRight = true;
-		move_ = true;
-		moved = true;
-	}
+    if (GetAsyncKeyState(VK_LEFT) & 0x8000) {
+        direct_ = LEFT;
+        intendToMoveLeft = true;
+        move_ = true;
+        moved = true;
+    }
+    if (GetAsyncKeyState(VK_RIGHT) & 0x8000) {
+        direct_ = RIGHT;
+        intendToMoveRight = true;
+        move_ = true;
+        moved = true;
+    }
 
-	if (move_) {
-		if (State() == TINO || State() == LARGETINO || State() == LIZAMONG || State() == LIZAD) {
-			imageNum = (imageNum + 1) % 3;
-		}
-		else if (State() == PAIRI) {
-			if(isJumping_) imageNum = (imageNum + 1) % 5;
-			else imageNum = (imageNum + 1) % 6;
-		}
-	}
+    if (move_) {
+        if (State() == TINO || State() == LARGETINO || State() == LIZAMONG || State() == LIZAD) {
+            imageNum = (imageNum + 1) % 3;
+        }
+        else if (State() == PAIRI) {
+            if (isJumping_) imageNum = (imageNum + 1) % 5;
+            else imageNum = (imageNum + 1) % 6;
+        }
+    }
 
-	if (State() == LIZAMONG) {
-		if (Images.NowStage() == STAGE1 || Images.NowStage() == STAGE2 || Images.NowStage() == STAGE3) defaultGroundY_ = 433;
-		else if (Images.NowStage() == HIDDEN) defaultGroundY_ = 421;
-	}
-	bool canMoveHorizontally = true;
-	if (intendToMoveLeft) newX -= MOVE;
-	if (intendToMoveRight) newX += MOVE;
+    if (State() == LIZAMONG) {
+        if (Images.NowStage() == STAGE1 || Images.NowStage() == STAGE2 || Images.NowStage() == STAGE3) defaultGroundY_ = 433;
+        else if (Images.NowStage() == HIDDEN) defaultGroundY_ = 421;
+    }
+    bool canMoveHorizontally = true;
+    if (intendToMoveLeft) newX -= MOVE;
+    if (intendToMoveRight) newX += MOVE;
 
-	if (intendToMoveLeft || intendToMoveRight) {
-		int checkHitboxX = newX;
-		switch (State()) {
-		case TINO:  checkHitboxX += 10; break;
-		case PAIRI: if (direct_ == RIGHT) checkHitboxX += 14; break;
-		case LIZAD: if (direct_ == RIGHT) checkHitboxX += 20; break;
-		case LIZAMONG: if (direct_ == RIGHT) checkHitboxX += 26; break;
-		default: if (direct_ == RIGHT) checkHitboxX += 14; break;
-		}
+    if (intendToMoveLeft || intendToMoveRight) {
+        int checkHitboxX = newX;
+        switch (State()) {
+        case TINO: checkHitboxX += 10; break;
+        case PAIRI: if (direct_ == RIGHT) checkHitboxX += 14; break;
+        case LIZAD: if (direct_ == RIGHT) checkHitboxX += 20; break;
+        case LIZAMONG: if (direct_ == RIGHT) checkHitboxX += 26; break;
+        default: if (direct_ == RIGHT) checkHitboxX += 14; break;
+        }
 
-		for (const auto& block : Images.blocks[Images.currentStage - 1]) {
-			int blockLeft = block.x;
-			int blockRight = block.x + block.width;
-			int blockTop = block.y;
-			int blockBottom = block.y + block.height;
+        for (const auto& block : Images.blocks[Images.currentStage - 1]) {
+            int blockLeft = block.x;
+            int blockRight = block.x + block.width;
+            int blockTop = block.y;
+            int blockBottom = block.y + block.height;
 
-			int newPlayerLeft = checkHitboxX;
-			int newPlayerRight = checkHitboxX + playerHitboxWidth;
-			int playerTop = playerHitboxY;
-			int playerBottom = playerHitboxY + playerHitboxHeight;
+            int newPlayerLeft = checkHitboxX;
+            int newPlayerRight = checkHitboxX + playerHitboxWidth;
+            int playerTop = playerHitboxY;
+            int playerBottom = playerHitboxY + playerHitboxHeight;
 
-			bool overlapX = newPlayerRight > blockLeft && newPlayerLeft < blockRight;
-			bool overlapY = playerBottom > blockTop && playerTop < blockBottom;
+            bool overlapX = newPlayerRight > blockLeft && newPlayerLeft < blockRight;
+            bool overlapY = playerBottom > blockTop && playerTop < blockBottom;
 
-			if (overlapX && overlapY) {
-				canMoveHorizontally = false;
-				break;
-			}
-		}
+            if (overlapX && overlapY) {
+                canMoveHorizontally = false;
+                break;
+            }
+        }
 
-		if (canMoveHorizontally) {
-			for (const auto& qblock : Images.questionBlocks[Images.currentStage - 1]) {
-				int qblockLeft = qblock.x;
-				int qblockRight = qblock.x + qblock.width;
-				int qblockTop = qblock.y;
-				int qblockBottom = qblock.y + qblock.height;
+        if (canMoveHorizontally) {
+            for (const auto& qblock : Images.questionBlocks[Images.currentStage - 1]) {
+                int qblockLeft = qblock.x;
+                int qblockRight = qblock.x + qblock.width;
+                int qblockTop = qblock.y;
+                int qblockBottom = qblock.y + qblock.height;
 
-				int newPlayerLeft = checkHitboxX;
-				int newPlayerRight = checkHitboxX + playerHitboxWidth;
-				int playerTop = playerHitboxY;
-				int playerBottom = playerHitboxY + playerHitboxHeight;
+                int newPlayerLeft = checkHitboxX;
+                int newPlayerRight = checkHitboxX + playerHitboxWidth;
+                int playerTop = playerHitboxY;
+                int playerBottom = playerHitboxY + playerHitboxHeight;
 
-				bool overlapX = newPlayerRight > qblockLeft && newPlayerLeft < qblockRight;
-				bool overlapY = playerBottom > qblockTop && playerTop < qblockBottom;
+                bool overlapX = newPlayerRight > qblockLeft && newPlayerLeft < qblockRight;
+                bool overlapY = playerBottom > qblockTop && playerTop < qblockBottom;
 
-				if (overlapX && overlapY) {
-					canMoveHorizontally = false;
-					break;
-				}
-			}
-		}
+                if (overlapX && overlapY) {
+                    canMoveHorizontally = false;
+                    break;
+                }
+            }
+        }
 
-		if (canMoveHorizontally) {
-			for (const auto& tblock : Images.tBlocks[Images.currentStage - 1]) {
-				int tblockLeft = tblock.x;
-				int tblockRight = tblock.x + tblock.width;
-				int tblockTop = tblock.y;
-				int tblockBottom = tblock.y + tblock.height;
+        if (canMoveHorizontally) {
+            for (const auto& tblock : Images.tBlocks[Images.currentStage - 1]) {
+                int tblockLeft = tblock.x;
+                int tblockRight = tblock.x + tblock.width;
+                int tblockTop = tblock.y;
+                int tblockBottom = tblock.y + tblock.height;
 
-				int newPlayerLeft = checkHitboxX;
-				int newPlayerRight = checkHitboxX + playerHitboxWidth;
-				int playerTop = playerHitboxY;
-				int playerBottom = playerHitboxY + playerHitboxHeight;
+                int newPlayerLeft = checkHitboxX;
+                int newPlayerRight = checkHitboxX + playerHitboxWidth;
+                int playerTop = playerHitboxY;
+                int playerBottom = playerHitboxY + playerHitboxHeight;
 
-				bool overlapX = newPlayerRight > tblockLeft && newPlayerLeft < tblockRight;
-				bool overlapY = playerBottom > tblockTop && playerTop < tblockBottom;
+                bool overlapX = newPlayerRight > tblockLeft && newPlayerLeft < tblockRight;
+                bool overlapY = playerBottom > tblockTop && playerTop < tblockBottom;
 
-				if (overlapX && overlapY) {
-					canMoveHorizontally = false;
-					break;
-				}
-			}
-		}
+                if (overlapX && overlapY) {
+                    canMoveHorizontally = false;
+                    break;
+                }
+            }
+        }
 
-		if (canMoveHorizontally) {
-			x_ = newX;
-		}
-		else {
-			move_ = true; // 벽에 부딪히는 애니메이션 유지
-			moved = true;
-		}
-	}
+        if (canMoveHorizontally) {
+            x_ = newX;
+        }
+        else {
+            move_ = true;
+            imageNum = 0;
+        }
+    }
 
-	if (GetAsyncKeyState(VK_UP) & 0x8000 && !isJumping_) {
-		isJumping_ = true;
-		jumpVelocity_ = JUMP_VELOCITY;
-	}
+    if (GetAsyncKeyState(VK_UP) & 0x8000 && !isJumping_) {
+        isJumping_ = true;
+        jumpVelocity_ = JUMP_VELOCITY;
+    }
 
-	if (isJumping_) {
-		y_ += static_cast<int>(jumpVelocity_);
-		jumpVelocity_ += GRAVITY;
-	}
+    if (isJumping_) {
+        y_ += static_cast<int>(jumpVelocity_);
+        jumpVelocity_ += GRAVITY;
+    }
 
-	GetHitbox(playerHitboxX, playerHitboxY, playerHitboxWidth, playerHitboxHeight);
+    GetHitbox(playerHitboxX, playerHitboxY, playerHitboxWidth, playerHitboxHeight);
 
-	bool onBlock = false;
-	int newGroundY = defaultGroundY_;
+    bool onBlock = false;
+    int newGroundY = defaultGroundY_;
 
-	for (const auto& block : Images.blocks[Images.currentStage - 1]) {
-		int blockLeft = block.x;
-		int blockRight = block.x + block.width;
-		int blockTop = block.y;
-		int blockBottom = block.y + block.height;
+    for (const auto& block : Images.blocks[Images.currentStage - 1]) {
+        int blockLeft = block.x;
+        int blockRight = block.x + block.width;
+        int blockTop = block.y;
+        int blockBottom = block.y + block.height;
 
-		int playerLeft = hitbox_.left;
-		int playerRight = hitbox_.right;
-		int playerTop = hitbox_.top;
-		int playerBottom = hitbox_.bottom;
+        int playerLeft = hitbox_.left;
+        int playerRight = hitbox_.right;
+        int playerTop = hitbox_.top;
+        int playerBottom = hitbox_.bottom;
 
-		bool overlapX = playerRight > blockLeft && playerLeft < blockRight;
-		bool overlapY = playerBottom > blockTop && playerTop < blockBottom;
+        bool overlapX = playerRight > blockLeft && playerLeft < blockRight;
+        bool overlapY = playerBottom > blockTop && playerTop < blockBottom;
 
-		if (overlapX && overlapY) {
-			int prevPlayerBottom = prevY + playerHitboxHeight;
-			if (prevPlayerBottom <= blockTop + 5 && jumpVelocity_ > 0) {
-				y_ = blockTop - playerHitboxHeight;
-				isJumping_ = false;
-				jumpVelocity_ = 0.0f;
-				onBlock = true;
-				newGroundY = blockTop - playerHitboxHeight;
-			}
-			else if (prevY >= blockBottom && jumpVelocity_ < 0) {
-				y_ = blockBottom;
-				jumpVelocity_ = 0.0f;
-			}
-		}
-	}
+        if (overlapX && overlapY) {
+            int prevPlayerBottom = prevY + playerHitboxHeight;
+            if (prevPlayerBottom <= blockTop + 5 && jumpVelocity_ > 0) {
+                y_ = blockTop - playerHitboxHeight;
+                isJumping_ = false;
+                jumpVelocity_ = 0.0f;
+                onBlock = true;
+                newGroundY = blockTop - playerHitboxHeight;
+            }
+            else if (prevY >= blockBottom && jumpVelocity_ < 0) {
+                y_ = blockBottom;
+                jumpVelocity_ = 0.0f;
+            }
+        }
+    }
 
-	if (!onBlock) {
-		for (auto& qblock : Images.questionBlocks[Images.currentStage - 1]) {
-			int qblockLeft = qblock.x;
-			int qblockRight = qblock.x + qblock.width;
-			int qblockTop = qblock.y;
-			int qblockBottom = qblock.y + qblock.height;
+    if (!onBlock) {
+        for (auto& qblock : Images.questionBlocks[Images.currentStage - 1]) {
+            int qblockLeft = qblock.x;
+            int qblockRight = qblock.x + qblock.width;
+            int qblockTop = qblock.y;
+            int qblockBottom = qblock.y + qblock.height;
 
-			int playerLeft = hitbox_.left;
-			int playerRight = hitbox_.right;
-			int playerTop = hitbox_.top;
-			int playerBottom = hitbox_.bottom;
+            int playerLeft = hitbox_.left;
+            int playerRight = hitbox_.right;
+            int playerTop = hitbox_.top;
+            int playerBottom = hitbox_.bottom;
 
-			bool overlapX = playerRight > qblockLeft && playerLeft < qblockRight;
-			bool overlapY = playerBottom > qblockTop && playerTop < qblockBottom;
+            bool overlapX = playerRight > qblockLeft && playerLeft < qblockRight;
+            bool overlapY = playerBottom > qblockTop && playerTop < qblockBottom;
 
-			if (overlapX && overlapY) {
-				int prevPlayerBottom = prevY + playerHitboxHeight;
-				int prevPlayerTop = prevY;
-				if (prevPlayerBottom <= qblockTop && jumpVelocity_ > 0) {
-					y_ = qblockTop - playerHitboxHeight;
-					isJumping_ = false;
-					jumpVelocity_ = 0.0f;
-					onBlock = true;
-					newGroundY = qblockTop - playerHitboxHeight;
-				}
-				else if (prevPlayerTop >= qblockBottom && jumpVelocity_ < 0) {
-					if (!qblock.hit) {
-						qblock.hit = true;
-						eatFlower_ = true;
-					}
-					y_ = qblockBottom;
-					jumpVelocity_ = 0.0f;
-				}
-			}
-		}
-	}
+            if (overlapX && overlapY) {
+                int prevPlayerBottom = prevY + playerHitboxHeight;
+                int prevPlayerTop = prevY;
+                if (prevPlayerBottom <= qblockTop && jumpVelocity_ > 0) {
+                    y_ = qblockTop - playerHitboxHeight;
+                    isJumping_ = false;
+                    jumpVelocity_ = 0.0f;
+                    onBlock = true;
+                    newGroundY = qblockTop - playerHitboxHeight;
+                }
+                else if (prevPlayerTop >= qblockBottom && jumpVelocity_ < 0) {
+                    if (!qblock.hit) {
+                        qblock.hit = true;
+                        eatFlower_ = true;
+                    }
+                    y_ = qblockBottom;
+                    jumpVelocity_ = 0.0f;
+                }
+            }
+        }
+    }
 
-	if (!onBlock) {
-		for (const auto& tblock : Images.tBlocks[Images.currentStage - 1]) {
-			int tblockLeft = tblock.x;
-			int tblockRight = tblock.x + tblock.width;
-			int tblockTop = tblock.y;
-			int tblockBottom = tblock.y + tblock.height;
+    if (!onBlock) {
+        for (const auto& tblock : Images.tBlocks[Images.currentStage - 1]) {
+            int tblockLeft = tblock.x;
+            int tblockRight = tblock.x + tblock.width;
+            int tblockTop = tblock.y;
+            int tblockBottom = tblock.y + tblock.height;
 
-			int playerLeft = playerHitboxX;
-			int playerRight = playerHitboxX + playerHitboxWidth;
-			int playerTop = playerHitboxY;
-			int playerBottom = playerHitboxY + playerHitboxHeight;
+            int playerLeft = playerHitboxX;
+            int playerRight = playerHitboxX + playerHitboxWidth;
+            int playerTop = playerHitboxY;
+            int playerBottom = playerHitboxY + playerHitboxHeight;
 
-			bool overlapX = playerRight > tblockLeft && playerLeft < tblockRight;
-			bool overlapY = playerBottom > tblockTop && playerTop < tblockBottom;
+            bool overlapX = playerRight > tblockLeft && playerLeft < tblockRight;
+            bool overlapY = playerBottom > tblockTop && playerTop < tblockBottom;
 
-			if (overlapX && overlapY) {
-				int prevPlayerBottom = prevY + playerHitboxHeight;
-				int prevPlayerTop = prevY;
+            if (overlapX && overlapY) {
+                int prevPlayerBottom = prevY + playerHitboxHeight;
+                int prevPlayerTop = prevY;
 
-				if (prevPlayerBottom <= tblockTop && jumpVelocity_ > 0) {
-					y_ = tblockTop - playerHitboxHeight;
-					isJumping_ = false;
-					jumpVelocity_ = 0.0f;
-					onBlock = true;
-					newGroundY = tblockTop - playerHitboxHeight;
-				}
-				else if (prevPlayerTop >= tblockBottom && jumpVelocity_ < 0) {
-					y_ = tblockBottom;
-					jumpVelocity_ = 0.0f;
-				}
-			}
-		}
-	}
+                if (prevPlayerBottom <= tblockTop && jumpVelocity_ > 0) {
+                    y_ = tblockTop - playerHitboxHeight;
+                    isJumping_ = false;
+                    jumpVelocity_ = 0.0f;
+                    onBlock = true;
+                    newGroundY = tblockTop - playerHitboxHeight;
+                }
+                else if (prevPlayerTop >= tblockBottom && jumpVelocity_ < 0) {
+                    y_ = tblockBottom;
+                    jumpVelocity_ = 0.0f;
+                }
+            }
+        }
+    }
 
-	if (!onBlock) {
-		for (const auto& hole : Images.holes[Images.currentStage - 1]) {
-			int holeLeft = hole.x;
-			int holeRight = hole.x + hole.width;
-			int holeTop = hole.y;
+    if (!onBlock) {
+        for (const auto& hole : Images.holes[Images.currentStage - 1]) {
+            int holeLeft = hole.x;
+            int holeRight = hole.x + hole.width;
+            int holeTop = hole.y;
 
-			int playerBottomCenterX = hitbox_.left + (hitbox_.right - hitbox_.left) / 2;
-			int playerBottomY = hitbox_.bottom;
+            int playerBottomCenterX = hitbox_.left + (hitbox_.right - hitbox_.left) / 2;
+            int playerBottomY = hitbox_.bottom;
 
-			bool withinHoleX = playerBottomCenterX >= holeLeft && playerBottomCenterX <= holeRight;
+            bool withinHoleX = playerBottomCenterX >= holeLeft && playerBottomCenterX <= holeRight;
 
-			int prevPlayerBottom = prevY + playerHitboxHeight;
-			bool atHoleTop = prevPlayerBottom >= holeTop - 5 && isJumping_ == FALSE;
+            int prevPlayerBottom = prevY + playerHitboxHeight;
+            bool atHoleTop = prevPlayerBottom >= holeTop - 5 && isJumping_ == FALSE;
 
-			if (withinHoleX && atHoleTop) {
-				isFallingIntoHole = true;
-				fallProgress = 0.0f;
-				y_ = holeTop - playerHitboxHeight;
-				break;
-			}
-		}
-	}
+            if (withinHoleX && atHoleTop) {
+                isFallingIntoHole = true;
+                fallProgress = 0.0f;
+                break;
+            }
+        }
+    }
 
-	if (!isFallingIntoHole && !Images.tBlocks[Images.currentStage - 1].empty() && Images.tBlocks[Images.currentStage - 1].size() >= 4) {
-		const auto& tblock4 = Images.tBlocks[Images.currentStage - 1][3];
-		int tblockLeft = tblock4.x;
-		int tblockRight = tblock4.x + tblock4.width;
-		int tblockTop = tblock4.y;
+    // Logic: Go to Hidden Stage from Stage 1 when standing on tblock0_4 and pressing down
+    if (!isFallingIntoHole && !Images.tBlocks[Images.currentStage - 1].empty() && Images.tBlocks[Images.currentStage - 1].size() >= 4) {
+        const auto& tblock4 = Images.tBlocks[Images.currentStage - 1][3]; // tblock0_4 in Stage 1
+        int tblockLeft = tblock4.x;
+        int tblockRight = tblock4.x + tblock4.width;
+        int tblockTop = tblock4.y;
 
-		int playerLeft = playerHitboxX;
-		int playerRight = playerHitboxX + playerHitboxWidth;
-		bool overlapX = playerRight > tblockLeft && playerLeft < tblockRight;
+        int playerLeft = playerHitboxX;
+        int playerRight = playerHitboxX + playerHitboxWidth;
+        bool overlapX = playerRight > tblockLeft && playerLeft < tblockRight;
 
-		if (overlapX && y_ == tblockTop - playerHitboxHeight && GetAsyncKeyState(VK_DOWN) & 0x8000) {
-			Images.NextStage();
-		}
-	}
+        if (overlapX && y_ == tblockTop - playerHitboxHeight && GetAsyncKeyState(VK_DOWN) & 0x8000) {
+            Images.NextStage();
+        }
+    }
 
-	if (!isFallingIntoHole && groundY_ != defaultGroundY_) {
-		bool stillOnBlock = false;
+    // Logic: Return to Stage 1 from Hidden Stage when colliding with tblock1_3's left face
+    if (!isFallingIntoHole && Images.currentStage == HIDDEN && !Images.tBlocks[Images.currentStage - 1].empty()) {
+        const auto& tblock3 = Images.tBlocks[Images.currentStage - 1][2]; // tblock1_3 in Hidden Stage
+        int tblockLeft = tblock3.x; // 614
+        int tblockTop = tblock3.y; // 388
+        int tblockBottom = tblock3.y + tblock3.height; // 388 + 86 = 474
 
-		for (const auto& block : Images.blocks[Images.currentStage - 1]) {
-			int blockLeft = block.x;
-			int blockRight = block.x + block.width;
-			int blockTop = block.y;
+        int playerRight = hitbox_.right;
+        int playerTop = hitbox_.top;
+        int playerBottom = hitbox_.bottom;
 
-			int playerLeft = hitbox_.left;
-			int playerRight = hitbox_.right;
-			bool overlapX = playerRight > blockLeft && playerLeft < blockRight;
+        int prevPlayerRight = prevX;
+        switch (State()) {
+        case TINO: prevPlayerRight += 10; break;
+        case PAIRI: if (direct_ == RIGHT) prevPlayerRight += 14; break;
+        case LIZAD: if (direct_ == RIGHT) prevPlayerRight += 20; break;
+        case LIZAMONG: if (direct_ == RIGHT) prevPlayerRight += 26; break;
+        default: if (direct_ == RIGHT) prevPlayerRight += 14; break;
+        }
+        prevPlayerRight += playerHitboxWidth;
 
-			if (overlapX && groundY_ == blockTop - playerHitboxHeight) {
-				stillOnBlock = true;
-				break;
-			}
-		}
+        bool collideWithLeftFace = intendToMoveRight && playerRight >= tblockLeft && prevPlayerRight < tblockLeft;
+        bool yOverlap = playerBottom > tblockTop && playerTop < tblockBottom;
 
-		if (!stillOnBlock) {
-			for (const auto& qblock : Images.questionBlocks[Images.currentStage - 1]) {
-				int qblockLeft = qblock.x;
-				int qblockRight = qblock.x + qblock.width;
-				int qblockTop = qblock.y;
+        if (collideWithLeftFace && yOverlap) {
+            Images.currentStage = STAGE1;
+            Images.stage1 = true;
+            Images.hidden = false;
+            Images.stage2 = false;
+            Images.stage3 = false;
+            Images.BlockInit();
+            x_ = 2616;
+            y_ = 372;
+            groundY_ = 447;
+            defaultGroundY_ = 447;
+            move_ = false;
+            isJumping_ = false;
+            jumpVelocity_ = 0.0f;
+            isFallingIntoHole = false;
+            direct_ = RIGHT;
+            fallProgress = 0.0f;
+            eatFlower_ = false;
+            eatMushroom_ = false;
+        }
+    }
 
-				int playerLeft = hitbox_.left;
-				int playerRight = hitbox_.right;
-				bool overlapX = playerRight > qblockLeft && playerLeft < qblockRight;
+    if (!isFallingIntoHole && groundY_ != defaultGroundY_) {
+        bool stillOnBlock = false;
 
-				if (overlapX && groundY_ == qblockTop - playerHitboxHeight) {
-					stillOnBlock = true;
-					break;
-				}
-			}
-		}
+        for (const auto& block : Images.blocks[Images.currentStage - 1]) {
+            int blockLeft = block.x;
+            int blockRight = block.x + block.width;
+            int blockTop = block.y;
 
-		if (!stillOnBlock) {
-			for (const auto& tblock : Images.tBlocks[Images.currentStage - 1]) {
-				int tblockLeft = tblock.x;
-				int tblockRight = tblock.x + tblock.width;
-				int tblockTop = tblock.y;
+            int playerLeft = hitbox_.left;
+            int playerRight = hitbox_.right;
+            bool overlapX = playerRight > blockLeft && playerLeft < blockRight;
 
-				int playerLeft = playerHitboxX;
-				int playerRight = playerHitboxX + playerHitboxWidth;
-				bool overlapX = playerRight > tblockLeft && playerLeft < tblockRight;
+            if (overlapX && groundY_ == blockTop - playerHitboxHeight) {
+                stillOnBlock = true;
+                break;
+            }
+        }
 
-				if (overlapX && groundY_ == tblockTop - playerHitboxHeight) {
-					stillOnBlock = true;
-					break;
-				}
-			}
-		}
+        if (!stillOnBlock) {
+            for (const auto& qblock : Images.questionBlocks[Images.currentStage - 1]) {
+                int qblockLeft = qblock.x;
+                int qblockRight = qblock.x + qblock.width;
+                int qblockTop = qblock.y;
 
-		if (!stillOnBlock) {
-			groundY_ = defaultGroundY_;
-			if (y_ < defaultGroundY_) {
-				isJumping_ = true;
-			}
-		}
-	}
+                int playerLeft = hitbox_.left;
+                int playerRight = hitbox_.right;
+                bool overlapX = playerRight > qblockLeft && playerLeft < qblockRight;
 
-	if (onBlock) {
-		groundY_ = newGroundY;
-	}
+                if (overlapX && groundY_ == qblockTop - playerHitboxHeight) {
+                    stillOnBlock = true;
+                    break;
+                }
+            }
+        }
 
-	if (!onBlock && !isFallingIntoHole && y_ >= defaultGroundY_) {
-		y_ = defaultGroundY_;
-		isJumping_ = false;
-		jumpVelocity_ = 0.0f;
-	}
+        if (!stillOnBlock) {
+            for (const auto& tblock : Images.tBlocks[Images.currentStage - 1]) {
+                int tblockLeft = tblock.x;
+                int tblockRight = tblock.x + tblock.width;
+                int tblockTop = tblock.y;
 
-	int stageWidth = (Images.NowStage() == STAGE1 ? Pimage.mStage1.GetWidth() :
-		Images.NowStage() == HIDDEN ? Pimage.mStageHidden.GetWidth() :
-		Images.NowStage() == STAGE2 ? Pimage.mStage2.GetWidth() :
-		Images.NowStage() == STAGE3 ? Pimage.mStage3.GetWidth() : 0);
+                int playerLeft = playerHitboxX;
+                int playerRight = playerHitboxX + playerHitboxWidth;
+                bool overlapX = playerRight > tblockLeft && playerLeft < tblockRight;
 
-	int playerWidth = 0;
-	switch (State()) {
-	case TINO: playerWidth = 36; break;
-	case PAIRI: playerWidth = 39; break;
-	case LIZAD: playerWidth = 46; break;
-	case LIZAMONG: playerWidth = 66; break;
-	default: playerWidth = 36;
-	}
+                if (overlapX && groundY_ == tblockTop - playerHitboxHeight) {
+                    stillOnBlock = true;
+                    break;
+                }
+            }
+        }
 
-	if (x_ < 0) {
-		x_ = 0;
-		move_ = true;
-		imageNum = 0;
-	}
-	if (x_ + playerWidth > stageWidth) {
-		x_ = stageWidth - playerWidth;
-		move_ = true;
-		imageNum = 0;
-	}
+        if (!stillOnBlock) {
+            groundY_ = defaultGroundY_;
+            if (y_ < defaultGroundY_) {
+                isJumping_ = true;
+            }
+        }
+    }
 
-	if (!moved) {
-		move_ = false;
-		if (!isJumping_) imageNum = 0;
-		else if (isJumping_) {
-			if (State() == PAIRI) {
-				imageNum = (imageNum + 1) % 3;
-			}
-			else if (State() == LIZAMONG) {
-				imageNum = (imageNum + 1) % 4;
-			}
-		}
-	}
-	else if (!canMoveHorizontally && (intendToMoveLeft || intendToMoveRight)) {
-		move_ = true;
-		imageNum = 0;
-	}
+    if (onBlock) {
+        groundY_ = newGroundY;
+    }
 
-	State();
+    if (!onBlock && !isFallingIntoHole && y_ >= defaultGroundY_) {
+        y_ = defaultGroundY_;
+        isJumping_ = false;
+        jumpVelocity_ = 0.0f;
+    }
+
+    int stageWidth = (Images.NowStage() == STAGE1 ? Pimage.mStage1.GetWidth() :
+        Images.NowStage() == HIDDEN ? Pimage.mStageHidden.GetWidth() :
+        Images.NowStage() == STAGE2 ? Pimage.mStage2.GetWidth() :
+        Images.NowStage() == STAGE3 ? Pimage.mStage3.GetWidth() : 0);
+
+    int playerWidth = 0;
+    switch (State()) {
+    case TINO: playerWidth = 36; break;
+    case PAIRI: playerWidth = 39; break;
+    case LIZAD: playerWidth = 46; break;
+    case LIZAMONG: playerWidth = 66; break;
+    default: playerWidth = 36;
+    }
+
+    if (x_ < 0) {
+        x_ = 0;
+        move_ = true;
+        imageNum = 0;
+    }
+    if (x_ + playerWidth > stageWidth) {
+        x_ = stageWidth - playerWidth;
+        move_ = true;
+        imageNum = 0;
+    }
+
+    if (!moved) {
+        move_ = false;
+        if (!isJumping_) imageNum = 0;
+        else if (isJumping_) {
+            if (State() == PAIRI) {
+                imageNum = (imageNum + 1) % 3;
+            }
+            else if (State() == LIZAMONG) {
+                imageNum = (imageNum + 1) % 4;
+            }
+        }
+    }
+    else if (!canMoveHorizontally && (intendToMoveLeft || intendToMoveRight)) {
+        move_ = true;
+        imageNum = 0;
+    }
+
+    State();
 }
 
-void Player_::Attack() {
-
-}
+void Player_::Attack() {}
 
 int Player_::State() {
-	if (!eatFlower_) {
-		if (!eatMushroom_) return TINO;
-		else if (eatMushroom_) return LARGETINO;
-	}
-	else {
-		if (!eatMushroom_) return PAIRI;
-		else return LIZAMONG;
-	}
+    if (!eatFlower_) {
+        if (!eatMushroom_) return TINO;
+        else if (eatMushroom_) return LARGETINO;
+    }
+    else {
+        if (!eatMushroom_) return PAIRI;
+        else return LIZAMONG;
+    }
 }
 
 void Image_::ImageInit() {
-	Player_Move_Tino.Load(TEXT("Image/티노 스프라이트.png"));
-	Player_Move_Pairi.Load(TEXT("Image/파이리 스프라이트.png"));
-	Player_Move_Lizard.Load(TEXT("Image/리자드 스프라이트.png"));
-	Player_Move_Lizamong.Load(TEXT("Image/리자몽 스프라이트.png"));
+    Player_Move_Tino.Load(TEXT("Image/티노 스프라이트.png"));
+    Player_Move_Pairi.Load(TEXT("Image/파이리 스프라이트.png"));
+    Player_Move_Lizard.Load(TEXT("Image/리자드 스프라이트.png"));
+    Player_Move_Lizamong.Load(TEXT("Image/리자몽 스프라이트.png"));
 
-	Player_Attack_Tino.Load(TEXT("Image/티노 스프라이트.png"));
-	Player_Attack_Pairi.Load(TEXT("Image/파이리 스프라이트.png"));
-	Player_Attack_Lizamong.Load(TEXT("Image/리자몽 스프라이트.png"));
+    Player_Attack_Tino.Load(TEXT("Image/티노 스프라이트.png"));
+    Player_Attack_Pairi.Load(TEXT("Image/파이리 스프라이트.png"));
+    Player_Attack_Lizamong.Load(TEXT("Image/리자몽 스프라이트.png"));
 
-	mStage1.Load(TEXT("Image/월드 1.png"));
-	mStageHidden.Load(TEXT("Image/히든 스테이지.png"));
-	mStage2.Load(TEXT("Image/월드 2.png"));
-	mStage3.Load(TEXT("Image/월드 3.png"));
+    mStage1.Load(TEXT("Image/월드 1.png"));
+    mStageHidden.Load(TEXT("Image/히든 스테이지.png"));
+    mStage2.Load(TEXT("Image/월드 2.png"));
+    mStage3.Load(TEXT("Image/월드 3.png"));
 
-	blockImage.Load(TEXT("Image/BrickBlockBrown.png"));
-	questionBlockImage.Load(TEXT("Image/QuestionBlock.gif"));
+    blockImage.Load(TEXT("Image/BrickBlockBrown.png"));
+    questionBlockImage.Load(TEXT("Image/QuestionBlock.gif"));
 
-	//QuestionBlock qblock2_1 = { 120, 335, 16, 42, false };
-	//questionBlocks[1].push_back(qblock2_1);
-	//
-	//TBlock tblock2_1 = { 200, 413, 32, 76 };
-	//tBlocks[1].push_back(tblock2_1);
-
-	 //Hole hole2_1 = { 250, 435, 32, 74 };
-	 //holes[1].push_back(hole2_1);
-
-	stage1 = hidden = stage2 = stage3 = false;
-	currentStage = STAGE1;
+    stage1 = hidden = stage2 = stage3 = false;
+    currentStage = STAGE1;
 }
 
 void Image_::BlockInit() {
-	if (currentStage == STAGE1) {
-		if (!blocks[3].empty()) {
-			blocks[3].clear();
-			questionBlocks[3].clear();
-			tBlocks[3].clear();
-			holes[3].clear();
-		}
-		if (!blocks[1].empty()) {
-			blocks[1].clear();
-			questionBlocks[1].clear();
-			tBlocks[1].clear();
-			holes[1].clear();
-		}
-		if (blocks[0].empty()) {
-			// Stage 1 Objects (currentStage == STAGE1)
-			Block block1_1 = { 320, 335, 16, 32 };
-			Block block1_2 = { 352, 335, 16, 32 };
-			Block block1_3 = { 384, 335, 16, 32 };
-			Block block1_4 = { 256, 335, 16, 42 };
-			Block block1_5 = { 352, 185, 16, 42 };
-			Block block1_6 = { 1280, 185, 130, 42 };
-			Block block1_7 = { 1232, 335, 16, 32 };
-			Block block1_8 = { 1264, 335, 16, 32 };
-			Block block1_9 = { 1456, 185, 16, 32 };
-			Block block1_10 = { 1472, 185, 16, 32 };
-			Block block1_11 = { 1488, 185, 16, 32 };
-			Block block1_12 = { 1600, 335, 16, 32 };
-			Block block1_13 = { 1616, 335, 16, 32 };
-			Block block1_14 = { 1744, 185, 16, 42 };
-			Block block1_15 = { 1888, 335, 16, 42 };
-			Block block1_16 = { 1936, 185, 16, 42 };
-			Block block1_17 = { 1952, 185, 16, 42 };
-			Block block1_18 = { 1968, 185, 16, 42 };
-			Block block1_19 = { 2048, 185, 16, 32 };
-			Block block1_20 = { 2096, 185, 16, 32 };
-			Block block1_21 = { 2064, 335, 16, 42 };
-			Block block1_22 = { 2080, 335, 16, 42 };
-			Block block1_23 = { 2688, 335, 16, 32 };
-			Block block1_24 = { 2704, 335, 16, 32 };
-			Block block1_25 = { 2736, 335, 16, 32 };
-			blocks[0].push_back(block1_1);
-			blocks[0].push_back(block1_2);
-			blocks[0].push_back(block1_3);
-			blocks[0].push_back(block1_4);
-			blocks[0].push_back(block1_5);
-			blocks[0].push_back(block1_6);
-			blocks[0].push_back(block1_7);
-			blocks[0].push_back(block1_8);
-			blocks[0].push_back(block1_9);
-			blocks[0].push_back(block1_10);
-			blocks[0].push_back(block1_11);
-			blocks[0].push_back(block1_12);
-			blocks[0].push_back(block1_13);
-			blocks[0].push_back(block1_14);
-			blocks[0].push_back(block1_15);
-			blocks[0].push_back(block1_16);
-			blocks[0].push_back(block1_17);
-			blocks[0].push_back(block1_18);
-			blocks[0].push_back(block1_19);
-			blocks[0].push_back(block1_20);
-			blocks[0].push_back(block1_21);
-			blocks[0].push_back(block1_22);
-			blocks[0].push_back(block1_23);
-			blocks[0].push_back(block1_24);
-			blocks[0].push_back(block1_25);
+    if (currentStage == STAGE1) {
+        if (!blocks[1].empty()) {
+            blocks[1].clear();
+            questionBlocks[1].clear();
+            tBlocks[1].clear();
+            holes[1].clear();
+        }
+        if (!blocks[2].empty()) {
+            blocks[2].clear();
+            questionBlocks[2].clear();
+            tBlocks[2].clear();
+            holes[2].clear();
+        }
+        if (!blocks[3].empty()) {
+            blocks[3].clear();
+            questionBlocks[3].clear();
+            tBlocks[3].clear();
+            holes[3].clear();
+        }
+        if (blocks[0].empty()) {
+            // Stage 1 Objects (currentStage == STAGE1)
+            Block block0_1 = { 320, 335, 16, 32 };
+            Block block0_2 = { 352, 335, 16, 32 };
+            Block block0_3 = { 384, 335, 16, 32 };
+            Block block0_4 = { 256, 335, 16, 42 };
+            Block block0_5 = { 352, 185, 16, 42 };
+            Block block0_6 = { 1280, 185, 130, 42 };
+            Block block0_7 = { 1232, 335, 16, 32 };
+            Block block0_8 = { 1264, 335, 16, 32 };
+            Block block0_9 = { 1456, 185, 16, 32 };
+            Block block0_10 = { 1472, 185, 16, 32 };
+            Block block0_11 = { 1488, 185, 16, 32 };
+            Block block0_12 = { 1600, 335, 16, 32 };
+            Block block0_13 = { 1616, 335, 16, 32 };
+            Block block0_14 = { 1744, 185, 16, 42 };
+            Block block0_15 = { 1888, 335, 16, 42 };
+            Block block0_16 = { 1936, 185, 16, 42 };
+            Block block0_17 = { 1952, 185, 16, 42 };
+            Block block0_18 = { 1968, 185, 16, 42 };
+            Block block0_19 = { 2048, 185, 16, 32 };
+            Block block0_20 = { 2096, 185, 16, 32 };
+            Block block0_21 = { 2064, 335, 16, 42 };
+            Block block0_22 = { 2080, 335, 16, 42 };
+            Block block0_23 = { 2688, 335, 16, 32 };
+            Block block0_24 = { 2704, 335, 16, 32 };
+            Block block0_25 = { 2736, 335, 16, 32 };
+            blocks[0].push_back(block0_1);
+            blocks[0].push_back(block0_2);
+            blocks[0].push_back(block0_3);
+            blocks[0].push_back(block0_4);
+            blocks[0].push_back(block0_5);
+            blocks[0].push_back(block0_6);
+            blocks[0].push_back(block0_7);
+            blocks[0].push_back(block0_8);
+            blocks[0].push_back(block0_9);
+            blocks[0].push_back(block0_10);
+            blocks[0].push_back(block0_11);
+            blocks[0].push_back(block0_12);
+            blocks[0].push_back(block0_13);
+            blocks[0].push_back(block0_14);
+            blocks[0].push_back(block0_15);
+            blocks[0].push_back(block0_16);
+            blocks[0].push_back(block0_17);
+            blocks[0].push_back(block0_18);
+            blocks[0].push_back(block0_19);
+            blocks[0].push_back(block0_20);
+            blocks[0].push_back(block0_21);
+            blocks[0].push_back(block0_22);
+            blocks[0].push_back(block0_23);
+            blocks[0].push_back(block0_24);
+            blocks[0].push_back(block0_25);
 
-			QuestionBlock qblock1_1 = { 336, 335, 16, 42, false };
-			QuestionBlock qblock1_2 = { 368, 335, 16, 42, false };
-			QuestionBlock qblock1_3 = { 1248, 335, 16, 42, false };
-			QuestionBlock qblock1_4 = { 1504, 335, 16, 42, false };
-			QuestionBlock qblock1_5 = { 1504, 185, 16, 42, false };
-			QuestionBlock qblock1_6 = { 1696, 335, 16, 42, false };
-			QuestionBlock qblock1_7 = { 1744, 335, 16, 42, false };
-			QuestionBlock qblock1_8 = { 1792, 335, 16, 42, false };
-			QuestionBlock qblock1_9 = { 2064, 185, 16, 42, false };
-			QuestionBlock qblock1_10 = { 2080, 185, 16, 42, false };
-			QuestionBlock qblock1_11 = { 2720, 335, 16, 42, false };
-			questionBlocks[0].push_back(qblock1_1);
-			questionBlocks[0].push_back(qblock1_2);
-			questionBlocks[0].push_back(qblock1_3);
-			questionBlocks[0].push_back(qblock1_4);
-			questionBlocks[0].push_back(qblock1_5);
-			questionBlocks[0].push_back(qblock1_6);
-			questionBlocks[0].push_back(qblock1_7);
-			questionBlocks[0].push_back(qblock1_8);
-			questionBlocks[0].push_back(qblock1_9);
-			questionBlocks[0].push_back(qblock1_10);
-			questionBlocks[0].push_back(qblock1_11);
+            QuestionBlock qblock0_1 = { 336, 335, 16, 42, false };
+            QuestionBlock qblock0_2 = { 368, 335, 16, 42, false };
+            QuestionBlock qblock0_3 = { 1248, 335, 16, 42, false };
+            QuestionBlock qblock0_4 = { 1504, 335, 16, 42, false };
+            QuestionBlock qblock0_5 = { 1504, 185, 16, 42, false };
+            QuestionBlock qblock0_6 = { 1696, 335, 16, 42, false };
+            QuestionBlock qblock0_7 = { 1744, 335, 16, 42, false };
+            QuestionBlock qblock0_8 = { 1792, 335, 16, 42, false };
+            QuestionBlock qblock0_9 = { 2064, 185, 16, 42, false };
+            QuestionBlock qblock0_10 = { 2080, 185, 16, 42, false };
+            QuestionBlock qblock0_11 = { 2720, 335, 16, 42, false };
+            questionBlocks[0].push_back(qblock0_1);
+            questionBlocks[0].push_back(qblock0_2);
+            questionBlocks[0].push_back(qblock0_3);
+            questionBlocks[0].push_back(qblock0_4);
+            questionBlocks[0].push_back(qblock0_5);
+            questionBlocks[0].push_back(qblock0_6);
+            questionBlocks[0].push_back(qblock0_7);
+            questionBlocks[0].push_back(qblock0_8);
+            questionBlocks[0].push_back(qblock0_9);
+            questionBlocks[0].push_back(qblock0_10);
+            questionBlocks[0].push_back(qblock0_11);
 
-			TBlock tblock1_1 = { 448, 413, 32, 76 };
-			TBlock tblock1_2 = { 608, 375, 32, 110 };
-			TBlock tblock1_3 = { 736, 336, 32, 150 };
-			TBlock tblock1_4 = { 912, 336, 32, 150 };
-			TBlock tblock1_5 = { 2140, 448, 59, 38 };
-			TBlock tblock1_6 = { 2156, 410, 43, 38 };
-			TBlock tblock1_7 = { 2172, 372, 27, 38 };
-			TBlock tblock1_8 = { 2188, 334, 11, 38 };
-			TBlock tblock1_9 = { 2238, 334, 16, 38 };
-			TBlock tblock1_10 = { 2238, 372, 32, 38 };
-			TBlock tblock1_11 = { 2238, 410, 48, 38 };
-			TBlock tblock1_12 = { 2238, 448, 64, 38 };
-			TBlock tblock1_13 = { 2366, 448, 75, 38 };
-			TBlock tblock1_14 = { 2382, 410, 59, 38 };
-			TBlock tblock1_15 = { 2398, 372, 43, 38 };
-			TBlock tblock1_16 = { 2414, 334, 27, 38 };
-			TBlock tblock1_17 = { 2480, 334, 16, 38 };
-			TBlock tblock1_18 = { 2480, 372, 32, 38 };
-			TBlock tblock1_19 = { 2480, 410, 48, 38 };
-			TBlock tblock1_20 = { 2480, 448, 64, 38 };
-			TBlock tblock1_21 = { 2608, 413, 32, 76 };
-			TBlock tblock1_22 = { 2864, 413, 32, 76 };
-			TBlock tblock1_23 = { 2896, 448, 144, 38 };
-			TBlock tblock1_24 = { 2912, 410, 128, 38 };
-			TBlock tblock1_25 = { 2928, 372, 112, 38 };
-			TBlock tblock1_26 = { 2944, 334, 96, 38 };
-			TBlock tblock1_27 = { 2960, 296, 80, 38 };
-			TBlock tblock1_28 = { 2976, 258, 64, 38 };
-			TBlock tblock1_29 = { 2992, 220, 48, 38 };
-			TBlock tblock1_30 = { 3008, 182, 32, 38 };
-			tBlocks[0].push_back(tblock1_1);
-			tBlocks[0].push_back(tblock1_2);
-			tBlocks[0].push_back(tblock1_3);
-			tBlocks[0].push_back(tblock1_4);
-			tBlocks[0].push_back(tblock1_5);
-			tBlocks[0].push_back(tblock1_6);
-			tBlocks[0].push_back(tblock1_7);
-			tBlocks[0].push_back(tblock1_8);
-			tBlocks[0].push_back(tblock1_9);
-			tBlocks[0].push_back(tblock1_10);
-			tBlocks[0].push_back(tblock1_11);
-			tBlocks[0].push_back(tblock1_12);
-			tBlocks[0].push_back(tblock1_13);
-			tBlocks[0].push_back(tblock1_14);
-			tBlocks[0].push_back(tblock1_15);
-			tBlocks[0].push_back(tblock1_16);
-			tBlocks[0].push_back(tblock1_17);
-			tBlocks[0].push_back(tblock1_18);
-			tBlocks[0].push_back(tblock1_19);
-			tBlocks[0].push_back(tblock1_20);
-			tBlocks[0].push_back(tblock1_21);
-			tBlocks[0].push_back(tblock1_22);
-			tBlocks[0].push_back(tblock1_23);
-			tBlocks[0].push_back(tblock1_24);
-			tBlocks[0].push_back(tblock1_25);
-			tBlocks[0].push_back(tblock1_26);
-			tBlocks[0].push_back(tblock1_27);
-			tBlocks[0].push_back(tblock1_28);
-			tBlocks[0].push_back(tblock1_29);
-			tBlocks[0].push_back(tblock1_30);
+            TBlock tblock0_1 = { 448, 413, 32, 76 };
+            TBlock tblock0_2 = { 608, 375, 32, 110 };
+            TBlock tblock0_3 = { 736, 336, 32, 150 };
+            TBlock tblock0_4 = { 912, 336, 32, 150 };
+            TBlock tblock0_5 = { 2140, 448, 59, 38 };
+            TBlock tblock0_6 = { 2156, 410, 43, 38 };
+            TBlock tblock0_7 = { 2172, 372, 27, 38 };
+            TBlock tblock0_8 = { 2188, 334, 11, 38 };
+            TBlock tblock0_9 = { 2238, 334, 16, 38 };
+            TBlock tblock0_10 = { 2238, 372, 32, 38 };
+            TBlock tblock0_11 = { 2238, 410, 48, 38 };
+            TBlock tblock0_12 = { 2238, 448, 64, 38 };
+            TBlock tblock0_13 = { 2366, 448, 75, 38 };
+            TBlock tblock0_14 = { 2382, 410, 59, 38 };
+            TBlock tblock0_15 = { 2398, 372, 43, 38 };
+            TBlock tblock0_16 = { 2414, 334, 27, 38 };
+            TBlock tblock0_17 = { 2480, 334, 16, 38 };
+            TBlock tblock0_18 = { 2480, 372, 32, 38 };
+            TBlock tblock0_19 = { 2480, 410, 48, 38 };
+            TBlock tblock0_20 = { 2480, 448, 64, 38 };
+            TBlock tblock0_21 = { 2608, 413, 32, 76 };
+            TBlock tblock0_22 = { 2864, 413, 32, 76 };
+            TBlock tblock0_23 = { 2896, 448, 144, 38 };
+            TBlock tblock0_24 = { 2912, 410, 128, 38 };
+            TBlock tblock0_25 = { 2928, 372, 112, 38 };
+            TBlock tblock0_26 = { 2944, 334, 96, 38 };
+            TBlock tblock0_27 = { 2960, 296, 80, 38 };
+            TBlock tblock0_28 = { 2976, 258, 64, 38 };
+            TBlock tblock0_29 = { 2992, 220, 48, 38 };
+            TBlock tblock0_30 = { 3008, 182, 32, 38 };
+            tBlocks[0].push_back(tblock0_1);
+            tBlocks[0].push_back(tblock0_2);
+            tBlocks[0].push_back(tblock0_3);
+            tBlocks[0].push_back(tblock0_4);
+            tBlocks[0].push_back(tblock0_5);
+            tBlocks[0].push_back(tblock0_6);
+            tBlocks[0].push_back(tblock0_7);
+            tBlocks[0].push_back(tblock0_8);
+            tBlocks[0].push_back(tblock0_9);
+            tBlocks[0].push_back(tblock0_10);
+            tBlocks[0].push_back(tblock0_11);
+            tBlocks[0].push_back(tblock0_12);
+            tBlocks[0].push_back(tblock0_13);
+            tBlocks[0].push_back(tblock0_14);
+            tBlocks[0].push_back(tblock0_15);
+            tBlocks[0].push_back(tblock0_16);
+            tBlocks[0].push_back(tblock0_17);
+            tBlocks[0].push_back(tblock0_18);
+            tBlocks[0].push_back(tblock0_19);
+            tBlocks[0].push_back(tblock0_20);
+            tBlocks[0].push_back(tblock0_21);
+            tBlocks[0].push_back(tblock0_22);
+            tBlocks[0].push_back(tblock0_23);
+            tBlocks[0].push_back(tblock0_24);
+            tBlocks[0].push_back(tblock0_25);
+            tBlocks[0].push_back(tblock0_26);
+            tBlocks[0].push_back(tblock0_27);
+            tBlocks[0].push_back(tblock0_28);
+            tBlocks[0].push_back(tblock0_29);
+            tBlocks[0].push_back(tblock0_30);
 
-			Hole hole1_1 = { 1104, 487, 32, 74 };
-			Hole hole1_2 = { 1376, 487, 48, 74 };
-			Hole hole1_3 = { 2448, 487, 32, 74 };
-			holes[0].push_back(hole1_1);
-			holes[0].push_back(hole1_2);
-			holes[0].push_back(hole1_3);
-		}
-	}
-	else if (currentStage == HIDDEN) {
-		if (!blocks[0].empty()) {
-			blocks[0].clear();
-			questionBlocks[0].clear();
-			tBlocks[0].clear();
-			holes[0].clear();
-		}
-		if (blocks[1].empty()) {
-			TBlock tblock2_1 = { 188, 346, 330, 126 };
-			TBlock tblock2_2 = { 0, 0, 48, 474 };
-			TBlock tblock2_3 = { 614, 388, 102, 86 };
+            Hole hole0_1 = { 1104, 487, 32, 74 };
+            Hole hole0_2 = { 1376, 487, 48, 74 };
+            Hole hole0_3 = { 2448, 487, 32, 74 };
+            holes[0].push_back(hole0_1);
+            holes[0].push_back(hole0_2);
+            holes[0].push_back(hole0_3);
+        }
+    }
+    else if (currentStage == HIDDEN) {
+        if (!blocks[0].empty()) {
+            blocks[0].clear();
+            questionBlocks[0].clear();
+            tBlocks[0].clear();
+            holes[0].clear();
+        }
+        if (!blocks[2].empty()) {
+            blocks[2].clear();
+            questionBlocks[2].clear();
+            tBlocks[2].clear();
+            holes[2].clear();
+        }
+        if (!blocks[3].empty()) {
+            blocks[3].clear();
+            questionBlocks[0].clear();
+            tBlocks[3].clear();
+            holes[3].clear();
+        }
+        if (blocks[1].empty()) {
+            TBlock tblock1_1 = { 188, 346, 330, 126 };
+            TBlock tblock1_2 = { 0, 0, 48, 474 };
+            TBlock tblock1_3 = { 614, 388, 102, 86 };
+            TBlock tblock1_4 = { 716, 0, 84, 392 };
 
-			tBlocks[1].push_back(tblock2_1);
-			tBlocks[1].push_back(tblock2_2);
-			tBlocks[1].push_back(tblock2_3);
-		}
-	}
+            tBlocks[1].push_back(tblock1_1);
+            tBlocks[1].push_back(tblock1_2);
+            tBlocks[1].push_back(tblock1_3);
+            tBlocks[1].push_back(tblock1_4);
+        }
+    }
+    else if (currentStage == STAGE2) {
+        if (!blocks[0].empty()) {
+            blocks[0].clear();
+            questionBlocks[0].clear();
+            tBlocks[0].clear();
+            holes[0].clear();
+        }
+        if (!blocks[1].empty()) {
+            blocks[1].clear();
+            questionBlocks[1].clear();
+            tBlocks[1].clear();
+            holes[1].clear();
+        }
+        if (!blocks[3].empty()) {
+            blocks[3].clear();
+            questionBlocks[3].clear();
+            tBlocks[3].clear();
+            holes[3].clear();
+        }
+        if (blocks[2].empty()) {
+            TBlock tblock2_1 = { 188, 346, 330, 126 };
+
+            tBlocks[2].push_back(tblock2_1);
+        }
+    }
+    else if (currentStage == STAGE3) {
+        if (!blocks[0].empty()) {
+            blocks[0].clear();
+            questionBlocks[0].clear();
+            tBlocks[0].clear();
+            holes[0].clear();
+        }
+        if (!blocks[1].empty()) {
+            blocks[1].clear();
+            questionBlocks[1].clear();
+            tBlocks[1].clear();
+            holes[1].clear();
+        }
+        if (!blocks[2].empty()) {
+            blocks[2].clear();
+            questionBlocks[2].clear();
+            tBlocks[2].clear();
+            holes[2].clear();
+        }
+        if (blocks[3].empty()) {
+            QuestionBlock qblock3_1 = { 480, 226, 16, 36, false };
+            questionBlocks[3].push_back(qblock3_1);
+
+            TBlock tblock3_1 = { 0, 262, 48, 36 };
+            TBlock tblock3_2 = { 48, 300, 16, 36 };
+            TBlock tblock3_3 = { 64, 336, 16, 36 };
+            TBlock tblock3_4 = { 80, 372, 128, 72 };
+            TBlock tblock3_5 = { 240, 372, 176, 108 };
+            TBlock tblock3_6 = { 0, 112, 386, 72 };
+            TBlock tblock3_7 = { 368, 184, 16, 36 };
+            TBlock tblock3_8 = { 464, 372, 48, 108 };
+            TBlock tblock3_9 = { 386, 74, 204, 36 };
+            TBlock tblock3_10 = { 590, 74, 562, 144 };
+            TBlock tblock3_11 = { 560, 336, 594, 144 };
+
+            tBlocks[3].push_back(tblock3_1);
+            tBlocks[3].push_back(tblock3_2);
+            tBlocks[3].push_back(tblock3_3);
+            tBlocks[3].push_back(tblock3_4);
+            tBlocks[3].push_back(tblock3_5);
+            tBlocks[3].push_back(tblock3_6);
+            tBlocks[3].push_back(tblock3_7);
+            tBlocks[3].push_back(tblock3_8);
+            tBlocks[3].push_back(tblock3_9);
+            tBlocks[3].push_back(tblock3_10);
+            tBlocks[3].push_back(tblock3_11);
+
+            Hole hole3_1 = { 208, 442, 32, 32 };
+            Hole hole3_2 = { 416, 480, 48, 32 };
+            Hole hole3_3 = { 512, 480, 48, 32 };
+            holes[3].push_back(hole3_1);
+            holes[3].push_back(hole3_2);
+            holes[3].push_back(hole3_3);
+        }
+    }
 }
 
 void Image_::DrawBackGround(int x, int y, HDC targetDC) {
@@ -1312,13 +1447,10 @@ void Image_::DrawHitBox(HDC targetDC) {
 }
 
 int GetCameraX(int playerX, int stageWidth) {
-	int cameraX = playerX - 400;
-	if (cameraX < 0) cameraX = 0;
-	if (stageWidth <= wRect.right) {
-		cameraX = 0;
-	}
-	else if (cameraX > stageWidth - wRect.right) {
-		cameraX = stageWidth - wRect.right;
-	}
-	return cameraX;
+    int cameraX = playerX - 400; // 플레이어가 화면 중앙에 오도록 설정
+    if (cameraX < 0) cameraX = 0; // 스테이지 왼쪽 경계
+    if (stageWidth > wRect.right && cameraX > stageWidth - wRect.right) {
+        cameraX = stageWidth - wRect.right; // 스테이지 오른쪽 경계
+    }
+    return cameraX;
 }
