@@ -583,48 +583,48 @@ void Player_::Move() {
         moved = true;
     }
 
-	if (move_) {
-		time++;
-		if (time == 3) {
-			if (State() == TINO || State() == LARGETINO || State() == LIZAMONG || State() == LIZAD) {
-				imageNum = (imageNum + 1) % 3;
-			}
-			else if (State() == PAIRI) {
-				if (isJumping_) imageNum = (imageNum + 1) % 5;
-				else imageNum = (imageNum + 1) % 6;
-			}
-			time = 0;
-		}
-	}
+    if (move_) {
+        time++;
+        if (time == 3) {
+            if (State() == TINO || State() == LARGETINO || State() == LIZAMONG || State() == LIZAD) {
+                imageNum = (imageNum + 1) % 3;
+            }
+            else if (State() == PAIRI) {
+                if (isJumping_) imageNum = (imageNum + 1) % 5;
+                else imageNum = (imageNum + 1) % 6;
+            }
+            time = 0;
+        }
+    }
 
-	if (State() == LIZAMONG || State() == LARGETINO) {
-		if (Images.NowStage() == STAGE1 || Images.NowStage() == STAGE2 || Images.NowStage() == STAGE3) defaultGroundY_ = 433;
-		else if (Images.NowStage() == HIDDEN) defaultGroundY_ = 421;
-	}
-	else {
-		if (Images.NowStage() == STAGE1 || Images.NowStage() == STAGE2 || Images.NowStage() == STAGE3) defaultGroundY_ = 447;
-		else if (Images.NowStage() == HIDDEN) defaultGroundY_ = 435;
-	}
-	bool canMoveHorizontally = true;
-	if (intendToMoveLeft) newX -= MOVE;
-	if (intendToMoveRight) newX += MOVE;
+    if (State() == LIZAMONG || State() == LARGETINO) {
+        if (Images.NowStage() == STAGE1 || Images.NowStage() == STAGE2 || Images.NowStage() == STAGE3) defaultGroundY_ = 433;
+        else if (Images.NowStage() == HIDDEN) defaultGroundY_ = 421;
+    }
+    else {
+        if (Images.NowStage() == STAGE1 || Images.NowStage() == STAGE2 || Images.NowStage() == STAGE3) defaultGroundY_ = 447;
+        else if (Images.NowStage() == HIDDEN) defaultGroundY_ = 435;
+    }
+    bool canMoveHorizontally = true;
+    if (intendToMoveLeft) newX -= MOVE;
+    if (intendToMoveRight) newX += MOVE;
 
-	if (intendToMoveLeft || intendToMoveRight) {
-		int checkHitboxX = newX;
-		switch (State()) {
-		case TINO:  checkHitboxX += 10; break;
-		case LARGETINO: 
-			if (direct_ == RIGHT) checkHitboxX += 10; 
-			else checkHitboxX += 12;
-			break;
-		case PAIRI: if (direct_ == RIGHT) checkHitboxX += 14; break;
-		case LIZAD: if (direct_ == RIGHT) checkHitboxX += 20; break;
-		case LIZAMONG:
-			if (direct_ == RIGHT) checkHitboxX += 26;
-			else checkHitboxX += 8;
-			break;
-		default: if (direct_ == RIGHT) checkHitboxX += 14; break;
-		}
+    if (intendToMoveLeft || intendToMoveRight) {
+        int checkHitboxX = newX;
+        switch (State()) {
+        case TINO:  checkHitboxX += 10; break;
+        case LARGETINO:
+            if (direct_ == RIGHT) checkHitboxX += 10;
+            else checkHitboxX += 12;
+            break;
+        case PAIRI: if (direct_ == RIGHT) checkHitboxX += 14; break;
+        case LIZAD: if (direct_ == RIGHT) checkHitboxX += 20; break;
+        case LIZAMONG:
+            if (direct_ == RIGHT) checkHitboxX += 26;
+            else checkHitboxX += 8;
+            break;
+        default: if (direct_ == RIGHT) checkHitboxX += 14; break;
+        }
 
         for (const auto& block : Images.blocks[Images.currentStage - 1]) {
             int blockLeft = block.x;
@@ -669,7 +669,11 @@ void Player_::Move() {
         }
 
         if (canMoveHorizontally) {
-            for (const auto& tblock : Images.tBlocks[Images.currentStage - 1]) {
+            for (size_t i = 0; i < Images.tBlocks[Images.currentStage - 1].size(); i++) {
+                // 히든 스테이지에서 tblock1_3 (인덱스 2)는 충돌 차단에서 제외
+                if (Images.currentStage == HIDDEN && i == 2) continue;
+
+                const auto& tblock = Images.tBlocks[Images.currentStage - 1][i];
                 int tblockLeft = tblock.x;
                 int tblockRight = tblock.x + tblock.width;
                 int tblockTop = tblock.y;
@@ -858,22 +862,22 @@ void Player_::Move() {
         const auto& tblock3 = Images.tBlocks[Images.currentStage - 1][2]; // tblock1_3 in Hidden Stage
         int tblockLeft = tblock3.x; // 614
         int tblockTop = tblock3.y; // 388
-        int tblockBottom = tblock3.y + tblock3.height; // 388 + 86 = 474
+        int tblockBottom = tblock3.y + tblock3.height; // 474
 
+        // 현재 히트박스
         int playerRight = hitbox_.right;
         int playerTop = hitbox_.top;
         int playerBottom = hitbox_.bottom;
 
-        int prevPlayerRight = prevX;
-        switch (State()) {
-        case TINO: prevPlayerRight += 10; break;
-        case PAIRI: if (direct_ == RIGHT) prevPlayerRight += 14; break;
-        case LIZAD: if (direct_ == RIGHT) prevPlayerRight += 20; break;
-        case LIZAMONG: if (direct_ == RIGHT) prevPlayerRight += 26; break;
-        default: if (direct_ == RIGHT) prevPlayerRight += 14; break;
-        }
-        prevPlayerRight += playerHitboxWidth;
+        // 이전 프레임의 히트박스 오른쪽 위치 계산
+        int prevHitboxX, prevHitboxY, prevHitboxWidth, prevHitboxHeight;
+        int tempX = x_;
+        x_ = prevX; // 이전 위치로 임시 변경
+        GetHitbox(prevHitboxX, prevHitboxY, prevHitboxWidth, prevHitboxHeight); // 이전 히트박스 계산
+        int prevPlayerRight = prevHitboxX + prevHitboxWidth; // 이전 히트박스의 오른쪽 위치
+        x_ = tempX; // 원래 위치로 복원
 
+        // 충돌 조건: 오른쪽으로 이동 중, 현재 오른쪽 면이 tblockLeft에 도달, 이전 오른쪽 면은 tblockLeft보다 왼쪽에 있었음
         bool collideWithLeftFace = intendToMoveRight && playerRight >= tblockLeft && prevPlayerRight < tblockLeft;
         bool yOverlap = playerBottom > tblockTop && playerTop < tblockBottom;
 
@@ -889,7 +893,7 @@ void Player_::Move() {
             groundY_ = 447;
             defaultGroundY_ = 447;
             move_ = false;
-            isJumping_ = false;
+            isJumping_ = true;
             jumpVelocity_ = 0.0f;
             isFallingIntoHole = false;
             direct_ = RIGHT;
@@ -983,34 +987,34 @@ void Player_::Move() {
     default: playerWidth = 36;
     }
 
-	if (x_ < 0) {
-		x_ = 0;
-		move_ = true;
-		imageNum = 0;
-	}
-	if (x_ + playerWidth > stageWidth) {
-		x_ = stageWidth - playerWidth; // 맵 끝에 고정
-		move_ = true;
-		imageNum = 0;
-	}
+    if (x_ < 0) {
+        x_ = 0;
+        move_ = true;
+        imageNum = 0;
+    }
+    if (x_ + playerWidth > stageWidth) {
+        x_ = stageWidth - playerWidth; // 맵 끝에 고정
+        move_ = true;
+        imageNum = 0;
+    }
 
-	if (!moved) {
-		move_ = false;
-		if (!isJumping_) imageNum = 0;
-		else if (isJumping_) {
-			if (State() == PAIRI) {
-				imageNum = (imageNum + 1) % 3;
-			}
-			else if (State() == LIZAMONG) {
-				imageNum = (imageNum + 1) % 4;
-			}
-		}
-		time = 0;
-	}
-	else if (!canMoveHorizontally && (intendToMoveLeft || intendToMoveRight) && !isJumping_) {
-		move_ = true;
-		imageNum = 0;
-	}
+    if (!moved) {
+        move_ = false;
+        if (!isJumping_) imageNum = 0;
+        else if (isJumping_) {
+            if (State() == PAIRI) {
+                imageNum = (imageNum + 1) % 3;
+            }
+            else if (State() == LIZAMONG) {
+                imageNum = (imageNum + 1) % 4;
+            }
+        }
+        time = 0;
+    }
+    else if (!canMoveHorizontally && (intendToMoveLeft || intendToMoveRight) && !isJumping_) {
+        move_ = true;
+        imageNum = 0;
+    }
 
     State();
 }
