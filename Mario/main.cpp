@@ -14,6 +14,7 @@
 #define PAIRI 2
 #define LIZAD 3
 #define LIZAMONG 4
+#define LARGETINO 5
 
 #define MOVE 7
 #define JUMP_VELOCITY -13
@@ -107,7 +108,8 @@ private:
 
 		switch (State()) {
 		case TINO:
-			if(direct_ == RIGHT) hitboxX += 14;
+		case LARGETINO:
+			if (direct_ == RIGHT) hitboxX += 14;
 			else hitboxX = x_;
 			hitboxWidth = 18;
 			hitboxHeight = 39;
@@ -243,7 +245,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 		switch (wParam) {
 		case 1: {
 			if (Player.Moving()) {
-				if (Player.State() == TINO || Player.State() == LIZAMONG || Player.State() == LIZAD) {
+				if (Player.State() == TINO || Player.State() == LARGETINO || Player.State() == LIZAMONG || Player.State() == LIZAD) {
 					Player.imageNum = (Player.imageNum + 1) % 3;
 				}
 				else if (Player.State() == PAIRI) {
@@ -299,7 +301,7 @@ void Player_::PlayerInit() {
 	direct_ = RIGHT;
 	move_ = false;
 	eatFlower_ = false;
-	eatMushroom_ = false;
+	eatMushroom_ = true;
 	imageNum = 0;
 	isJumping_ = false;
 	jumpVelocity_ = 0.0f;
@@ -312,6 +314,11 @@ void Player_::PlayerInit() {
 }
 
 void Player_::ResetPosition() {
+	move_ = false;
+	isJumping_ = false;
+	jumpVelocity_ = 0.0f;
+	isFallingIntoHole = false;
+	fallProgress = 0.0f;
 	if (Images.NowStage() == 1) {
 		x_ = 10;
 		y_ = 447;
@@ -337,12 +344,10 @@ void Player_::ResetPosition() {
 		defaultGroundY_ = 223;
 	}
 
-	direct_ = RIGHT;
-	move_ = false;
-	eatFlower_ = false;
-	eatMushroom_ = false;
-	isJumping_ = false;
-	jumpVelocity_ = 0.0f;
+	if (Images.NowStage() != 2) {
+		eatFlower_ = false;
+		eatMushroom_ = false;
+	}
 }
 
 void Player_::DrawPlayer(HDC targetDC) {
@@ -864,7 +869,8 @@ void Player_::Move() {
 
 int Player_::State() {
 	if (!eatFlower_) {
-		return TINO;
+		if (!eatMushroom_) return TINO;
+		else if (eatMushroom_) return LARGETINO;
 	}
 	else {
 		if (!eatMushroom_) return PAIRI;
@@ -962,9 +968,9 @@ void Image_::ImageInit() {
 	questionBlocks.push_back(qblock10);
 	questionBlocks.push_back(qblock11);
 
-	TBlock tblock1 = { 442, 413, 32, 76 };
-	TBlock tblock2 = { 602, 375, 32, 110 };
-	TBlock tblock3 = { 730, 336, 32, 150 };  // 파이프들
+	TBlock tblock1 = { 448, 413, 32, 76 };
+	TBlock tblock2 = { 608, 375, 32, 110 };
+	TBlock tblock3 = { 736, 336, 32, 150 };  // 파이프들
 	TBlock tblock4 = { 912, 336, 32, 150 };
 
 	TBlock tblock5 = { 2140, 448, 59, 38 };
@@ -1166,6 +1172,18 @@ void Image_::DrawHitBox(HDC targetDC) {
 		}
 	}
 	DeleteObject(qblockPen);
+
+	// 파이프, 계단 블록 히트박스 그리기
+	HPEN tblockPen = CreatePen(PS_DASH, 3, RGB(255, 0, 255));
+	HBRUSH tblockBrush = (HBRUSH)GetStockObject(NULL_BRUSH); // 내부 채우기 없음
+	SelectObject(targetDC, tblockPen);
+	SelectObject(targetDC, tblockBrush);
+
+	for (const auto& tblock : tBlocks) {
+		RECT screenHitbox = { tblock.x - cameraX, tblock.y, tblock.x + tblock.width - cameraX, tblock.y + tblock.height };
+		Rectangle(targetDC, screenHitbox.left, screenHitbox.top, screenHitbox.right, screenHitbox.bottom);
+	}
+	DeleteObject(tblockPen);
 }
 
 int GetCameraX(int playerX, int stageWidth) {
