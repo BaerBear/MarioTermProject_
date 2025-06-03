@@ -667,7 +667,7 @@ void Player_::Move() {
 
 	// Check collisions with TBlocks (vertical)
 	if (!onBlock) {
-		for (const auto& tblock : Pimage.tBlocks) {
+		for (const auto& tblock : Pimage.tBlocks[Pimage.currentStage - 1]) {
 			int tblockLeft = tblock.x;
 			int tblockRight = tblock.x + tblock.width;
 			int tblockTop = tblock.y;
