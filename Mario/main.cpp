@@ -145,8 +145,8 @@ private:
 			break;
 		case LIZAMONG:
 			if (direct_ == RIGHT) hitboxX += 26;
-			else hitboxX = x_;
-			hitboxWidth = 30;
+			else hitboxX += 6;
+			hitboxWidth = 32;
 			hitboxHeight = 51;
 			break;
 		default:
@@ -563,7 +563,7 @@ void Player_::Move() {
 			imageNum = (imageNum + 1) % 3;
 		}
 		else if (State() == PAIRI) {
-			if(isJumping_) imageNum = (imageNum + 1) % 5;
+			if (isJumping_) imageNum = (imageNum + 1) % 5;
 			else imageNum = (imageNum + 1) % 6;
 		}
 	}
@@ -582,7 +582,10 @@ void Player_::Move() {
 		case TINO:  checkHitboxX += 10; break;
 		case PAIRI: if (direct_ == RIGHT) checkHitboxX += 14; break;
 		case LIZAD: if (direct_ == RIGHT) checkHitboxX += 20; break;
-		case LIZAMONG: if (direct_ == RIGHT) checkHitboxX += 26; break;
+		case LIZAMONG:
+			if (direct_ == RIGHT) checkHitboxX += 26;
+			else checkHitboxX += 8;
+			break;
 		default: if (direct_ == RIGHT) checkHitboxX += 14; break;
 		}
 
@@ -903,7 +906,7 @@ void Player_::Move() {
 		imageNum = 0;
 	}
 	if (x_ + playerWidth > stageWidth) {
-		x_ = stageWidth - playerWidth;
+		x_ = stageWidth - playerWidth; // 맵 끝에 고정
 		move_ = true;
 		imageNum = 0;
 	}
@@ -920,7 +923,7 @@ void Player_::Move() {
 			}
 		}
 	}
-	else if (!canMoveHorizontally && (intendToMoveLeft || intendToMoveRight)) {
+	else if (!canMoveHorizontally && (intendToMoveLeft || intendToMoveRight) && !isJumping_) {
 		move_ = true;
 		imageNum = 0;
 	}
@@ -1229,21 +1232,30 @@ void Image_::Destroy() {
 	mStage3.Destroy();
 	blockImage.Destroy();
 	questionBlockImage.Destroy();
+	for (int i = 0; i < 4; ++i) {
+		if (!blocks[i].empty()) {
+			blocks[i].clear();
+			questionBlocks[i].clear();
+			tBlocks[i].clear();
+			holes[i].clear();
+		}
+	}
 }
 
 void Player_::DrawHitbox(HDC targetDC) {
 	int hitboxX, hitboxY, hitboxWidth, hitboxHeight;
-	GetHitbox(hitboxX, hitboxY, hitboxWidth, hitboxHeight);
+	GetHitbox(hitboxX, hitboxY, hitboxWidth, hitboxHeight); // hitbox_ 업데이트
 
-	int cameraX = GetCameraX(x_, Pimage.NowStage() == STAGE1 ? Pimage.mStage1.GetWidth() :
-		Pimage.NowStage() == HIDDEN ? Pimage.mStageHidden.GetWidth() :
-		Pimage.NowStage() == STAGE2 ? Pimage.mStage2.GetWidth() :
-		Pimage.NowStage() == STAGE3 ? Pimage.mStage3.GetWidth() : 0);
+	int cameraX = GetCameraX(x_, Images.NowStage() == 1 ? Images.mStage1.GetWidth() :
+		Images.NowStage() == 2 ? Images.mStageHidden.GetWidth() :
+		Images.NowStage() == 3 ? Images.mStage2.GetWidth() :
+		Images.NowStage() == 4 ? Images.mStage3.GetWidth() : 0);
 
+	// 화면 좌표로 변환
 	RECT screenHitbox = { hitbox_.left - cameraX, hitbox_.top, hitbox_.right - cameraX, hitbox_.bottom };
 
 	HPEN pen = CreatePen(PS_DASH, 3, RGB(255, 0, 0));
-	HBRUSH hBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
+	HBRUSH hBrush = (HBRUSH)GetStockObject(NULL_BRUSH); // 내부 채우기 없음
 	SelectObject(targetDC, pen);
 	SelectObject(targetDC, hBrush);
 	Rectangle(targetDC, screenHitbox.left, screenHitbox.top, screenHitbox.right, screenHitbox.bottom);
