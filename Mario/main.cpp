@@ -89,6 +89,7 @@ class Player_ {
 public:
 	Image_ Pimage;
 	int imageNum;
+	int time{};
 
 	void PlayerInit();
 	void ResetPosition();
@@ -102,6 +103,16 @@ public:
 
 	int x() { return x_; };
 	int y() { return y_; };
+
+	// 확인용
+	void turnFlower() { 
+		eatFlower_ = !eatFlower_; 
+		State();
+	};
+	void turnMushroom() { 
+		eatMushroom_ = !eatMushroom_; 
+		State();
+	};
 
 private:
 	int x_, y_;
@@ -125,12 +136,18 @@ private:
 
 		switch (State()) {
 		case TINO:
-		case LARGETINO:
 			if (direct_ == RIGHT) hitboxX += 12;
 			else hitboxX += 8;
 			hitboxWidth = 18;
 			hitboxHeight = 39;
 			break;
+		case LARGETINO:
+			if (direct_ == RIGHT) hitboxX += 12;
+			else hitboxX += 8;
+			hitboxWidth = 31;
+			hitboxHeight = 54;
+			break;
+
 		case PAIRI:
 			if (direct_ == RIGHT) hitboxX += 21;
 			else hitboxX = x_;
@@ -234,6 +251,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 		else if (wParam == 'h' || wParam == 'H') {
 			DrawAllHitBox = !DrawAllHitBox;
 		}
+		else if (wParam == '1') {
+			Player.turnFlower();
+		}
+		else if (wParam == '2') {
+			Player.turnMushroom();
+		}
 		break;
 	}
 	case WM_MOUSEMOVE: {
@@ -310,7 +333,7 @@ void Player_::PlayerInit() {
 	y_ = 447;
 	direct_ = RIGHT;
 	move_ = false;
-	eatFlower_ = true;
+	eatFlower_ = false;
 	eatMushroom_ = true;
 	imageNum = 0;
 	isJumping_ = false;
@@ -330,6 +353,7 @@ void Player_::ResetPosition() {
 	isFallingIntoHole = false;
 	direct_ = RIGHT;
 	fallProgress = 0.0f;
+	time = 0;
 	if (Images.NowStage() == 1) {
 		x_ = 10;
 		y_ = 447;
@@ -379,6 +403,7 @@ void Player_::DrawPlayer(HDC targetDC) {
 		int playerWidth = 0;
 		switch (State()) {
 		case TINO: playerWidth = 36; break;
+		case LARGETINO: playerWidth = 49; break;
 		case PAIRI: playerWidth = 39; break;
 		case LIZAD: playerWidth = 46; break;
 		case LIZAMONG: playerWidth = 66; break;
@@ -400,7 +425,7 @@ void Player_::DrawPlayer(HDC targetDC) {
 						if (isJumping_)
 							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, 10, 177, 36, 39, RGB(0, 255, 0));
 						else
-							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, (2 - imageNum) * 56 + 10, 177, 36, 39, RGB(0, 255, 0));
+							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, (2 - imageNum) * 56 + 10, 125, 36, 39, RGB(0, 255, 0));
 					}
 					else if (direct_ == RIGHT) {
 						if (isJumping_)
@@ -409,18 +434,18 @@ void Player_::DrawPlayer(HDC targetDC) {
 							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, imageNum * 56 + 10, 10, 36, 39, RGB(0, 255, 0));
 					}
 				}
-				else if (eatMushroom_) { // LARGETINO 아직 크기 미구현
+				else if (eatMushroom_) { // LARGETINO
 					if (direct_ == LEFT) {
 						if (isJumping_)
-							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, 2 * 56 + 10, 69, 36, 39, RGB(0, 255, 0));
+							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 49, 54, 10, 177, 36, 39, RGB(0, 255, 0));
 						else
-							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, imageNum * 56 + 10, 10, 36, 39, RGB(0, 255, 0));
+							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 49, 54, (2 - imageNum) * 56 + 10, 125, 36, 39, RGB(0, 255, 0));
 					}
 					else if (direct_ == RIGHT) {
 						if (isJumping_)
-							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, 2 * 56 + 10, 69, 36, 39, RGB(0, 255, 0));
+							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 49, 54, 2 * 56 + 10, 69, 36, 39, RGB(0, 255, 0));
 						else
-							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, imageNum * 56 + 10, 10, 36, 39, RGB(0, 255, 0));
+							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 49, 54, imageNum * 56 + 10, 10, 36, 39, RGB(0, 255, 0));
 					}
 				}
 			}
@@ -471,18 +496,18 @@ void Player_::DrawPlayer(HDC targetDC) {
 							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, imageNum * 56 + 10, 69, 36, 39, RGB(0, 255, 0));
 					}
 				}
-				else if (eatMushroom_) { // LARGETINO 아직 크기 미구현
+				else if (eatMushroom_) { // LARGETINO
 					if (direct_ == LEFT) {
 						if (isJumping_)
-							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, 2 * 56 + 10, 69, 36, 39, RGB(0, 255, 0));
+							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 49, 54, 10, 177, 36, 39, RGB(0, 255, 0));
 						else
-							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, imageNum * 56 + 10, 69, 36, 39, RGB(0, 255, 0));
+							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 49, 54, (2 - imageNum) * 56 + 10, 177, 36, 39, RGB(0, 255, 0));
 					}
 					else if (direct_ == RIGHT) {
 						if (isJumping_)
-							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, 2 * 56 + 10, 69, 36, 39, RGB(0, 255, 0));
+							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 49, 54, 2 * 56 + 10, 69, 36, 39, RGB(0, 255, 0));
 						else
-							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, imageNum * 56 + 10, 69, 36, 39, RGB(0, 255, 0));
+							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 49, 54, imageNum * 56 + 10, 69, 36, 39, RGB(0, 255, 0));
 					}
 				}
 			}
@@ -559,18 +584,26 @@ void Player_::Move() {
 	}
 
 	if (move_) {
-		if (State() == TINO || State() == LARGETINO || State() == LIZAMONG || State() == LIZAD) {
-			imageNum = (imageNum + 1) % 3;
-		}
-		else if (State() == PAIRI) {
-			if (isJumping_) imageNum = (imageNum + 1) % 5;
-			else imageNum = (imageNum + 1) % 6;
+		time++;
+		if (time == 3) {
+			if (State() == TINO || State() == LARGETINO || State() == LIZAMONG || State() == LIZAD) {
+				imageNum = (imageNum + 1) % 3;
+			}
+			else if (State() == PAIRI) {
+				if (isJumping_) imageNum = (imageNum + 1) % 5;
+				else imageNum = (imageNum + 1) % 6;
+			}
+			time = 0;
 		}
 	}
 
-	if (State() == LIZAMONG) {
+	if (State() == LIZAMONG || State() == LARGETINO) {
 		if (Images.NowStage() == STAGE1 || Images.NowStage() == STAGE2 || Images.NowStage() == STAGE3) defaultGroundY_ = 433;
 		else if (Images.NowStage() == HIDDEN) defaultGroundY_ = 421;
+	}
+	else {
+		if (Images.NowStage() == STAGE1 || Images.NowStage() == STAGE2 || Images.NowStage() == STAGE3) defaultGroundY_ = 447;
+		else if (Images.NowStage() == HIDDEN) defaultGroundY_ = 435;
 	}
 	bool canMoveHorizontally = true;
 	if (intendToMoveLeft) newX -= MOVE;
@@ -580,6 +613,10 @@ void Player_::Move() {
 		int checkHitboxX = newX;
 		switch (State()) {
 		case TINO:  checkHitboxX += 10; break;
+		case LARGETINO: 
+			if (direct_ == RIGHT) checkHitboxX += 10; 
+			else checkHitboxX += 12;
+			break;
 		case PAIRI: if (direct_ == RIGHT) checkHitboxX += 14; break;
 		case LIZAD: if (direct_ == RIGHT) checkHitboxX += 20; break;
 		case LIZAMONG:
@@ -922,6 +959,7 @@ void Player_::Move() {
 				imageNum = (imageNum + 1) % 4;
 			}
 		}
+		time = 0;
 	}
 	else if (!canMoveHorizontally && (intendToMoveLeft || intendToMoveRight) && !isJumping_) {
 		move_ = true;
