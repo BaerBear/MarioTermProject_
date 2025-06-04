@@ -1320,6 +1320,14 @@ void Image_::BlockInit() {
             TBlock tblock3_18 = { 1664, 74, 304, 36 };
             TBlock tblock3_19 = { 1856, 374, 64, 108 };
             TBlock tblock3_20 = { 1920, 482, 48, 36 };
+            TBlock tblock3_21 = { 1968, 374, 80, 108 };
+            TBlock tblock3_22 = { 1968, 74, 80, 108 };
+            TBlock tblock3_23 = { 2048, 374, 206, 36 };
+            TBlock tblock3_24 = { 2270, 74, 32, 144 };
+            TBlock tblock3_25 = { 2048, 74, 222, 36 };
+            TBlock tblock3_26 = { 2254, 336, 50, 144 };
+            TBlock tblock3_27 = { 2302, 74, 254, 36 };
+            TBlock tblock3_28 = { 2302, 484, 254, 36 };
 
             tBlocks[3].push_back(tblock3_1);
             tBlocks[3].push_back(tblock3_2);
@@ -1341,6 +1349,14 @@ void Image_::BlockInit() {
             tBlocks[3].push_back(tblock3_18);
             tBlocks[3].push_back(tblock3_19);
             tBlocks[3].push_back(tblock3_20);
+            tBlocks[3].push_back(tblock3_21);
+            tBlocks[3].push_back(tblock3_22);
+            tBlocks[3].push_back(tblock3_23);
+            tBlocks[3].push_back(tblock3_24);
+            tBlocks[3].push_back(tblock3_25);
+            tBlocks[3].push_back(tblock3_26);
+            tBlocks[3].push_back(tblock3_27);
+            tBlocks[3].push_back(tblock3_28);
 
             Hole hole3_1 = { 208, 442, 32, 32 };
             Hole hole3_2 = { 416, 480, 48, 32 };
