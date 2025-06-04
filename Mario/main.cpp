@@ -1309,6 +1309,15 @@ void Image_::BlockInit() {
             TBlock tblock3_9 = { 386, 74, 204, 36 };
             TBlock tblock3_10 = { 590, 74, 562, 144 };
             TBlock tblock3_11 = { 560, 336, 594, 144 };
+            TBlock tblock3_12 = { 1150, 74, 402, 36 }; 
+            TBlock tblock3_13 = { 1150, 374, 514, 108 };
+            TBlock tblock3_14 = { 1552, 74, 112, 108 };
+            TBlock tblock3_15 = { 1280, 110, 16, 36 };
+            TBlock tblock3_16 = { 1408, 110, 16, 36 };
+            TBlock tblock3_17 = { 1664, 482, 192, 36 };
+            TBlock tblock3_18 = { 1664, 74, 304, 36 };
+            TBlock tblock3_19 = { 1856, 374, 64, 108 };
+            TBlock tblock3_20 = { 1920, 482, 48, 36 };
 
             tBlocks[3].push_back(tblock3_1);
             tBlocks[3].push_back(tblock3_2);
@@ -1321,6 +1330,15 @@ void Image_::BlockInit() {
             tBlocks[3].push_back(tblock3_9);
             tBlocks[3].push_back(tblock3_10);
             tBlocks[3].push_back(tblock3_11);
+            tBlocks[3].push_back(tblock3_12);
+            tBlocks[3].push_back(tblock3_13);
+            tBlocks[3].push_back(tblock3_14);
+            tBlocks[3].push_back(tblock3_15);
+            tBlocks[3].push_back(tblock3_16);
+            tBlocks[3].push_back(tblock3_17);
+            tBlocks[3].push_back(tblock3_18);
+            tBlocks[3].push_back(tblock3_19);
+            tBlocks[3].push_back(tblock3_20);
 
             Hole hole3_1 = { 208, 442, 32, 32 };
             Hole hole3_2 = { 416, 480, 48, 32 };
@@ -1371,7 +1389,7 @@ void Image_::DrawBackGround(int x, int y, HDC targetDC) {
 		for (const auto& block : blocks[currentStage - 1]) {
 			int offsetX = block.x - cameraX;
 			if (offsetX + block.width > 0 && offsetX < wRect.right) {
-				blockImage.StretchBlt(targetDC, offsetX, block.y, block.width, block.height, 0, 0, blockImage.GetWidth(), blockImage.GetHeight(), SRCCOPY);
+				blockImage.StretchBlt(targetDC, offsetX, block.y, block.width, 42, 0, 0, blockImage.GetWidth(), blockImage.GetHeight(), SRCCOPY);
 			}
 		}
 	}
