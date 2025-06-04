@@ -42,7 +42,7 @@ public:
     CImage Player_Attack_Tino, Player_Attack_Pairi, Player_Attack_Lizamong;
     CImage mStage1, mStageHidden, mStage2, mStage3;
     CImage blockImage;
-    CImage questionBlockImage;
+    CImage questionBlockImage[2];
     struct Block {
         int x, y;
         int width, height;
@@ -776,6 +776,7 @@ void Player_::Move() {
                 else if (prevPlayerTop >= qblockBottom && jumpVelocity_ < 0) {
                     if (!qblock.hit) {
                         qblock.hit = true;
+                        
                         eatFlower_ = true;
                     }
                     y_ = qblockBottom;
@@ -1048,7 +1049,8 @@ void Image_::ImageInit() {
     mStage3.Load(TEXT("Image/월드 3.png"));
 
     blockImage.Load(TEXT("Image/BrickBlockBrown.png"));
-    questionBlockImage.Load(TEXT("Image/QuestionBlock.gif"));
+    questionBlockImage[0].Load(TEXT("Image/QuestionBlock.gif"));
+    questionBlockImage[1].Load(TEXT("Image/HitQuestionBlock.png"));
 
     stage1 = hidden = stage2 = stage3 = false;
     currentStage = STAGE1;
@@ -1371,17 +1373,20 @@ void Image_::DrawBackGround(int x, int y, HDC targetDC) {
 		for (const auto& block : blocks[currentStage - 1]) {
 			int offsetX = block.x - cameraX;
 			if (offsetX + block.width > 0 && offsetX < wRect.right) {
-				blockImage.StretchBlt(targetDC, offsetX, block.y, block.width, block.height, 0, 0, blockImage.GetWidth(), blockImage.GetHeight(), SRCCOPY);
+				blockImage.StretchBlt(targetDC, offsetX, block.y, block.width, 42, 0, 0, blockImage.GetWidth(), blockImage.GetHeight(), SRCCOPY);
 			}
 		}
 	}
 
-	if (!questionBlockImage.IsNull()) {
+	if (!questionBlockImage[0].IsNull() && !questionBlockImage[1].IsNull()) {
 		for (const auto& qblock : questionBlocks[currentStage - 1]) {
 			int offsetX = qblock.x - cameraX;
-			if (offsetX + qblock.width > 0 && offsetX < wRect.right) {
-				questionBlockImage.StretchBlt(targetDC, offsetX, qblock.y, qblock.width, qblock.height, 0, 0, questionBlockImage.GetWidth(), questionBlockImage.GetHeight(), SRCCOPY);
+			if (offsetX + qblock.width > 0 && offsetX < wRect.right && !qblock.hit) {
+				questionBlockImage[0].StretchBlt(targetDC, offsetX, qblock.y, qblock.width, qblock.height, 0, 0, questionBlockImage[0].GetWidth(), questionBlockImage[0].GetHeight(), SRCCOPY);
 			}
+            else if (offsetX + qblock.width > 0 && offsetX < wRect.right && qblock.hit) {
+                questionBlockImage[1].StretchBlt(targetDC, offsetX, qblock.y, qblock.width, qblock.height, 0, 0, questionBlockImage[0].GetWidth(), questionBlockImage[0].GetHeight(), SRCCOPY);
+            }
 		}
 	}
 }
@@ -1408,7 +1413,8 @@ void Image_::Destroy() {
 	mStage2.Destroy();
 	mStage3.Destroy();
 	blockImage.Destroy();
-	questionBlockImage.Destroy();
+    questionBlockImage[0].Destroy();
+    questionBlockImage[1].Destroy();
 	for (int i = 0; i < 4; ++i) {
 		if (!blocks[i].empty()) {
 			blocks[i].clear();
