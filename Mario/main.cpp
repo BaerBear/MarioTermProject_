@@ -370,8 +370,8 @@ void Player_::ResetPosition() {
 	}
 	else if (Images.NowStage() == STAGE2) {
 		x_ = 30;
-		y_ = 448;
-		groundY_ = 448;
+		y_ = 449;
+		groundY_ = 449;
 		defaultGroundY_ = 465;
 	}
 	else if (Images.NowStage() == STAGE3) {
