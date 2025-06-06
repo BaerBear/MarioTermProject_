@@ -1360,6 +1360,7 @@ void Image_::BlockInit() {
             tBlocks[1].clear();
             holes[1].clear();
             flagBlocks[1].clear();
+            monsters[1].clear();
         }
         if (!blocks[2].empty()) {
             blocks[2].clear();
@@ -1367,6 +1368,7 @@ void Image_::BlockInit() {
             tBlocks[2].clear();
             holes[2].clear();
             flagBlocks[2].clear();
+            monsters[2].clear();
         }
         if (!blocks[3].empty()) {
             blocks[3].clear();
@@ -1374,6 +1376,7 @@ void Image_::BlockInit() {
             tBlocks[3].clear();
             holes[3].clear();
             flagBlocks[3].clear();
+            monsters[3].clear();
         }
         if (blocks[0].empty()) {
             TBlock tblock0_1 = { 291, 450, 57, 32 };
@@ -1431,19 +1434,7 @@ void Image_::BlockInit() {
             FlagBlock flagBlock0_1 = { 3168, 94, 16, 392 }; // x=3100, 높이 286 (맨 아래 y=486
             flagBlocks[0].push_back(flagBlock0_1);
 
-            Monster monster0_1;
-            monster0_1.x = 500; // 초기 위치
-            monster0_1.y = 447; // 바닥에 위치
-            monster0_1.width = 32;
-            monster0_1.height = 32;
-            monster0_1.direction = RIGHT;
-            monster0_1.speed = 2.0f;
-            monster0_1.isAlive = true;
-            monster0_1.isFalling = false;
-            monster0_1.fallProgress = 0.0f;
-            monster0_1.directionTimer = 0.0f;
-            monster0_1.directionChangeInterval = static_cast<float>(rand() % 6 + 5); // 5~10초
-            monsters[0].push_back(monster0_1);
+         
         }
         }
     else if (currentStage == STAGE1) {
@@ -1452,18 +1443,21 @@ void Image_::BlockInit() {
             questionBlocks[0].clear();
             tBlocks[0].clear();
             holes[0].clear();
+            monsters[0].clear();
         }
         if (!blocks[2].empty()) {
             blocks[2].clear();
             questionBlocks[2].clear();
             tBlocks[2].clear();
             holes[2].clear();
+            monsters[2].clear();
         }
         if (!blocks[3].empty()) {
             blocks[3].clear();
             questionBlocks[0].clear();
             tBlocks[3].clear();
             holes[3].clear();
+            monsters[3].clear();
         }
         if (blocks[1].empty()) {
             // Stage 1 Objects (currentStage == STAGE1)
@@ -1612,6 +1606,20 @@ void Image_::BlockInit() {
             // 깃발 블럭 추가 (Stage 1 끝부분)
             FlagBlock flagBlock1_1 = { 3168, 94, 16, 392 }; // x=3100, 높이 286 (맨 아래 y=486
             flagBlocks[1].push_back(flagBlock1_1);
+
+            Monster monster1_1;
+            monster1_1.x = 500; // 초기 위치
+            monster1_1.y = 447; // 바닥에 위치
+            monster1_1.width = 32;
+            monster1_1.height = 32;
+            monster1_1.direction = RIGHT;
+            monster1_1.speed = 2.0f;
+            monster1_1.isAlive = true;
+            monster1_1.isFalling = false;
+            monster1_1.fallProgress = 0.0f;
+            monster1_1.directionTimer = 0.0f;
+            monster1_1.directionChangeInterval = static_cast<float>(rand() % 6 + 5); // 5~10초
+            monsters[1].push_back(monster1_1);
         }
     }
     else if (currentStage == STAGE2) {
@@ -1620,18 +1628,21 @@ void Image_::BlockInit() {
             questionBlocks[0].clear();
             tBlocks[0].clear();
             holes[0].clear();
+            monsters[0].clear();
         }
         if (!blocks[1].empty()) {
             blocks[1].clear();
             questionBlocks[1].clear();
             tBlocks[1].clear();
             holes[1].clear();
+            monsters[1].clear();
         }
         if (!blocks[3].empty()) {
             blocks[3].clear();
             questionBlocks[3].clear();
             tBlocks[3].clear();
             holes[3].clear();
+            monsters[3].clear();
         }
         if (blocks[2].empty()) {
             QuestionBlock qblock2_1 = { 480, 226, 16, 36, false };
@@ -1710,18 +1721,21 @@ void Image_::BlockInit() {
                 questionBlocks[0].clear();
                 tBlocks[0].clear();
                 holes[0].clear();
+                monsters[0].clear();
             }
             if (!blocks[1].empty()) {
                 blocks[1].clear();
                 questionBlocks[1].clear();
                 tBlocks[1].clear();
                 holes[1].clear();
+                monsters[1].clear();
             }
             if (!blocks[2].empty()) {
                 blocks[2].clear();
                 questionBlocks[2].clear();
                 tBlocks[2].clear();
                 holes[2].clear();
+                monsters[2].clear();
             }
             if (blocks[3].empty()) {
                 TBlock tblock3_1 = { 188, 346, 330, 126 };
