@@ -388,7 +388,7 @@ void Player_::PlayerInit() {
 	direct_ = RIGHT;
 	move_ = false;
 	eatFlower_ = false;
-	eatMushroom_ = true;
+	eatMushroom_ = false;
 	imageNum = 0;
 	isJumping_ = false;
 	jumpVelocity_ = 0.0f;
@@ -428,8 +428,8 @@ void Player_::ResetPosition() {
 	}
 	else if (Images.NowStage() == STAGE1) {
 		x_ = 10;
-		y_ = 0;
-		groundY_ = 1;
+		y_ = 447;
+		groundY_ = 447;
 		defaultGroundY_ = 447;
 	}
 	else if (Images.NowStage() == STAGE2) {
@@ -928,7 +928,7 @@ void Player_::Move() {
 		jumpVelocity_ = JUMP_VELOCITY;
 		jumpKeyPressed = true;
 	}
-	if (intendToAttack) {
+	if (intendToAttack && fireballCooldown <= 0) {
 		Attack();
 		attackKeyPressed = true;
 	}
@@ -1186,7 +1186,6 @@ void Player_::Move() {
 			bool atHoleTop = prevPlayerBottom >= holeTop - 5 && isJumping_ == FALSE;
 
 			if (withinHoleX && atHoleTop) {
-				isJumping_ = false;
 				isFallingIntoHole = true;
 				fallProgress_ = 0.0f;
 				break;
@@ -1389,11 +1388,11 @@ void Player_::Attack() {
 		fireball.x = hitbox_.left - fireball.width;
 		fireball.velocityX = -6.0f;
 	}
-	fireball.y = playerHitboxY + playerHitboxHeight / 2;
+	fireball.y = playerHitboxY + playerHitboxHeight / 3;
 	fireball.velocityY = 0.0f;
 
 	Images.fireballs.push_back(fireball);
-	fireballCooldown = 2;
+	fireballCooldown = 15;
 
 	WCHAR buffer[100];
 	swprintf_s(buffer, L"Fireball shot: x=%d, y=%d, velocityX=%.2f\n", fireball.x, fireball.y, fireball.velocityX);
@@ -1429,9 +1428,10 @@ void Player_::FireballMove() {
 				continue;
 			}
 
+			// 지면에서의 튕김
 			if (it->y + it->height >= defaultGroundY_) {
 				it->y = defaultGroundY_ - it->height;
-				it->velocityY = -4.0f;
+				it->velocityY = -4.0f; // 위로 튕김
 			}
 
 			bool hitWall = false;
@@ -1450,7 +1450,23 @@ void Player_::FireballMove() {
 				bool overlapY = fireballBottom > blockTop && fireballTop < blockBottom;
 
 				if (overlapX && overlapY) {
-					hitWall = true;
+					// 이전 위치 계산 (충돌 방향 판별용)
+					int prevFireballBottom = fireballBottom - static_cast<int>(it->velocityY);
+					int prevFireballTop = fireballTop - static_cast<int>(it->velocityY);
+					int prevFireballRight = fireballRight - static_cast<int>(it->velocityX);
+					int prevFireballLeft = fireballLeft - static_cast<int>(it->velocityX);
+
+					// 위쪽 면 충돌: 이전 위치가 블록 위에 있었고, 현재 아래로 내려옴
+					if (prevFireballBottom <= blockTop && fireballBottom > blockTop && it->velocityY > 0) {
+						it->y = blockTop - it->height; // 블록 위에 위치 조정
+						it->velocityY = -4.0f; // 위로 튕김
+					}
+					// 옆면 또는 아래면 충돌: 삭제
+					else if ((prevFireballRight <= blockLeft && fireballRight > blockLeft) ||
+						(prevFireballLeft >= blockRight && fireballLeft < blockRight) ||
+						(prevFireballTop >= blockBottom && fireballTop < blockBottom)) {
+						hitWall = true;
+					}
 					break;
 				}
 			}
@@ -1471,7 +1487,20 @@ void Player_::FireballMove() {
 					bool overlapY = fireballBottom > qblockTop && fireballTop < qblockBottom;
 
 					if (overlapX && overlapY) {
-						hitWall = true;
+						int prevFireballBottom = fireballBottom - static_cast<int>(it->velocityY);
+						int prevFireballTop = fireballTop - static_cast<int>(it->velocityY);
+						int prevFireballRight = fireballRight - static_cast<int>(it->velocityX);
+						int prevFireballLeft = fireballLeft - static_cast<int>(it->velocityX);
+
+						if (prevFireballBottom <= qblockTop && fireballBottom > qblockTop && it->velocityY > 0) {
+							it->y = qblockTop - it->height;
+							it->velocityY = -4.0f;
+						}
+						else if ((prevFireballRight <= qblockLeft && fireballRight > qblockLeft) ||
+							(prevFireballLeft >= qblockRight && fireballLeft < qblockRight) ||
+							(prevFireballTop >= qblockBottom && fireballTop < qblockBottom)) {
+							hitWall = true;
+						}
 						break;
 					}
 				}
@@ -1494,7 +1523,20 @@ void Player_::FireballMove() {
 					bool overlapY = fireballBottom > tblockTop && fireballTop < tblockBottom;
 
 					if (overlapX && overlapY) {
-						hitWall = true;
+						int prevFireballBottom = fireballBottom - static_cast<int>(it->velocityY);
+						int prevFireballTop = fireballTop - static_cast<int>(it->velocityY);
+						int prevFireballRight = fireballRight - static_cast<int>(it->velocityX);
+						int prevFireballLeft = fireballLeft - static_cast<int>(it->velocityX);
+
+						if (prevFireballBottom <= tblockTop && fireballBottom > tblockTop && it->velocityY > 0) {
+							it->y = tblockTop - it->height;
+							it->velocityY = -4.0f;
+						}
+						else if ((prevFireballRight <= tblockLeft && fireballRight > tblockLeft) ||
+							(prevFireballLeft >= tblockRight && fireballLeft < tblockRight) ||
+							(prevFireballTop >= tblockBottom && fireballTop < tblockBottom)) {
+							hitWall = true;
+						}
 						break;
 					}
 				}
