@@ -36,195 +36,195 @@ int GetCameraX(int playerX, int stageWidth);
 
 class Image_ {
 public:
-    bool stage1, hidden, tutorial, stage2;
-    int currentStage;
+	bool stage1, hidden, tutorial, stage2;
+	int currentStage;
 
-    CImage Player_Move_Tino, Player_Move_Pairi, Player_Move_Lizard, Player_Move_Lizamong;
-    CImage Player_Attack_Tino, Player_Attack_Pairi, Player_Attack_Lizamong;
-    CImage FireballImage;
-    CImage mStage1, mStageHidden, mStageTutorial, mStage2;
-    CImage blockImage;
-    CImage questionBlockImage[2];
-    CImage monster;
-    struct Block {
-        int x, y;
-        int width, height;
-    };
-    struct QuestionBlock {
-        int x, y;
-        int width, height;
-        bool hit;
-    };
-    struct TBlock {
-        int x, y;
-        int width, height;
-    };
-    struct Hole {
-        int x, y;
-        int width, height;
-    };
-    struct FlagBlock {
-        int x, y;
-        int width, height;
-    };
-    struct Fireball {
-        int x, y;
-        float velocityX;
-        float velocityY;
-        bool active;
-        int width, height;
-        int imageNum{};
-        int time{};
-    };
-    struct Monster {
-        int x, y;
-        int width, height;
-        int direction; // LEFT(1) 또는 RIGHT(2)
-        float speed; // 이동 속도
-        bool isAlive; // 살아있는지 여부
-        bool isFalling; // 구멍에 빠졌는지 여부
-        float fallProgress; // 낙하 진행률
-        float directionTimer; // 방향 변경 타이머
-        float directionChangeInterval; // 방향 변경 간격 (5~10초)
-    };
+	CImage Player_Move_Tino, Player_Move_Pairi, Player_Move_Lizard, Player_Move_Lizamong;
+	CImage Player_Attack_Tino, Player_Attack_Pairi, Player_Attack_Lizamong;
+	CImage FireballImage;
+	CImage mStage1, mStageHidden, mStageTutorial, mStage2;
+	CImage blockImage;
+	CImage questionBlockImage[2];
+	CImage monster;
+	struct Block {
+		int x, y;
+		int width, height;
+	};
+	struct QuestionBlock {
+		int x, y;
+		int width, height;
+		bool hit;
+	};
+	struct TBlock {
+		int x, y;
+		int width, height;
+	};
+	struct Hole {
+		int x, y;
+		int width, height;
+	};
+	struct FlagBlock {
+		int x, y;
+		int width, height;
+	};
+	struct Fireball {
+		int x, y;
+		float velocityX;
+		float velocityY;
+		bool active;
+		int width, height;
+		int imageNum{};
+		int time{};
+	};
+	struct Monster {
+		int x, y;
+		int width, height;
+		int direction; // LEFT(1) 또는 RIGHT(2)
+		float speed; // 이동 속도
+		bool isAlive; // 살아있는지 여부
+		bool isFalling; // 구멍에 빠졌는지 여부
+		float fallProgress; // 낙하 진행률
+		float directionTimer; // 방향 변경 타이머
+		float directionChangeInterval; // 방향 변경 간격 (5~10초)
+	};
 
-    std::vector<Monster> monsters[4]{};
-    std::vector<Block> blocks[4]{};
-    std::vector<QuestionBlock> questionBlocks[4]{};
-    std::vector<TBlock> tBlocks[4]{};
-    std::vector<Hole> holes[4]{};
-    std::vector<FlagBlock> flagBlocks[4]{};
-    std::vector<Fireball> fireballs; // 단일 벡터로 관리
+	std::vector<Monster> monsters[4]{};
+	std::vector<Block> blocks[4]{};
+	std::vector<QuestionBlock> questionBlocks[4]{};
+	std::vector<TBlock> tBlocks[4]{};
+	std::vector<Hole> holes[4]{};
+	std::vector<FlagBlock> flagBlocks[4]{};
+	std::vector<Fireball> fireballs; // 단일 벡터로 관리
 
-    Image_() {
-        for (int i = 0; i < 4; ++i) {
-            blocks[i].clear();
-            questionBlocks[i].clear();
-            tBlocks[i].clear();
-            holes[i].clear();
-            flagBlocks[i].clear();
-        }
-        fireballs.clear();
-        currentStage = TUTORIAL;
-    };
-    ~Image_() {};
+	Image_() {
+		for (int i = 0; i < 4; ++i) {
+			blocks[i].clear();
+			questionBlocks[i].clear();
+			tBlocks[i].clear();
+			holes[i].clear();
+			flagBlocks[i].clear();
+		}
+		fireballs.clear();
+		currentStage = TUTORIAL;
+	};
+	~Image_() {};
 
-    void ImageInit();
-    void BlockInit();
-    void DrawBackGround(int x, int y, HDC targetDC);
-    void Destroy();
-    void NextStage();
-    int NowStage() { return currentStage; };
-    void DrawHitBox(HDC targetDC);
-    void EnterHiddenStage();
-    void QuitHiddenStage();
+	void ImageInit();
+	void BlockInit();
+	void DrawBackGround(int x, int y, HDC targetDC);
+	void Destroy();
+	void NextStage();
+	int NowStage() { return currentStage; };
+	void DrawHitBox(HDC targetDC);
+	void EnterHiddenStage();
+	void QuitHiddenStage();
 };
 
 class Player_ {
 public:
-    Image_ Pimage;
-    int imageNum;
-    int time{};
-    int fireballCooldown;
-    bool attackKeyPressed;
-    bool jumpKeyPressed; // 점프 키 상태 추적
+	Image_ Pimage;
+	int imageNum;
+	int time{};
+	int fireballCooldown;
+	bool attackKeyPressed;
+	bool jumpKeyPressed; // 점프 키 상태 추적
 
-    void PlayerInit();
-    void ResetPosition();
-    void DrawPlayer(HDC targetDC);
-    void Move();
-    void Attack();
-    void FireballMove();
-    bool Moving() { return move_; };
-    void DrawHitbox(HDC targetDC);
+	void PlayerInit();
+	void ResetPosition();
+	void DrawPlayer(HDC targetDC);
+	void Move();
+	void Attack();
+	void FireballMove();
+	bool Moving() { return move_; };
+	void DrawHitbox(HDC targetDC);
 
-    int State();
+	int State();
 
-    int x() { return x_; };
-    int y() { return y_; };
+	int x() { return x_; };
+	int y() { return y_; };
 
-    // 확인용
-    void turnFlower() {
-        eatFlower_ = !eatFlower_;
-        State();
-    };
-    void turnMushroom() {
-        if (State() == TINO || State() == PAIRI) {
-            groundY_ -= 15;
-            y_ -= 15;
-        }
-        eatMushroom_ = !eatMushroom_;
-        State();
-    };
+	// 확인용
+	void turnFlower() {
+		eatFlower_ = !eatFlower_;
+		State();
+	};
+	void turnMushroom() {
+		if (State() == TINO || State() == PAIRI) {
+			groundY_ -= 15;
+			y_ -= 15;
+		}
+		eatMushroom_ = !eatMushroom_;
+		State();
+	};
 
 private:
-    int x_, y_;
-    int direct_;
-    bool move_;
-    bool shoot_;
-    bool eatFlower_;
-    bool eatMushroom_;
-    bool isJumping_;
-    float jumpVelocity_;
-    int groundY_;
-    int defaultGroundY_;
-    bool isFallingIntoHole;
-    float fallProgress_;
-    RECT hitbox_;
-    bool isTouchingFlag; // 깃발 블럭에 닿았는지 여부
-    float flagSlideProgress; // 깃발을 타고 내려가는 진행률
-    float flagMoveRightProgress; // 오른쪽으로 이동하는 진행률
-    int flagBottomY; // 깃발 블럭의 맨 아래 y 좌표
-    bool isMovingRightAfterFlag; // 깃발 내려간 후 오른쪽 이동 중인지 여부
-    int flagBlockStage; // 깃발 블럭이 있는 스테이지 번호
+	int x_, y_;
+	int direct_;
+	bool move_;
+	bool shoot_;
+	bool eatFlower_;
+	bool eatMushroom_;
+	bool isJumping_;
+	float jumpVelocity_;
+	int groundY_;
+	int defaultGroundY_;
+	bool isFallingIntoHole;
+	float fallProgress_;
+	RECT hitbox_;
+	bool isTouchingFlag; // 깃발 블럭에 닿았는지 여부
+	float flagSlideProgress; // 깃발을 타고 내려가는 진행률
+	float flagMoveRightProgress; // 오른쪽으로 이동하는 진행률
+	int flagBottomY; // 깃발 블럭의 맨 아래 y 좌표
+	bool isMovingRightAfterFlag; // 깃발 내려간 후 오른쪽 이동 중인지 여부
+	int flagBlockStage; // 깃발 블럭이 있는 스테이지 번호
 
-    void GetHitbox(int& hitboxX, int& hitboxY, int& hitboxWidth, int& hitboxHeight) {
-        hitboxX = x_;
-        hitboxY = y_;
-        hitboxWidth = 0;
-        hitboxHeight = 0;
+	void GetHitbox(int& hitboxX, int& hitboxY, int& hitboxWidth, int& hitboxHeight) {
+		hitboxX = x_;
+		hitboxY = y_;
+		hitboxWidth = 0;
+		hitboxHeight = 0;
 
-        switch (State()) {
-        case TINO:
-            if (direct_ == RIGHT) hitboxX += 12;
-            else hitboxX += 8;
-            hitboxWidth = 18;
-            hitboxHeight = 39;
-            break;
-        case LARGETINO:
-            if (direct_ == RIGHT) hitboxX += 12;
-            else hitboxX += 8;
-            hitboxWidth = 31;
-            hitboxHeight = 54;
-            break;
-        case PAIRI:
-            if (direct_ == RIGHT) hitboxX += 21;
-            else hitboxX = x_;
-            hitboxWidth = 18;
-            hitboxHeight = 39;
-            break;
-        case LIZAD:
-            if (direct_ == RIGHT) hitboxX += 26;
-            else hitboxX = x_;
-            hitboxWidth = 44;
-            hitboxHeight = 45;
-            break;
-        case LIZAMONG:
-            if (direct_ == RIGHT) hitboxX += 26;
-            else hitboxX += 6;
-            hitboxWidth = 32;
-            hitboxHeight = 54;
-            break;
-        default:
-            hitboxWidth = 36;
-            hitboxHeight = 39;
-        }
+		switch (State()) {
+		case TINO:
+			if (direct_ == RIGHT) hitboxX += 12;
+			else hitboxX += 8;
+			hitboxWidth = 18;
+			hitboxHeight = 39;
+			break;
+		case LARGETINO:
+			if (direct_ == RIGHT) hitboxX += 12;
+			else hitboxX += 8;
+			hitboxWidth = 31;
+			hitboxHeight = 54;
+			break;
+		case PAIRI:
+			if (direct_ == RIGHT) hitboxX += 21;
+			else hitboxX = x_;
+			hitboxWidth = 18;
+			hitboxHeight = 39;
+			break;
+		case LIZAD:
+			if (direct_ == RIGHT) hitboxX += 26;
+			else hitboxX = x_;
+			hitboxWidth = 44;
+			hitboxHeight = 45;
+			break;
+		case LIZAMONG:
+			if (direct_ == RIGHT) hitboxX += 26;
+			else hitboxX += 6;
+			hitboxWidth = 32;
+			hitboxHeight = 54;
+			break;
+		default:
+			hitboxWidth = 36;
+			hitboxHeight = 39;
+		}
 
-        hitbox_.left = hitboxX;
-        hitbox_.top = hitboxY;
-        hitbox_.right = hitboxX + hitboxWidth;
-        hitbox_.bottom = hitboxY + hitboxHeight;
-    }
+		hitbox_.left = hitboxX;
+		hitbox_.top = hitboxY;
+		hitbox_.right = hitboxX + hitboxWidth;
+		hitbox_.bottom = hitboxY + hitboxHeight;
+	}
 };
 
 HDC hDC;
@@ -239,1275 +239,1279 @@ static int mouseBackgroundX = 0;
 static int mouseBackgroundY = 0;
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdParam, int nCmdShow) {
-    HWND hWnd;
-    MSG Message;
-    WNDCLASSEX WndClass;
-    g_hInst = hInstance;
+	HWND hWnd;
+	MSG Message;
+	WNDCLASSEX WndClass;
+	g_hInst = hInstance;
 
-    WndClass.cbSize = sizeof(WndClass);
-    WndClass.style = CS_HREDRAW | CS_VREDRAW;
-    WndClass.lpfnWndProc = (WNDPROC)WndProc;
-    WndClass.cbClsExtra = 0;
-    WndClass.cbWndExtra = 0;
-    WndClass.hInstance = hInstance;
-    WndClass.hIcon = LoadIcon(NULL, IDI_APPLICATION);
-    WndClass.hCursor = LoadCursor(NULL, IDC_ARROW);
-    WndClass.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
-    WndClass.lpszMenuName = NULL;
-    WndClass.lpszClassName = lpszClass;
-    WndClass.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
-    RegisterClassEx(&WndClass);
+	WndClass.cbSize = sizeof(WndClass);
+	WndClass.style = CS_HREDRAW | CS_VREDRAW;
+	WndClass.lpfnWndProc = (WNDPROC)WndProc;
+	WndClass.cbClsExtra = 0;
+	WndClass.cbWndExtra = 0;
+	WndClass.hInstance = hInstance;
+	WndClass.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+	WndClass.hCursor = LoadCursor(NULL, IDC_ARROW);
+	WndClass.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
+	WndClass.lpszMenuName = NULL;
+	WndClass.lpszClassName = lpszClass;
+	WndClass.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+	RegisterClassEx(&WndClass);
 
-    hWnd = CreateWindow(lpszClass, lpszWindowName, WS_OVERLAPPEDWINDOW, 0, 0, 800, 600, NULL, (HMENU)NULL, hInstance, NULL);
+	hWnd = CreateWindow(lpszClass, lpszWindowName, WS_OVERLAPPEDWINDOW, 0, 0, 800, 600, NULL, (HMENU)NULL, hInstance, NULL);
 
-    ShowWindow(hWnd, nCmdShow);
-    UpdateWindow(hWnd);
+	ShowWindow(hWnd, nCmdShow);
+	UpdateWindow(hWnd);
 
-    while (GetMessage(&Message, 0, 0, 0)) {
-        TranslateMessage(&Message);
-        DispatchMessage(&Message);
-    }
-    return Message.wParam;
+	while (GetMessage(&Message, 0, 0, 0)) {
+		TranslateMessage(&Message);
+		DispatchMessage(&Message);
+	}
+	return Message.wParam;
 }
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam) {
-    PAINTSTRUCT ps;
-    static HBITMAP hBitmap;
+	PAINTSTRUCT ps;
+	static HBITMAP hBitmap;
 
-    switch (iMessage) {
-    case WM_CREATE: {
-        hDC = GetDC(hWnd);
-        mDC = CreateCompatibleDC(hDC);
-        GetClientRect(hWnd, &wRect);
-        Images.ImageInit();
-        Player.PlayerInit();
-        hBitmap = CreateCompatibleBitmap(hDC, wRect.right, wRect.bottom);
-        SelectObject(mDC, hBitmap);
-        SetTimer(hWnd, 1, 16, NULL);
-        Images.tutorial = true;
-        Images.BlockInit();
-        ReleaseDC(hWnd, hDC);
-        break;
-    }
-    case WM_KEYDOWN: {
-        if (wParam == 'S' || wParam == 's') {
-            Images.NextStage();
-            InvalidateRect(hWnd, NULL, FALSE);
-        }
-        if (wParam == 'd' || wParam == 'D') {
-            Images.EnterHiddenStage();
-            InvalidateRect(hWnd, NULL, FALSE);
-        }
-        else if (wParam == 'q' || wParam == 'Q') {
-            PostQuitMessage(0);
-        }
-        else if (wParam == 'h' || wParam == 'H') {
-            DrawAllHitBox = !DrawAllHitBox;
-        }
-        else if (wParam == '1') {
-            Player.turnFlower();
-        }
-        else if (wParam == '2') {
-            Player.turnMushroom();
-        }
-        break;
-    }
-    case WM_MOUSEMOVE: {
-        int mouseX = LOWORD(lParam);
-        int mouseY = HIWORD(lParam);
+	switch (iMessage) {
+	case WM_CREATE: {
+		hDC = GetDC(hWnd);
+		mDC = CreateCompatibleDC(hDC);
+		GetClientRect(hWnd, &wRect);
+		Images.ImageInit();
+		Player.PlayerInit();
+		hBitmap = CreateCompatibleBitmap(hDC, wRect.right, wRect.bottom);
+		SelectObject(mDC, hBitmap);
+		SetTimer(hWnd, 1, 16, NULL);
+		Images.tutorial = true;
+		Images.BlockInit();
+		ReleaseDC(hWnd, hDC);
+		break;
+	}
+	case WM_KEYDOWN: {
+		if (wParam == 'S' || wParam == 's') {
+			Images.NextStage();
+			InvalidateRect(hWnd, NULL, FALSE);
+		}
+		if (wParam == 'd' || wParam == 'D') {
+			Images.EnterHiddenStage();
+			InvalidateRect(hWnd, NULL, FALSE);
+		}
+		else if (wParam == 'q' || wParam == 'Q') {
+			PostQuitMessage(0);
+		}
+		else if (wParam == 'h' || wParam == 'H') {
+			DrawAllHitBox = !DrawAllHitBox;
+		}
+		else if (wParam == '1') {
+			Player.turnFlower();
+		}
+		else if (wParam == '2') {
+			Player.turnMushroom();
+		}
+		break;
+	}
+	case WM_MOUSEMOVE: {
+		int mouseX = LOWORD(lParam);
+		int mouseY = HIWORD(lParam);
 
-        int cameraX = Player.x() - 400;
-        if (cameraX < 0) cameraX = 0;
-        int stageWidth = (Images.NowStage() == TUTORIAL ? Images.mStageTutorial.GetWidth() :
-            Images.NowStage() == STAGE1 ? Images.mStage1.GetWidth() :
-            Images.NowStage() == STAGE2 ? Images.mStage2.GetWidth() :
-            Images.NowStage() == HIDDEN ? Images.mStageHidden.GetWidth() : 0);
-        if (stageWidth <= wRect.right) {
-            cameraX = 0;
-        }
-        else if (cameraX > stageWidth - wRect.right) {
-            cameraX = stageWidth - wRect.right;
-        }
+		int cameraX = Player.x() - 400;
+		if (cameraX < 0) cameraX = 0;
+		int stageWidth = (Images.NowStage() == TUTORIAL ? Images.mStageTutorial.GetWidth() :
+			Images.NowStage() == STAGE1 ? Images.mStage1.GetWidth() :
+			Images.NowStage() == STAGE2 ? Images.mStage2.GetWidth() :
+			Images.NowStage() == HIDDEN ? Images.mStageHidden.GetWidth() : 0);
+		if (stageWidth <= wRect.right) {
+			cameraX = 0;
+		}
+		else if (cameraX > stageWidth - wRect.right) {
+			cameraX = stageWidth - wRect.right;
+		}
 
-        mouseBackgroundX = mouseX + cameraX;
-        mouseBackgroundY = mouseY;
+		mouseBackgroundX = mouseX + cameraX;
+		mouseBackgroundY = mouseY;
 
-        InvalidateRect(hWnd, NULL, FALSE);
-        break;
-    }
-    case WM_TIMER: {
-        switch (wParam) {
-        case 1: {
-            Player.Move();
-            Player.FireballMove();
-            break;
-        }
-        }
-        InvalidateRect(hWnd, NULL, FALSE);
-        break;
-    }
-    case WM_PAINT: {
-        hDC = BeginPaint(hWnd, &ps);
-        HBRUSH whiteBrush = CreateSolidBrush(RGB(255, 255, 255));
-        FillRect(mDC, &wRect, whiteBrush);
-        DeleteObject(whiteBrush);
+		InvalidateRect(hWnd, NULL, FALSE);
+		break;
+	}
+	case WM_TIMER: {
+		switch (wParam) {
+		case 1: {
+			Player.Move();
+			Player.FireballMove();
+			break;
+		}
+		}
+		InvalidateRect(hWnd, NULL, FALSE);
+		break;
+	}
+	case WM_PAINT: {
+		hDC = BeginPaint(hWnd, &ps);
+		HBRUSH whiteBrush = CreateSolidBrush(RGB(255, 255, 255));
+		FillRect(mDC, &wRect, whiteBrush);
+		DeleteObject(whiteBrush);
 
-        Images.DrawBackGround(Player.x(), Player.y(), mDC);
-        Player.DrawPlayer(mDC);
+		Images.DrawBackGround(Player.x(), Player.y(), mDC);
+		Player.DrawPlayer(mDC);
 
-        WCHAR buffer[100];
-        wsprintf(buffer, L"Mouse: (%d, %d)", mouseBackgroundX, mouseBackgroundY);
-        SetTextColor(mDC, RGB(255, 255, 255));
-        SetBkMode(mDC, TRANSPARENT);
-        TextOut(mDC, 10, 10, buffer, lstrlen(buffer));
+		WCHAR buffer[100];
+		wsprintf(buffer, L"Mouse: (%d, %d)", mouseBackgroundX, mouseBackgroundY);
+		SetTextColor(mDC, RGB(255, 255, 255));
+		SetBkMode(mDC, TRANSPARENT);
+		TextOut(mDC, 10, 10, buffer, lstrlen(buffer));
 
-        if (DrawAllHitBox) {
-            Player.DrawHitbox(mDC);
-            Images.DrawHitBox(mDC);
-        }
+		if (DrawAllHitBox) {
+			Player.DrawHitbox(mDC);
+			Images.DrawHitBox(mDC);
+		}
 
-        BitBlt(hDC, 0, 0, wRect.right, wRect.bottom, mDC, 0, 0, SRCCOPY);
-        EndPaint(hWnd, &ps);
-        break;
-    }
-    case WM_DESTROY: {
-        Images.Destroy();
-        DeleteDC(mDC);
-        DeleteObject(hBitmap);
-        ReleaseDC(hWnd, hDC);
-        PostQuitMessage(0);
-        return 0;
-    }
-    }
-    return (DefWindowProc(hWnd, iMessage, wParam, lParam));
+		BitBlt(hDC, 0, 0, wRect.right, wRect.bottom, mDC, 0, 0, SRCCOPY);
+		EndPaint(hWnd, &ps);
+		break;
+	}
+	case WM_DESTROY: {
+		Images.Destroy();
+		DeleteDC(mDC);
+		DeleteObject(hBitmap);
+		ReleaseDC(hWnd, hDC);
+		PostQuitMessage(0);
+		return 0;
+	}
+	}
+	return (DefWindowProc(hWnd, iMessage, wParam, lParam));
 }
 
 void Player_::PlayerInit() {
-    x_ = 10;
-    y_ = 447;
-    direct_ = RIGHT;
-    move_ = false;
-    eatFlower_ = false;
-    eatMushroom_ = true;
-    imageNum = 0;
-    isJumping_ = false;
-    jumpVelocity_ = 0.0f;
-    groundY_ = 447;
-    defaultGroundY_ = 447;
-    isFallingIntoHole = false;
-    fallProgress_ = 0.0f;
-    Pimage = Images;
-    hitbox_ = { x_ + 14, y_, x_ + 39, y_ + 39 };
-    isTouchingFlag = false;
-    flagSlideProgress = 0.0f;
-    flagMoveRightProgress = 0.0f;
-    flagBottomY = 0;
-    isMovingRightAfterFlag = false;
-    flagBlockStage = 0;
-    fireballCooldown = 0;
-    attackKeyPressed = false;
-    jumpKeyPressed = false;
+	x_ = 10;
+	y_ = 447;
+	direct_ = RIGHT;
+	move_ = false;
+	eatFlower_ = false;
+	eatMushroom_ = true;
+	imageNum = 0;
+	isJumping_ = false;
+	jumpVelocity_ = 0.0f;
+	groundY_ = 447;
+	defaultGroundY_ = 447;
+	isFallingIntoHole = false;
+	fallProgress_ = 0.0f;
+	Pimage = Images;
+	hitbox_ = { x_ + 14, y_, x_ + 39, y_ + 39 };
+	isTouchingFlag = false;
+	flagSlideProgress = 0.0f;
+	flagMoveRightProgress = 0.0f;
+	flagBottomY = 0;
+	isMovingRightAfterFlag = false;
+	flagBlockStage = 0;
+	fireballCooldown = 0;
+	attackKeyPressed = false;
+	jumpKeyPressed = false;
 }
 
 void Player_::ResetPosition() {
-    move_ = false;
-    isJumping_ = false;
-    jumpVelocity_ = 0.0f;
-    jumpKeyPressed = false;
-    isFallingIntoHole = false;
-    direct_ = RIGHT;
-    fallProgress_ = 0.0f;
-    time = 0;
-    fireballCooldown = 0;
-    attackKeyPressed = false;
-    if (Images.NowStage() == TUTORIAL) {
-        x_ = 0;
-        y_ = 30;
-        groundY_ = 0;
-        defaultGroundY_ = 465;
-    }
-    else if (Images.NowStage() == STAGE1) {
-        x_ = 10;
-        y_ = 0;
-        groundY_ = 1;
-        defaultGroundY_ = 447;
-    }
-    else if (Images.NowStage() == STAGE2) {
-        x_ = 5;
-        y_ = 223;
-        groundY_ = 223;
-        defaultGroundY_ = 447;
-    }
-    else if (Images.NowStage() == HIDDEN) {
-        x_ = 50;
-        y_ = 0;
-        isJumping_ = true;
-        groundY_ = 435;
-        defaultGroundY_ = 435;
-    }
+	move_ = false;
+	isJumping_ = false;
+	jumpVelocity_ = 0.0f;
+	jumpKeyPressed = false;
+	isFallingIntoHole = false;
+	direct_ = RIGHT;
+	fallProgress_ = 0.0f;
+	time = 0;
+	fireballCooldown = 0;
+	attackKeyPressed = false;
+	if (Images.NowStage() == TUTORIAL) {
+		x_ = 0;
+		y_ = 30;
+		groundY_ = 0;
+		defaultGroundY_ = 465;
+	}
+	else if (Images.NowStage() == STAGE1) {
+		x_ = 10;
+		y_ = 0;
+		groundY_ = 1;
+		defaultGroundY_ = 447;
+	}
+	else if (Images.NowStage() == STAGE2) {
+		x_ = 5;
+		y_ = 223;
+		groundY_ = 223;
+		defaultGroundY_ = 447;
+	}
+	else if (Images.NowStage() == HIDDEN) {
+		x_ = 50;
+		y_ = 0;
+		isJumping_ = true;
+		groundY_ = 435;
+		defaultGroundY_ = 435;
+	}
 
-    if (Images.NowStage() != HIDDEN) {
-        eatFlower_ = false;
-        eatMushroom_ = false;
-    }
-    isTouchingFlag = false;
-    flagSlideProgress = 0.0f;
-    flagMoveRightProgress = 0.0f;
-    flagBottomY = 0;
-    isMovingRightAfterFlag = false;
-    flagBlockStage = 0;
+	if (Images.NowStage() != HIDDEN) {
+		eatFlower_ = false;
+		eatMushroom_ = false;
+	}
+	isTouchingFlag = false;
+	flagSlideProgress = 0.0f;
+	flagMoveRightProgress = 0.0f;
+	flagBottomY = 0;
+	isMovingRightAfterFlag = false;
+	flagBlockStage = 0;
 }
 
 void Player_::DrawPlayer(HDC targetDC) {
-    if (!Pimage.Player_Move_Tino.IsNull()) {
-        int cameraX = x_ - 400;
-        if (cameraX < 0) cameraX = 0;
-        int stageWidth = (Images.NowStage() == TUTORIAL ? Pimage.mStageTutorial.GetWidth() :
-            Images.NowStage() == STAGE1 ? Pimage.mStage1.GetWidth() :
-            Images.NowStage() == STAGE2 ? Pimage.mStage2.GetWidth() :
-            Images.NowStage() == HIDDEN ? Pimage.mStageHidden.GetWidth() : 0);
+	if (!Pimage.Player_Move_Tino.IsNull()) {
+		int cameraX = x_ - 400;
+		if (cameraX < 0) cameraX = 0;
+		int stageWidth = (Images.NowStage() == TUTORIAL ? Pimage.mStageTutorial.GetWidth() :
+			Images.NowStage() == STAGE1 ? Pimage.mStage1.GetWidth() :
+			Images.NowStage() == STAGE2 ? Pimage.mStage2.GetWidth() :
+			Images.NowStage() == HIDDEN ? Pimage.mStageHidden.GetWidth() : 0);
 
-        if (stageWidth <= wRect.right) {
-            cameraX = 0;
-        }
-        else if (cameraX > stageWidth - wRect.right) {
-            cameraX = stageWidth - wRect.right;
-        }
-        int playerWidth = 0;
-        switch (State()) {
-        case TINO: playerWidth = 36; break;
-        case LARGETINO: playerWidth = 49; break;
-        case PAIRI: playerWidth = 39; break;
-        case LIZAD: playerWidth = 46; break;
-        case LIZAMONG: playerWidth = 66; break;
-        default: playerWidth = 36;
-        }
+		if (stageWidth <= wRect.right) {
+			cameraX = 0;
+		}
+		else if (cameraX > stageWidth - wRect.right) {
+			cameraX = stageWidth - wRect.right;
+		}
+		int playerWidth = 0;
+		switch (State()) {
+		case TINO: playerWidth = 36; break;
+		case LARGETINO: playerWidth = 49; break;
+		case PAIRI: playerWidth = 39; break;
+		case LIZAD: playerWidth = 46; break;
+		case LIZAMONG: playerWidth = 66; break;
+		default: playerWidth = 36;
+		}
 
-        int offsetX = x_ - cameraX;
-        if (offsetX + playerWidth > wRect.right) {
-            offsetX = wRect.right - playerWidth;
-        }
-        if (offsetX < 0) {
-            offsetX = 0;
-        }
+		int offsetX = x_ - cameraX;
+		if (offsetX + playerWidth > wRect.right) {
+			offsetX = wRect.right - playerWidth;
+		}
+		if (offsetX < 0) {
+			offsetX = 0;
+		}
 
-        if (!Images.FireballImage.IsNull() && !Images.fireballs.empty()) {
-            for (auto& fireball : Images.fireballs) {
-                if (fireball.active) {
-                    int fireballOffsetX = fireball.x - cameraX;
-                    if (fireballOffsetX + fireball.width > 0 && fireballOffsetX < wRect.right) {
-                        Images.FireballImage.TransparentBlt(targetDC, fireballOffsetX, fireball.y, fireball.width, fireball.height,
-                            fireball.imageNum * 8, 0, 8, 8, RGB(146, 144, 255));
-                    }
-                }
-            }
-        }
+		if (!Images.FireballImage.IsNull() && !Images.fireballs.empty()) {
+			for (auto& fireball : Images.fireballs) {
+				if (fireball.active) {
+					int fireballOffsetX = fireball.x - cameraX;
+					if (fireballOffsetX + fireball.width > 0 && fireballOffsetX < wRect.right) {
+						Images.FireballImage.TransparentBlt(targetDC, fireballOffsetX, fireball.y, fireball.width, fireball.height,
+							fireball.imageNum * 8, 0, 8, 8, RGB(146, 144, 255));
+					}
+				}
+			}
+		}
 
-        if (move_) {
-            if (!eatFlower_) {
-                if (!eatMushroom_) { // TINO
-                    if (direct_ == LEFT) {
-                        if (isJumping_)
-                            Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, 10, 175, 36, 39, RGB(0, 255, 0));
-                        else
-                            Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, (2 - imageNum) * 56 + 10, 124, 36, 39, RGB(0, 255, 0));
-                    }
-                    else if (direct_ == RIGHT) {
-                        if (isJumping_)
-                            Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, 2 * 56 + 10, 69, 36, 39, RGB(0, 255, 0));
-                        else
-                            Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, imageNum * 56 + 10, 10, 36, 39, RGB(0, 255, 0));
-                    }
-                }
-                else if (eatMushroom_) { // LARGETINO
-                    if (direct_ == LEFT) {
-                        if (isJumping_)
-                            Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 49, 54, 10, 175, 36, 39, RGB(0, 255, 0));
-                        else
-                            Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 49, 54, (2 - imageNum) * 56 + 10, 124, 36, 39, RGB(0, 255, 0));
-                    }
-                    else if (direct_ == RIGHT) {
-                        if (isJumping_)
-                            Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 49, 54, 2 * 56 + 10, 69, 36, 39, RGB(0, 255, 0));
-                        else
-                            Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 49, 54, imageNum * 56 + 10, 10, 36, 39, RGB(0, 255, 0));
-                    }
-                }
-            }
-            else if (eatFlower_) {
-                if (!eatMushroom_) { // PAIRI
-                    if (direct_ == LEFT) {
-                        if (isJumping_)
-                            Pimage.Player_Move_Pairi.TransparentBlt(targetDC, offsetX, y_, 39, 39, imageNum * 42, 222, 41, 39, RGB(199, 225, 209));
-                        else
-                            Pimage.Player_Move_Pairi.TransparentBlt(targetDC, offsetX, y_, 39, 39, imageNum * 40, 83, 39, 39, RGB(199, 225, 209));
-                    }
-                    else if (direct_ == RIGHT) {
-                        if (isJumping_)
-                            Pimage.Player_Move_Pairi.TransparentBlt(targetDC, offsetX, y_, 39, 39, imageNum * 42 + 5, 268, 41, 39, RGB(199, 225, 209));
-                        else
-                            Pimage.Player_Move_Pairi.TransparentBlt(targetDC, offsetX, y_, 39, 39, imageNum * 40 + 2, 42, 39, 39, RGB(199, 225, 209));
-                    }
-                }
-                else if (eatMushroom_) { // LIZAMONG
-                    if (direct_ == LEFT) {
-                        if (isJumping_)
-                            Pimage.Player_Move_Lizamong.TransparentBlt(targetDC, offsetX, y_, 64, 54, (3 - imageNum) * 75 + 2, 227, 75, 47, RGB(199, 225, 209));
-                        else
-                            Pimage.Player_Move_Lizamong.TransparentBlt(targetDC, offsetX, y_, 64, 54, (2 - imageNum) * 63 + 1, 54, 65, 54, RGB(199, 225, 209));
-                    }
-                    else if (direct_ == RIGHT) {
-                        if (isJumping_)
-                            Pimage.Player_Move_Lizamong.TransparentBlt(targetDC, offsetX, y_, 64, 54, imageNum * 75, 277, 75, 47, RGB(199, 225, 209));
-                        else
-                            Pimage.Player_Move_Lizamong.TransparentBlt(targetDC, offsetX, y_, 64, 54, imageNum * 62, 0, 65, 54, RGB(199, 225, 209));
-                    }
-                }
-            }
-        }
-        else if (!move_) {
-            if (!eatFlower_) {
-                if (!eatMushroom_) { // TINO
-                    if (direct_ == LEFT) {
-                        if (isJumping_)
-                            Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, 10, 175, 36, 39, RGB(0, 255, 0));
-                        else
-                            Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, (2 - imageNum) * 56 + 10, 175, 36, 39, RGB(0, 255, 0));
-                    }
-                    else if (direct_ == RIGHT) {
-                        if (isJumping_)
-                            Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, 2 * 56 + 10, 69, 36, 39, RGB(0, 255, 0));
-                        else
-                            Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, imageNum * 56 + 10, 69, 36, 39, RGB(0, 255, 0));
-                    }
-                }
-                else if (eatMushroom_) { // LARGETINO
-                    if (direct_ == LEFT) {
-                        if (isJumping_)
-                            Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 49, 54, 10, 175, 36, 39, RGB(0, 255, 0));
-                        else
-                            Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 49, 54, (2 - imageNum) * 56 + 10, 175, 36, 39, RGB(0, 255, 0));
-                    }
-                    else if (direct_ == RIGHT) {
-                        if (isJumping_)
-                            Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 49, 54, 2 * 56 + 10, 69, 36, 39, RGB(0, 255, 0));
-                        else
-                            Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 49, 54, imageNum * 56 + 10, 69, 36, 39, RGB(0, 255, 0));
-                    }
-                }
-            }
-            else if (eatFlower_) {
-                if (!eatMushroom_) { // PAIRI
-                    if (direct_ == LEFT) {
-                        if (isJumping_)
-                            Pimage.Player_Move_Pairi.TransparentBlt(targetDC, offsetX, y_, 39, 39, imageNum * 42, 222, 41, 39, RGB(199, 225, 209));
-                        else
-                            Pimage.Player_Move_Pairi.TransparentBlt(targetDC, offsetX, y_, 39, 39, imageNum * 40, 0, 39, 39, RGB(199, 225, 209));
-                    }
-                    else if (direct_ == RIGHT) {
-                        if (isJumping_)
-                            Pimage.Player_Move_Pairi.TransparentBlt(targetDC, offsetX, y_, 39, 39, imageNum * 42 + 5, 268, 41, 39, RGB(199, 225, 209));
-                        else
-                            Pimage.Player_Move_Pairi.TransparentBlt(targetDC, offsetX, y_, 39, 39, 40, 0, 39, 39, RGB(199, 225, 209));
-                    }
-                }
-                else if (eatMushroom_) { // LIZAMONG
-                    if (direct_ == LEFT) {
-                        if (isJumping_)
-                            Pimage.Player_Move_Lizamong.TransparentBlt(targetDC, offsetX, y_, 64, 54, (3 - imageNum) * 75 + 2, 227, 75, 47, RGB(199, 225, 209));
-                        else
-                            Pimage.Player_Move_Lizamong.TransparentBlt(targetDC, offsetX, y_, 64, 54, 2 * 63 + 1, 54, 65, 54, RGB(199, 225, 209));
-                    }
-                    else if (direct_ == RIGHT) {
-                        if (isJumping_)
-                            Pimage.Player_Move_Lizamong.TransparentBlt(targetDC, offsetX, y_, 64, 54, imageNum * 75, 277, 75, 47, RGB(199, 225, 209));
-                        else
-                            Pimage.Player_Move_Lizamong.TransparentBlt(targetDC, offsetX, y_, 64, 54, imageNum * 62, 0, 65, 54, RGB(199, 225, 209));
-                    }
-                }
-            }
-        }
-    }
-    else {
-        OutputDebugString(L"Player_Move_Pairi is NULL\n");
-    }
+		if (move_) {
+			if (!eatFlower_) {
+				if (!eatMushroom_) { // TINO
+					if (direct_ == LEFT) {
+						if (isJumping_)
+							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, 10, 175, 36, 39, RGB(0, 255, 0));
+						else
+							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, (2 - imageNum) * 56 + 10, 124, 36, 39, RGB(0, 255, 0));
+					}
+					else if (direct_ == RIGHT) {
+						if (isJumping_)
+							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, 2 * 56 + 10, 69, 36, 39, RGB(0, 255, 0));
+						else
+							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, imageNum * 56 + 10, 10, 36, 39, RGB(0, 255, 0));
+					}
+				}
+				else if (eatMushroom_) { // LARGETINO
+					if (direct_ == LEFT) {
+						if (isJumping_)
+							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 49, 54, 10, 175, 36, 39, RGB(0, 255, 0));
+						else
+							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 49, 54, (2 - imageNum) * 56 + 10, 124, 36, 39, RGB(0, 255, 0));
+					}
+					else if (direct_ == RIGHT) {
+						if (isJumping_)
+							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 49, 54, 2 * 56 + 10, 69, 36, 39, RGB(0, 255, 0));
+						else
+							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 49, 54, imageNum * 56 + 10, 10, 36, 39, RGB(0, 255, 0));
+					}
+				}
+			}
+			else if (eatFlower_) {
+				if (!eatMushroom_) { // PAIRI
+					if (direct_ == LEFT) {
+						if (isJumping_)
+							Pimage.Player_Move_Pairi.TransparentBlt(targetDC, offsetX, y_, 39, 39, imageNum * 42, 222, 41, 39, RGB(199, 225, 209));
+						else
+							Pimage.Player_Move_Pairi.TransparentBlt(targetDC, offsetX, y_, 39, 39, imageNum * 40, 83, 39, 39, RGB(199, 225, 209));
+					}
+					else if (direct_ == RIGHT) {
+						if (isJumping_)
+							Pimage.Player_Move_Pairi.TransparentBlt(targetDC, offsetX, y_, 39, 39, imageNum * 42 + 5, 268, 41, 39, RGB(199, 225, 209));
+						else
+							Pimage.Player_Move_Pairi.TransparentBlt(targetDC, offsetX, y_, 39, 39, imageNum * 40 + 2, 42, 39, 39, RGB(199, 225, 209));
+					}
+				}
+				else if (eatMushroom_) { // LIZAMONG
+					if (direct_ == LEFT) {
+						if (isJumping_)
+							Pimage.Player_Move_Lizamong.TransparentBlt(targetDC, offsetX, y_, 64, 54, (3 - imageNum) * 75 + 2, 227, 75, 47, RGB(199, 225, 209));
+						else
+							Pimage.Player_Move_Lizamong.TransparentBlt(targetDC, offsetX, y_, 64, 54, (2 - imageNum) * 63 + 1, 54, 65, 54, RGB(199, 225, 209));
+					}
+					else if (direct_ == RIGHT) {
+						if (isJumping_)
+							Pimage.Player_Move_Lizamong.TransparentBlt(targetDC, offsetX, y_, 64, 54, imageNum * 75, 277, 75, 47, RGB(199, 225, 209));
+						else
+							Pimage.Player_Move_Lizamong.TransparentBlt(targetDC, offsetX, y_, 64, 54, imageNum * 62, 0, 65, 54, RGB(199, 225, 209));
+					}
+				}
+			}
+		}
+		else if (!move_) {
+			if (!eatFlower_) {
+				if (!eatMushroom_) { // TINO
+					if (direct_ == LEFT) {
+						if (isJumping_)
+							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, 10, 175, 36, 39, RGB(0, 255, 0));
+						else
+							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, (2 - imageNum) * 56 + 10, 175, 36, 39, RGB(0, 255, 0));
+					}
+					else if (direct_ == RIGHT) {
+						if (isJumping_)
+							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, 2 * 56 + 10, 69, 36, 39, RGB(0, 255, 0));
+						else
+							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, imageNum * 56 + 10, 69, 36, 39, RGB(0, 255, 0));
+					}
+				}
+				else if (eatMushroom_) { // LARGETINO
+					if (direct_ == LEFT) {
+						if (isJumping_)
+							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 49, 54, 10, 175, 36, 39, RGB(0, 255, 0));
+						else
+							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 49, 54, (2 - imageNum) * 56 + 10, 175, 36, 39, RGB(0, 255, 0));
+					}
+					else if (direct_ == RIGHT) {
+						if (isJumping_)
+							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 49, 54, 2 * 56 + 10, 69, 36, 39, RGB(0, 255, 0));
+						else
+							Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 49, 54, imageNum * 56 + 10, 69, 36, 39, RGB(0, 255, 0));
+					}
+				}
+			}
+			else if (eatFlower_) {
+				if (!eatMushroom_) { // PAIRI
+					if (direct_ == LEFT) {
+						if (isJumping_)
+							Pimage.Player_Move_Pairi.TransparentBlt(targetDC, offsetX, y_, 39, 39, imageNum * 42, 222, 41, 39, RGB(199, 225, 209));
+						else
+							Pimage.Player_Move_Pairi.TransparentBlt(targetDC, offsetX, y_, 39, 39, imageNum * 40, 0, 39, 39, RGB(199, 225, 209));
+					}
+					else if (direct_ == RIGHT) {
+						if (isJumping_)
+							Pimage.Player_Move_Pairi.TransparentBlt(targetDC, offsetX, y_, 39, 39, imageNum * 42 + 5, 268, 41, 39, RGB(199, 225, 209));
+						else
+							Pimage.Player_Move_Pairi.TransparentBlt(targetDC, offsetX, y_, 39, 39, 40, 0, 39, 39, RGB(199, 225, 209));
+					}
+				}
+				else if (eatMushroom_) { // LIZAMONG
+					if (direct_ == LEFT) {
+						if (isJumping_)
+							Pimage.Player_Move_Lizamong.TransparentBlt(targetDC, offsetX, y_, 64, 54, (3 - imageNum) * 75 + 2, 227, 75, 47, RGB(199, 225, 209));
+						else
+							Pimage.Player_Move_Lizamong.TransparentBlt(targetDC, offsetX, y_, 64, 54, 2 * 63 + 1, 54, 65, 54, RGB(199, 225, 209));
+					}
+					else if (direct_ == RIGHT) {
+						if (isJumping_)
+							Pimage.Player_Move_Lizamong.TransparentBlt(targetDC, offsetX, y_, 64, 54, imageNum * 75, 277, 75, 47, RGB(199, 225, 209));
+						else
+							Pimage.Player_Move_Lizamong.TransparentBlt(targetDC, offsetX, y_, 64, 54, imageNum * 62, 0, 65, 54, RGB(199, 225, 209));
+					}
+				}
+			}
+		}
+	}
+	else {
+		OutputDebugString(L"Player_Move_Pairi is NULL\n");
+	}
 }
 
 void Player_::Move() {
-    if (isFallingIntoHole) {
-        const float fallSpeed = 2.0f;
-        fallProgress_ += fallSpeed;
-        y_ += static_cast<int>(fallSpeed);
+	if (isFallingIntoHole) {
+		const float fallSpeed = 2.0f;
+		fallProgress_ += fallSpeed;
+		y_ += static_cast<int>(fallSpeed);
 
-        if (fallProgress_ >= 100.0f) {
-            PostQuitMessage(0);
-        }
-        return;
-    }
+		if (fallProgress_ >= 100.0f) {
+			PostQuitMessage(0);
+		}
+		return;
+	}
 
-    // 깃발 블럭을 타고 내려가는 중이거나 오른쪽으로 이동 중이면 다른 입력 무시
-    if (isTouchingFlag || isMovingRightAfterFlag) {
-        if (isTouchingFlag) {
-            const float slideSpeed = 4.0f; // 내려가는 속도
-            flagSlideProgress += slideSpeed;
-            y_ += static_cast<int>(slideSpeed);
+	int newX = x_;
+	bool intendToMoveLeft = false;
+	bool intendToMoveRight = false;
 
-            // 플레이어의 히트박스 높이를 고려하여 바닥에 도달했는지 확인
-            if (y_ >= defaultGroundY_) {
-                y_ = defaultGroundY_;
-                isTouchingFlag = false;
-                direct_ = RIGHT;
-                move_ = false;
-                isMovingRightAfterFlag = true;
-                flagSlideProgress = 0.0f;
-            }
-        }
-        else if (isMovingRightAfterFlag) {
-            const float moveRightSpeed = 2.0f; // 오른쪽 이동 속도
-            const float moveRightDistance = 100.0f; // 오른쪽으로 이동할 거리
-            flagMoveRightProgress += moveRightSpeed;
-            x_ += static_cast<int>(moveRightSpeed);
-            move_ = true;
-            time++;
-            if (time == 3) {
-                if (State() == TINO || State() == LARGETINO || State() == LIZAMONG || State() == LIZAD) {
-                    imageNum = (imageNum + 1) % 3;
-                }
-                else if (State() == PAIRI) {
-                    if (isJumping_) imageNum = (imageNum + 1) % 5;
-                    else imageNum = (imageNum + 1) % 6;
-                }
-                time = 0;
-            }
-            if (flagMoveRightProgress >= moveRightDistance) {
-                Images.NextStage();
-                isMovingRightAfterFlag = false;
-                flagMoveRightProgress = 0.0f;
-            }
-        }
-        return;
-    }
+	// 깃발 블럭을 타고 내려가는 중이거나 오른쪽으로 이동 중이면 다른 입력 무시
+	if (isTouchingFlag || isMovingRightAfterFlag) {
+		if (isTouchingFlag) {
+			const float slideSpeed = 4.0f; // 내려가는 속도
+			flagSlideProgress += slideSpeed;
+			y_ += static_cast<int>(slideSpeed);
 
-    bool moved = false;
-    int prevX = x_;
-    int prevY = y_;
-    int playerHitboxX, playerHitboxY, playerHitboxWidth, playerHitboxHeight;
-    GetHitbox(playerHitboxX, playerHitboxY, playerHitboxWidth, playerHitboxHeight);
-
-    // 몬스터 이동 및 충돌 처리
-    if (!Images.monsters[Images.currentStage - 1].empty()) {
-        for (auto& monster : Images.monsters[Images.currentStage - 1]) {
-            if (!monster.isAlive) continue; // 죽은 몬스터는 처리하지 않음
-
-            // 구멍에 빠진 경우
-            if (monster.isFalling) {
-                const float fallSpeed = 2.0f;
-                monster.fallProgress += fallSpeed;
-                monster.y += static_cast<int>(fallSpeed);
-                if (monster.fallProgress >= 100.0f) {
-                    monster.isAlive = false; // 사라짐
-                }
-                continue;
-            }
-
-            // 방향 변경 타이머 업데이트
-            monster.directionTimer += 0.016f; // 16ms 프레임 기준
-            if (monster.directionTimer >= monster.directionChangeInterval) {
-                // 5~10초 사이에서 새로운 간격 설정
-                monster.directionChangeInterval = static_cast<float>(rand() % 6 + 5);
-                monster.directionTimer = 0.0f;
-                // 방향 반전
-                monster.direction = (monster.direction == LEFT) ? RIGHT : LEFT;
-            }
-
-            // 몬스터 이동
-            int newMonsterX = monster.x;
-            if (monster.direction == LEFT) {
-                newMonsterX -= static_cast<int>(monster.speed);
-            }
-            else if (monster.direction == RIGHT) {
-                newMonsterX += static_cast<int>(monster.speed);
-            }
-
-            // 블럭 충돌 체크
-            bool canMove = true;
-            for (const auto& block : Images.blocks[Images.currentStage - 1]) {
-                int blockLeft = block.x;
-                int blockRight = block.x + block.width;
-                int blockTop = block.y;
-                int blockBottom = block.y + block.height;
-
-                int monsterLeft = newMonsterX;
-                int monsterRight = newMonsterX + monster.width;
-                int monsterTop = monster.y;
-                int monsterBottom = monster.y + monster.height;
-
-                bool overlapX = monsterRight > blockLeft && monsterLeft < blockRight;
-                bool overlapY = monsterBottom > blockTop && monsterTop < blockBottom;
-
-                if (overlapX && overlapY) {
-                    canMove = false;
-                    monster.direction = (monster.direction == LEFT) ? RIGHT : LEFT; // 방향 반전
-                    break;
-                }
-            }
-
-            if (canMove) {
-                for (const auto& qblock : Images.questionBlocks[Images.currentStage - 1]) {
-                    int qblockLeft = qblock.x;
-                    int qblockRight = qblock.x + qblock.width;
-                    int qblockTop = qblock.y;
-                    int qblockBottom = qblock.y + qblock.height;
-
-                    int monsterLeft = newMonsterX;
-                    int monsterRight = newMonsterX + monster.width;
-                    int monsterTop = monster.y;
-                    int monsterBottom = monster.y + monster.height;
-
-                    bool overlapX = monsterRight > qblockLeft && monsterLeft < qblockRight;
-                    bool overlapY = monsterBottom > qblockTop && monsterTop < qblockBottom;
-
-                    if (overlapX && overlapY) {
-                        canMove = false;
-                        monster.direction = (monster.direction == LEFT) ? RIGHT : LEFT;
-                        break;
-                    }
-                }
-            }
-
-            if (canMove) {
-                for (size_t i = 0; i < Images.tBlocks[Images.currentStage - 1].size(); i++) {
-                    if (Images.currentStage == HIDDEN && i == 2) continue;
-
-                    const auto& tblock = Images.tBlocks[Images.currentStage - 1][i];
-                    int tblockLeft = tblock.x;
-                    int tblockRight = tblock.x + tblock.width;
-                    int tblockTop = tblock.y;
-                    int tblockBottom = tblock.y + tblock.height;
-
-                    int monsterLeft = newMonsterX;
-                    int monsterRight = newMonsterX + monster.width;
-                    int monsterTop = monster.y;
-                    int monsterBottom = monster.y + monster.height;
-
-                    bool overlapX = monsterRight > tblockLeft && monsterLeft < tblockRight;
-                    bool overlapY = monsterBottom > tblockTop && monsterTop < tblockBottom;
-
-                    if (overlapX && overlapY) {
-                        canMove = false;
-                        monster.direction = (monster.direction == LEFT) ? RIGHT : LEFT;
-                        break;
-                    }
-                }
-            }
-
-            if (canMove) {
-                monster.x = newMonsterX;
-            }
-
-            // 구멍 충돌 체크
-            for (const auto& hole : Images.holes[Images.currentStage - 1]) {
-                int holeLeft = hole.x;
-                int holeRight = hole.x + hole.width;
-                int holeTop = hole.y;
-
-                int monsterBottomCenterX = monster.x + monster.width / 2;
-                int monsterBottomY = monster.y + monster.height;
-
-                bool withinHoleX = monsterBottomCenterX >= holeLeft && monsterBottomCenterX <= holeRight;
-                int prevMonsterBottom = monster.y + monster.height;
-                bool atHoleTop = prevMonsterBottom >= holeTop - 5;
-
-                if (withinHoleX && atHoleTop) {
-                    monster.isFalling = true;
-                    monster.fallProgress = 0.0f;
-                    break;
-                }
-            }
-
-            // 플레이어와 충돌 체크
-            int monsterLeft = monster.x;
-            int monsterRight = monster.x + monster.width;
-            int monsterTop = monster.y;
-            int monsterBottom = monster.y + monster.height;
-
-            int playerLeft = hitbox_.left;
-            int playerRight = hitbox_.right;
-            int playerTop = hitbox_.top;
-            int playerBottom = hitbox_.bottom;
-
-            bool overlapX = playerRight > monsterLeft && playerLeft < monsterRight;
-            bool overlapY = playerBottom > monsterTop && playerTop < monsterBottom;
-
-            if (overlapX && overlapY) {
-                int prevPlayerBottom = prevY + playerHitboxHeight;
-                // 플레이어가 몬스터를 밟은 경우 (위에서 아래로)
-                if (prevPlayerBottom <= monsterTop + 5 && jumpVelocity_ > 0) {
-                    monster.isAlive = false; // 몬스터 죽음
-                    jumpVelocity_ = JUMP_VELOCITY/2; // 플레이어 점프
+			// 플레이어의 히트박스 높이를 고려하여 바닥에 도달했는지 확인
+			if (y_ >= defaultGroundY_) {
+				y_ = defaultGroundY_;
+				isTouchingFlag = false;
+				direct_ = RIGHT;
+				move_ = false;
+				isMovingRightAfterFlag = true;
+				flagSlideProgress = 0.0f;
+			}
+		}
+		else if (isMovingRightAfterFlag) {
+			const float moveRightSpeed = 2.0f; // 오른쪽 이동 속도
+			const float moveRightDistance = 100.0f; // 오른쪽으로 이동할 거리
+			flagMoveRightProgress += moveRightSpeed;
+			x_ += static_cast<int>(moveRightSpeed);
+			move_ = true;
+			time++;
+			if (time == 3) {
+				if (State() == TINO || State() == LARGETINO || State() == LIZAMONG || State() == LIZAD) {
+					imageNum = (imageNum + 1) % 3;
 				}
-                else {
-                    // 플레이어가 몬스터에 닿았을 때
-                    if (State() == TINO)  {
-                        ResetPosition(); // 플레이어 초기화
-                    }
-                    else if (State() == LARGETINO){
-                        eatMushroom_ = false;
-                        }
-                    else if (State() == PAIRI) {
-                        eatFlower_ = false; // 꽃 먹음
-                        eatMushroom_ = false; // 버섯 상태 해제
-                       
-                    }
-                    else if (State() == LIZAMONG) {
-                        eatFlower_ = true; // 꽃 상태 해제
-                        eatMushroom_ = false; // 버섯 상태 해제
-                       
-                    }
-                }
-            }
-        }
-
-        // 죽은 몬스터 제거
-        auto& monsterList = Images.monsters[Images.currentStage - 1];
-        monsterList.erase(std::remove_if(monsterList.begin(), monsterList.end(),
-            [](const Image_::Monster& m) { return !m.isAlive; }), monsterList.end());
-    }
-
-    // 깃발 블럭 충돌 감지
-    if (!isFallingIntoHole && !Images.flagBlocks[Images.currentStage - 1].empty()) {
-        for (const auto& flagBlock : Images.flagBlocks[Images.currentStage - 1]) {
-            int flagLeft = flagBlock.x;
-            int flagRight = flagBlock.x + flagBlock.width;
-            int flagTop = flagBlock.y;
-            int flagBottom = flagBlock.y + flagBlock.height;
-
-            int playerLeft = hitbox_.left;
-            int playerRight = hitbox_.right;
-            int playerTop = hitbox_.top;
-            int playerBottom = hitbox_.bottom;
-
-            bool overlapX = playerRight > flagLeft && playerLeft < flagRight;
-            bool overlapY = playerBottom > flagTop && playerTop < flagBottom;
-
-            if (overlapX && overlapY) {
-                isTouchingFlag = true;
-                flagBlockStage = Images.currentStage;
-                flagSlideProgress = 0.0f;
-                flagMoveRightProgress = 0.0f;
-                isMovingRightAfterFlag = false;
-                isJumping_ = false;
-                jumpVelocity_ = 0.0f;
-                break;
-            }
-        }
-    }
-
-    // 키 입력 처리
-    intendToMoveLeft = (GetAsyncKeyState(VK_LEFT) & 0x8000) != 0;
-    intendToMoveRight = (GetAsyncKeyState(VK_RIGHT) & 0x8000) != 0;
-    bool intendToJump = (GetAsyncKeyState(VK_UP) & 0x8000) != 0 && !jumpKeyPressed;
-    bool intendToAttack = (GetAsyncKeyState(VK_SPACE) & 0x8000) != 0 && !attackKeyPressed;
-
-    if (intendToMoveLeft) {
-        direct_ = LEFT;
-        move_ = true;
-        moved = true;
-    }
-    if (intendToMoveRight) {
-        direct_ = RIGHT;
-        move_ = true;
-        moved = true;
-    }
-    if (intendToJump && !isJumping_ && !isFallingIntoHole) {
-        isJumping_ = true;
-        jumpVelocity_ = JUMP_VELOCITY;
-        jumpKeyPressed = true;
-    }
-    if (intendToAttack) {
-        Attack();
-        attackKeyPressed = true;
-    }
-
-    // 키 해제 시 플래그 리셋
-    if (!(GetAsyncKeyState(VK_UP) & 0x8000)) jumpKeyPressed = false;
-    if (!(GetAsyncKeyState(VK_SPACE) & 0x8000)) attackKeyPressed = false;
-
-    if (move_) {
-        time++;
-        if (time == 3) {
-            if (State() == TINO || State() == LARGETINO || State() == LIZAMONG || State() == LIZAD) {
-                imageNum = (imageNum + 1) % 3;
-            }
-            else if (State() == PAIRI) {
-                if (isJumping_) imageNum = (imageNum + 1) % 5;
-                else imageNum = (imageNum + 1) % 6;
-            }
-            time = 0;
-        }
-    }
-
-    if (State() == LIZAMONG || State() == LARGETINO) {
-        if (Images.NowStage() == STAGE1 || Images.NowStage() == STAGE2) defaultGroundY_ = 433;
-        else if (Images.NowStage() == HIDDEN) defaultGroundY_ = 421;
-        else if (Images.NowStage() == TUTORIAL) defaultGroundY_ = 451;
-    }
-    else {
-        if (Images.NowStage() == STAGE1 || Images.NowStage() == STAGE2) defaultGroundY_ = 447;
-        else if (Images.NowStage() == HIDDEN) defaultGroundY_ = 435;
-        else if (Images.NowStage() == TUTORIAL) defaultGroundY_ = 465;
-    }
-
-    bool canMoveHorizontally = true;
-    if (intendToMoveLeft) newX -= MOVE;
-    if (intendToMoveRight) newX += MOVE;
-
-    if (intendToMoveLeft || intendToMoveRight) {
-        int checkHitboxX = newX;
-        switch (State()) {
-        case TINO: checkHitboxX += 10; break;
-        case LARGETINO:
-            if (direct_ == RIGHT) checkHitboxX += 10;
-            else checkHitboxX += 12;
-            break;
-        case PAIRI: if (direct_ == RIGHT) checkHitboxX += 14; break;
-        case LIZAD: if (direct_ == RIGHT) checkHitboxX += 20; break;
-        case LIZAMONG:
-            if (direct_ == RIGHT) checkHitboxX += 26;
-            else checkHitboxX += 8;
-            break;
-        default: if (direct_ == RIGHT) checkHitboxX += 14; break;
-        }
-
-        for (const auto& block : Images.blocks[Images.currentStage - 1]) {
-            int blockLeft = block.x;
-            int blockRight = block.x + block.width;
-            int blockTop = block.y;
-            int blockBottom = block.y + block.height;
-
-            int newPlayerLeft = checkHitboxX;
-            int newPlayerRight = checkHitboxX + playerHitboxWidth;
-            int playerTop = playerHitboxY;
-            int playerBottom = playerHitboxY + playerHitboxHeight;
-
-            bool overlapX = newPlayerRight > blockLeft && newPlayerLeft < blockRight;
-            bool overlapY = playerBottom > blockTop && playerTop < blockBottom;
-
-            if (overlapX && overlapY) {
-                canMoveHorizontally = false;
-                break;
-            }
-        }
-
-        if (canMoveHorizontally) {
-            for (const auto& qblock : Images.questionBlocks[Images.currentStage - 1]) {
-                int qblockLeft = qblock.x;
-                int qblockRight = qblock.x + qblock.width;
-                int qblockTop = qblock.y;
-                int qblockBottom = qblock.y + qblock.height;
-
-                int newPlayerLeft = checkHitboxX;
-                int newPlayerRight = checkHitboxX + playerHitboxWidth;
-                int playerTop = playerHitboxY;
-                int playerBottom = playerHitboxY + playerHitboxHeight;
-
-                bool overlapX = newPlayerRight > qblockLeft && newPlayerLeft < qblockRight;
-                bool overlapY = playerBottom > qblockTop && playerTop < qblockBottom;
-
-                if (overlapX && overlapY) {
-                    canMoveHorizontally = false;
-                    break;
-                }
-            }
-        }
-
-        if (canMoveHorizontally) {
-            for (size_t i = 0; i < Images.tBlocks[Images.currentStage - 1].size(); i++) {
-                // 히든 스테이지에서 tblock1_3 (인덱스 2)는 충돌 차단에서 제외
-                if (Images.currentStage == HIDDEN && i == 2) continue;
-
-                const auto& tblock = Images.tBlocks[Images.currentStage - 1][i];
-                int tblockLeft = tblock.x;
-                int tblockRight = tblock.x + tblock.width;
-                int tblockTop = tblock.y;
-                int tblockBottom = tblock.y + tblock.height;
-
-                int newPlayerLeft = checkHitboxX;
-                int newPlayerRight = checkHitboxX + playerHitboxWidth;
-                int playerTop = playerHitboxY;
-                int playerBottom = playerHitboxY + playerHitboxHeight;
-
-                bool overlapX = newPlayerRight > tblockLeft && newPlayerLeft < tblockRight;
-                bool overlapY = playerBottom > tblockTop && playerTop < tblockBottom;
-
-                if (overlapX && overlapY) {
-                    canMoveHorizontally = false;
-                    break;
-                }
-            }
-        }
-
-        if (canMoveHorizontally) {
-            x_ = newX;
-        }
-        else {
-            move_ = true;
-            imageNum = 0;
-        }
-    }
-
-    if (isJumping_) {
-        y_ += static_cast<int>(jumpVelocity_);
-        jumpVelocity_ += GRAVITY;
-    }
-
-    GetHitbox(playerHitboxX, playerHitboxY, playerHitboxWidth, playerHitboxHeight);
-
-    bool onBlock = false;
-    int newGroundY = defaultGroundY_;
-
-    for (const auto& block : Images.blocks[Images.currentStage - 1]) {
-        int blockLeft = block.x;
-        int blockRight = block.x + block.width;
-        int blockTop = block.y;
-        int blockBottom = block.y + block.height;
-
-        int playerLeft = hitbox_.left;
-        int playerRight = hitbox_.right;
-        int playerTop = hitbox_.top;
-        int playerBottom = hitbox_.bottom;
-
-        bool overlapX = playerRight > blockLeft && playerLeft < blockRight;
-        bool overlapY = playerBottom > blockTop && playerTop < blockBottom;
-
-        if (overlapX && overlapY) {
-            int prevPlayerBottom = prevY + playerHitboxHeight;
-            if (prevPlayerBottom <= blockTop + 5 && jumpVelocity_ > 0) {
-                y_ = blockTop - playerHitboxHeight;
-                isJumping_ = false;
-                jumpVelocity_ = 0.0f;
-                onBlock = true;
-                newGroundY = blockTop - playerHitboxHeight;
-            }
-            else if (prevY >= blockBottom && jumpVelocity_ < 0) {
-                y_ = blockBottom;
-                jumpVelocity_ = 0.0f;
-            }
-        }
-    }
-
-    if (!onBlock) {
-        for (auto& qblock : Images.questionBlocks[Images.currentStage - 1]) {
-            int qblockLeft = qblock.x;
-            int qblockRight = qblock.x + qblock.width;
-            int qblockTop = qblock.y;
-            int qblockBottom = qblock.y + qblock.height;
-
-            int playerLeft = hitbox_.left;
-            int playerRight = hitbox_.right;
-            int playerTop = hitbox_.top;
-            int playerBottom = hitbox_.bottom;
-
-            bool overlapX = playerRight > qblockLeft && playerLeft < qblockRight;
-            bool overlapY = playerBottom > qblockTop && playerTop < qblockBottom;
-
-            if (overlapX && overlapY) {
-                int prevPlayerBottom = prevY + playerHitboxHeight;
-                int prevPlayerTop = prevY;
-                if (prevPlayerBottom <= qblockTop && jumpVelocity_ > 0) {
-                    y_ = qblockTop - playerHitboxHeight;
-                    isJumping_ = false;
-                    jumpVelocity_ = 0.0f;
-                    onBlock = true;
-                    newGroundY = qblockTop - playerHitboxHeight;
-                }
-                else if (prevPlayerTop >= qblockBottom && jumpVelocity_ < 0) {
-                    if (!qblock.hit) {
-                        qblock.hit = true;
-                        eatFlower_ = true;
-                    }
-                    y_ = qblockBottom;
-                    jumpVelocity_ = 0.0f;
-                }
-            }
-        }
-    }
-
-    if (!onBlock) {
-        for (const auto& tblock : Images.tBlocks[Images.currentStage - 1]) {
-            int tblockLeft = tblock.x;
-            int tblockRight = tblock.x + tblock.width;
-            int tblockTop = tblock.y;
-            int tblockBottom = tblock.y + tblock.height;
-
-            int playerLeft = playerHitboxX;
-            int playerRight = playerHitboxX + playerHitboxWidth;
-            int playerTop = playerHitboxY;
-            int playerBottom = playerHitboxY + playerHitboxHeight;
-
-            bool overlapX = playerRight > tblockLeft && playerLeft < tblockRight;
-            bool overlapY = playerBottom > tblockTop && playerTop < tblockBottom;
-
-            if (overlapX && overlapY) {
-                int prevPlayerBottom = prevY + playerHitboxHeight;
-                int prevPlayerTop = prevY;
-
-                if (prevPlayerBottom <= tblockTop && jumpVelocity_ > 0) {
-                    y_ = tblockTop - playerHitboxHeight;
-                    isJumping_ = false;
-                    jumpVelocity_ = 0.0f;
-                    onBlock = true;
-                    newGroundY = tblockTop - playerHitboxHeight;
-                }
-                else if (prevPlayerTop >= tblockBottom && jumpVelocity_ < 0) {
-                    y_ = tblockBottom;
-                    jumpVelocity_ = 0.0f;
-                }
-            }
-        }
-    }
-
-    if (!onBlock) {
-        for (const auto& hole : Images.holes[Images.currentStage - 1]) {
-            int holeLeft = hole.x;
-            int holeRight = hole.x + hole.width;
-            int holeTop = hole.y;
-
-            int playerBottomCenterX = hitbox_.left + (hitbox_.right - hitbox_.left) / 2;
-            int playerBottomY = hitbox_.bottom;
-
-            bool withinHoleX = playerBottomCenterX >= holeLeft && playerBottomCenterX <= holeRight;
-
-            int prevPlayerBottom = prevY + playerHitboxHeight;
-            bool atHoleTop = prevPlayerBottom >= holeTop - 5 && isJumping_ == FALSE;
-
-            if (withinHoleX && atHoleTop) {
-                isJumping_ = false;
-                isFallingIntoHole = true;
-                fallProgress_ = 0.0f;
-                break;
-            }
-        }
-    }
-
-    // 스테이지1 -> 히든 입장
-    if (!isFallingIntoHole && !Images.tBlocks[Images.currentStage - 1].empty() && Images.tBlocks[Images.currentStage - 1].size() >= 4) {
-        const auto& tblock4 = Images.tBlocks[Images.currentStage - 1][3]; // tblock0_4 in Stage 1
-        int tblockLeft = tblock4.x;
-        int tblockRight = tblock4.x + tblock4.width;
-        int tblockTop = tblock4.y;
-
-        int playerLeft = playerHitboxX;
-        int playerRight = playerHitboxX + playerHitboxWidth;
-        bool overlapX = playerRight > tblockLeft && playerLeft < tblockRight;
-
-        if (overlapX && y_ == tblockTop - playerHitboxHeight && GetAsyncKeyState(VK_DOWN) & 0x8000) {
-            Images.EnterHiddenStage();
-        }
-    }
-
-    // 히든 -> 스테이지1 복귀
-    if (!isFallingIntoHole && Images.currentStage == HIDDEN && !Images.tBlocks[Images.currentStage - 1].empty()) {
-        const auto& tblock3 = Images.tBlocks[Images.currentStage - 1][2]; // tblock1_3 in Hidden Stage
-        int tblockLeft = tblock3.x; // 614
-        int tblockTop = tblock3.y; // 388
-        int tblockBottom = tblock3.y + tblock3.height; // 474
-
-        // 현재 히트박스
-        int playerRight = hitbox_.right;
-        int playerTop = hitbox_.top;
-        int playerBottom = hitbox_.bottom;
-
-        // 이전 프레임의 히트박스 오른쪽 위치 계산
-        int prevHitboxX, prevHitboxY, prevHitboxWidth, prevHitboxHeight;
-        int tempX = x_;
-        x_ = prevX; // 이전 위치로 임시 변경
-        GetHitbox(prevHitboxX, prevHitboxY, prevHitboxWidth, prevHitboxHeight); // 이전 히트박스 계산
-        int prevPlayerRight = prevHitboxX + prevHitboxWidth; // 이전 히트박스의 오른쪽 위치
-        x_ = tempX; // 원래 위치로 복원
-
-        // 충돌 조건: 오른쪽으로 이동 중, 현재 오른쪽 면이 tblockLeft에 도달, 이전 오른쪽 면은 tblockLeft보다 왼쪽에 있었음
-        bool collideWithLeftFace = intendToMoveRight && playerRight + 4 >= tblockLeft && prevPlayerRight < tblockLeft;
-        bool yOverlap = playerBottom > tblockTop && playerTop < tblockBottom;
-
-        if (collideWithLeftFace && yOverlap) {
-            Images.QuitHiddenStage();
-            x_ = 2616;
-            y_ = 372;
-            groundY_ = 447;
-            defaultGroundY_ = 447;
-            move_ = false;
-            isJumping_ = true;
-            jumpVelocity_ = 0.0f;
-            isFallingIntoHole = false;
-            direct_ = RIGHT;
-            fallProgress_ = 0.0f;
-        }
-    }
-
-    if (!isFallingIntoHole && groundY_ != defaultGroundY_) {
-        bool stillOnBlock = false;
-
-        for (const auto& block : Images.blocks[Images.currentStage - 1]) {
-            int blockLeft = block.x;
-            int blockRight = block.x + block.width;
-            int blockTop = block.y;
-
-            int playerLeft = hitbox_.left;
-            int playerRight = hitbox_.right;
-            bool overlapX = playerRight > blockLeft && playerLeft < blockRight;
-
-            if (overlapX && groundY_ == blockTop - playerHitboxHeight) {
-                stillOnBlock = true;
-                break;
-            }
-        }
-
-        if (!stillOnBlock) {
-            for (const auto& qblock : Images.questionBlocks[Images.currentStage - 1]) {
-                int qblockLeft = qblock.x;
-                int qblockRight = qblock.x + qblock.width;
-                int qblockTop = qblock.y;
-
-                int playerLeft = hitbox_.left;
-                int playerRight = hitbox_.right;
-                bool overlapX = playerRight > qblockLeft && playerLeft < qblockRight;
-
-                if (overlapX && groundY_ == qblockTop - playerHitboxHeight) {
-                    stillOnBlock = true;
-                    break;
-                }
-            }
-        }
-
-        if (!stillOnBlock) {
-            for (const auto& tblock : Images.tBlocks[Images.currentStage - 1]) {
-                int tblockLeft = tblock.x;
-                int tblockRight = tblock.x + tblock.width;
-                int tblockTop = tblock.y;
-
-                int playerLeft = playerHitboxX;
-                int playerRight = playerHitboxX + playerHitboxWidth;
-                bool overlapX = playerRight > tblockLeft && playerLeft < tblockRight;
-
-                if (overlapX && groundY_ == tblockTop - playerHitboxHeight) {
-                    stillOnBlock = true;
-                    break;
-                }
-            }
-        }
-
-        if (!stillOnBlock) {
-            groundY_ = defaultGroundY_;
-            if (y_ < defaultGroundY_) {
-                isJumping_ = true;
-            }
-        }
-    }
-
-    if (onBlock) {
-        groundY_ = newGroundY;
-    }
-
-    if (!onBlock && !isFallingIntoHole && y_ >= defaultGroundY_) {
-        y_ = defaultGroundY_;
-        isJumping_ = false;
-        jumpVelocity_ = 0.0f;
-    }
-
-    int stageWidth = (Images.NowStage() == TUTORIAL ? Pimage.mStageTutorial.GetWidth() :
-        Images.NowStage() == STAGE1 ? Pimage.mStage1.GetWidth() :
-        Images.NowStage() == STAGE2 ? Pimage.mStage2.GetWidth() :
-        Images.NowStage() == HIDDEN ? Pimage.mStageHidden.GetWidth() : 0);
-
-    int playerWidth = 0;
-    switch (State()) {
-    case TINO: playerWidth = 36; break;
-    case PAIRI: playerWidth = 39; break;
-    case LIZAD: playerWidth = 46; break;
-    case LIZAMONG: playerWidth = 66; break;
-    default: playerWidth = 36;
-    }
-
-    if (x_ < 0) {
-        x_ = 0;
-        move_ = true;
-        imageNum = 0;
-    }
-    if (x_ + playerWidth > stageWidth) {
-        x_ = stageWidth - playerWidth; // 맵 끝에 고정
-        move_ = true;
-        imageNum = 0;
-    }
-
-    if (!moved) {
-        move_ = false;
-        if (!isJumping_) imageNum = 0;
-        else if (isJumping_) {
-            time++;
-            if (time == 3) {
-                if (State() == PAIRI) {
-                    imageNum = (imageNum + 1) % 3;
-                }
-                else if (State() == LIZAMONG) {
-                    imageNum = (imageNum + 1) % 4;
-                }
-                time = 0;
-            }
-        }
-    }
-    else if (!canMoveHorizontally && (intendToMoveLeft || intendToMoveRight) && !isJumping_) {
-        move_ = true;
-        imageNum = 0;
-    }
-    if (fireballCooldown > 0) {
-        fireballCooldown--;
-    }
-    State();
+				else if (State() == PAIRI) {
+					if (isJumping_) imageNum = (imageNum + 1) % 5;
+					else imageNum = (imageNum + 1) % 6;
+				}
+				time = 0;
+			}
+			if (flagMoveRightProgress >= moveRightDistance) {
+				Images.NextStage();
+				isMovingRightAfterFlag = false;
+				flagMoveRightProgress = 0.0f;
+			}
+		}
+		return;
+	}
+
+	bool moved = false;
+	int prevX = x_;
+	int prevY = y_;
+	int playerHitboxX, playerHitboxY, playerHitboxWidth, playerHitboxHeight;
+	GetHitbox(playerHitboxX, playerHitboxY, playerHitboxWidth, playerHitboxHeight);
+
+	// 몬스터 이동 및 충돌 처리
+	if (!Images.monsters[Images.currentStage - 1].empty()) {
+		for (auto& monster : Images.monsters[Images.currentStage - 1]) {
+			if (!monster.isAlive) continue; // 죽은 몬스터는 처리하지 않음
+
+			// 구멍에 빠진 경우
+			if (monster.isFalling) {
+				const float fallSpeed = 2.0f;
+				monster.fallProgress += fallSpeed;
+				monster.y += static_cast<int>(fallSpeed);
+				if (monster.fallProgress >= 100.0f) {
+					monster.isAlive = false; // 사라짐
+				}
+				continue;
+			}
+
+			// 방향 변경 타이머 업데이트
+			monster.directionTimer += 0.016f; // 16ms 프레임 기준
+			if (monster.directionTimer >= monster.directionChangeInterval) {
+				// 5~10초 사이에서 새로운 간격 설정
+				monster.directionChangeInterval = static_cast<float>(rand() % 6 + 5);
+				monster.directionTimer = 0.0f;
+				// 방향 반전
+				monster.direction = (monster.direction == LEFT) ? RIGHT : LEFT;
+			}
+
+			// 몬스터 이동
+			int newMonsterX = monster.x;
+			if (monster.direction == LEFT) {
+				newMonsterX -= static_cast<int>(monster.speed);
+			}
+			else if (monster.direction == RIGHT) {
+				newMonsterX += static_cast<int>(monster.speed);
+			}
+
+			// 블럭 충돌 체크
+			bool canMove = true;
+			for (const auto& block : Images.blocks[Images.currentStage - 1]) {
+				int blockLeft = block.x;
+				int blockRight = block.x + block.width;
+				int blockTop = block.y;
+				int blockBottom = block.y + block.height;
+
+				int monsterLeft = newMonsterX;
+				int monsterRight = newMonsterX + monster.width;
+				int monsterTop = monster.y;
+				int monsterBottom = monster.y + monster.height;
+
+				bool overlapX = monsterRight > blockLeft && monsterLeft < blockRight;
+				bool overlapY = monsterBottom > blockTop && monsterTop < blockBottom;
+
+				if (overlapX && overlapY) {
+					canMove = false;
+					monster.direction = (monster.direction == LEFT) ? RIGHT : LEFT; // 방향 반전
+					break;
+				}
+			}
+
+			if (canMove) {
+				for (const auto& qblock : Images.questionBlocks[Images.currentStage - 1]) {
+					int qblockLeft = qblock.x;
+					int qblockRight = qblock.x + qblock.width;
+					int qblockTop = qblock.y;
+					int qblockBottom = qblock.y + qblock.height;
+
+					int monsterLeft = newMonsterX;
+					int monsterRight = newMonsterX + monster.width;
+					int monsterTop = monster.y;
+					int monsterBottom = monster.y + monster.height;
+
+					bool overlapX = monsterRight > qblockLeft && monsterLeft < qblockRight;
+					bool overlapY = monsterBottom > qblockTop && monsterTop < qblockBottom;
+
+					if (overlapX && overlapY) {
+						canMove = false;
+						monster.direction = (monster.direction == LEFT) ? RIGHT : LEFT;
+						break;
+					}
+				}
+			}
+
+			if (canMove) {
+				for (size_t i = 0; i < Images.tBlocks[Images.currentStage - 1].size(); i++) {
+					if (Images.currentStage == HIDDEN && i == 2) continue;
+
+					const auto& tblock = Images.tBlocks[Images.currentStage - 1][i];
+					int tblockLeft = tblock.x;
+					int tblockRight = tblock.x + tblock.width;
+					int tblockTop = tblock.y;
+					int tblockBottom = tblock.y + tblock.height;
+
+					int monsterLeft = newMonsterX;
+					int monsterRight = newMonsterX + monster.width;
+					int monsterTop = monster.y;
+					int monsterBottom = monster.y + monster.height;
+
+					bool overlapX = monsterRight > tblockLeft && monsterLeft < tblockRight;
+					bool overlapY = monsterBottom > tblockTop && monsterTop < tblockBottom;
+
+					if (overlapX && overlapY) {
+						canMove = false;
+						monster.direction = (monster.direction == LEFT) ? RIGHT : LEFT;
+						break;
+					}
+				}
+			}
+
+			if (canMove) {
+				monster.x = newMonsterX;
+			}
+
+			// 구멍 충돌 체크
+			for (const auto& hole : Images.holes[Images.currentStage - 1]) {
+				int holeLeft = hole.x;
+				int holeRight = hole.x + hole.width;
+				int holeTop = hole.y;
+
+				int monsterBottomCenterX = monster.x + monster.width / 2;
+				int monsterBottomY = monster.y + monster.height;
+
+				bool withinHoleX = monsterBottomCenterX >= holeLeft && monsterBottomCenterX <= holeRight;
+				int prevMonsterBottom = monster.y + monster.height;
+				bool atHoleTop = prevMonsterBottom >= holeTop - 5;
+
+				if (withinHoleX && atHoleTop) {
+					monster.isFalling = true;
+					monster.fallProgress = 0.0f;
+					break;
+				}
+			}
+
+			// 플레이어와 충돌 체크
+			int monsterLeft = monster.x;
+			int monsterRight = monster.x + monster.width;
+			int monsterTop = monster.y;
+			int monsterBottom = monster.y + monster.height;
+
+			int playerLeft = hitbox_.left;
+			int playerRight = hitbox_.right;
+			int playerTop = hitbox_.top;
+			int playerBottom = hitbox_.bottom;
+
+			bool overlapX = playerRight > monsterLeft && playerLeft < monsterRight;
+			bool overlapY = playerBottom > monsterTop && playerTop < monsterBottom;
+
+			if (overlapX && overlapY) {
+				int prevPlayerBottom = prevY + playerHitboxHeight;
+				// 플레이어가 몬스터를 밟은 경우 (위에서 아래로)
+				if (prevPlayerBottom <= monsterTop + 5 && jumpVelocity_ > 0) {
+					monster.isAlive = false; // 몬스터 죽음
+					jumpVelocity_ = JUMP_VELOCITY / 2; // 플레이어 점프
+				}
+				else {
+					// 플레이어가 몬스터에 닿았을 때
+					if (State() == TINO) {
+						ResetPosition(); // 플레이어 초기화
+					}
+					else if (State() == LARGETINO) {
+						eatMushroom_ = false;
+					}
+					else if (State() == PAIRI) {
+						eatFlower_ = false; // 꽃 먹음
+						eatMushroom_ = false; // 버섯 상태 해제
+
+					}
+					else if (State() == LIZAMONG) {
+						eatFlower_ = true; // 꽃 상태 해제
+						eatMushroom_ = false; // 버섯 상태 해제
+
+					}
+				}
+			}
+		}
+
+		// 죽은 몬스터 제거
+		auto& monsterList = Images.monsters[Images.currentStage - 1];
+		monsterList.erase(std::remove_if(monsterList.begin(), monsterList.end(),
+			[](const Image_::Monster& m) { return !m.isAlive; }), monsterList.end());
+	}
+
+	// 깃발 블럭 충돌 감지
+	if (!isFallingIntoHole && !Images.flagBlocks[Images.currentStage - 1].empty()) {
+		for (const auto& flagBlock : Images.flagBlocks[Images.currentStage - 1]) {
+			int flagLeft = flagBlock.x;
+			int flagRight = flagBlock.x + flagBlock.width;
+			int flagTop = flagBlock.y;
+			int flagBottom = flagBlock.y + flagBlock.height;
+
+			int playerLeft = hitbox_.left;
+			int playerRight = hitbox_.right;
+			int playerTop = hitbox_.top;
+			int playerBottom = hitbox_.bottom;
+
+			bool overlapX = playerRight > flagLeft && playerLeft < flagRight;
+			bool overlapY = playerBottom > flagTop && playerTop < flagBottom;
+
+			if (overlapX && overlapY) {
+				isTouchingFlag = true;
+				flagBlockStage = Images.currentStage;
+				flagSlideProgress = 0.0f;
+				flagMoveRightProgress = 0.0f;
+				isMovingRightAfterFlag = false;
+				isJumping_ = false;
+				jumpVelocity_ = 0.0f;
+				break;
+			}
+		}
+	}
+
+	// 키 입력 처리
+	intendToMoveLeft = (GetAsyncKeyState(VK_LEFT) & 0x8000) != 0;
+	intendToMoveRight = (GetAsyncKeyState(VK_RIGHT) & 0x8000) != 0;
+	bool intendToJump = (GetAsyncKeyState(VK_UP) & 0x8000) != 0 && !jumpKeyPressed;
+	bool intendToAttack = (GetAsyncKeyState(VK_SPACE) & 0x8000) != 0 && !attackKeyPressed;
+
+	if (intendToMoveLeft) {
+		direct_ = LEFT;
+		move_ = true;
+		moved = true;
+	}
+	if (intendToMoveRight) {
+		direct_ = RIGHT;
+		move_ = true;
+		moved = true;
+	}
+	if (intendToJump && !isJumping_ && !isFallingIntoHole) {
+		isJumping_ = true;
+		jumpVelocity_ = JUMP_VELOCITY;
+		jumpKeyPressed = true;
+	}
+	if (intendToAttack) {
+		Attack();
+		attackKeyPressed = true;
+	}
+
+	// 키 해제 시 플래그 리셋
+	if (!(GetAsyncKeyState(VK_UP) & 0x8000)) jumpKeyPressed = false;
+	if (!(GetAsyncKeyState(VK_SPACE) & 0x8000)) attackKeyPressed = false;
+
+	if (move_) {
+		time++;
+		if (time == 3) {
+			if (State() == TINO || State() == LARGETINO || State() == LIZAMONG || State() == LIZAD) {
+				imageNum = (imageNum + 1) % 3;
+			}
+			else if (State() == PAIRI) {
+				if (isJumping_) imageNum = (imageNum + 1) % 5;
+				else imageNum = (imageNum + 1) % 6;
+			}
+			time = 0;
+		}
+	}
+
+	if (State() == LIZAMONG || State() == LARGETINO) {
+		if (Images.NowStage() == STAGE1 || Images.NowStage() == STAGE2) defaultGroundY_ = 433;
+		else if (Images.NowStage() == HIDDEN) defaultGroundY_ = 421;
+		else if (Images.NowStage() == TUTORIAL) defaultGroundY_ = 451;
+	}
+	else {
+		if (Images.NowStage() == STAGE1 || Images.NowStage() == STAGE2) defaultGroundY_ = 447;
+		else if (Images.NowStage() == HIDDEN) defaultGroundY_ = 435;
+		else if (Images.NowStage() == TUTORIAL) defaultGroundY_ = 465;
+	}
+
+	bool canMoveHorizontally = true;
+	if (intendToMoveLeft) newX -= MOVE;
+	if (intendToMoveRight) newX += MOVE;
+
+	if (intendToMoveLeft || intendToMoveRight) {
+		int checkHitboxX = newX;
+		switch (State()) {
+		case TINO: checkHitboxX += 10; break;
+		case LARGETINO:
+			if (direct_ == RIGHT) checkHitboxX += 10;
+			else checkHitboxX += 12;
+			break;
+		case PAIRI: if (direct_ == RIGHT) checkHitboxX += 14; break;
+		case LIZAD: if (direct_ == RIGHT) checkHitboxX += 20; break;
+		case LIZAMONG:
+			if (direct_ == RIGHT) checkHitboxX += 26;
+			else checkHitboxX += 8;
+			break;
+		default: if (direct_ == RIGHT) checkHitboxX += 14; break;
+		}
+
+		for (const auto& block : Images.blocks[Images.currentStage - 1]) {
+			int blockLeft = block.x;
+			int blockRight = block.x + block.width;
+			int blockTop = block.y;
+			int blockBottom = block.y + block.height;
+
+			int newPlayerLeft = checkHitboxX;
+			int newPlayerRight = checkHitboxX + playerHitboxWidth;
+			int playerTop = playerHitboxY;
+			int playerBottom = playerHitboxY + playerHitboxHeight;
+
+			bool overlapX = newPlayerRight > blockLeft && newPlayerLeft < blockRight;
+			bool overlapY = playerBottom > blockTop && playerTop < blockBottom;
+
+			if (overlapX && overlapY) {
+				canMoveHorizontally = false;
+				break;
+			}
+		}
+
+		if (canMoveHorizontally) {
+			for (const auto& qblock : Images.questionBlocks[Images.currentStage - 1]) {
+				int qblockLeft = qblock.x;
+				int qblockRight = qblock.x + qblock.width;
+				int qblockTop = qblock.y;
+				int qblockBottom = qblock.y + qblock.height;
+
+				int newPlayerLeft = checkHitboxX;
+				int newPlayerRight = checkHitboxX + playerHitboxWidth;
+				int playerTop = playerHitboxY;
+				int playerBottom = playerHitboxY + playerHitboxHeight;
+
+				bool overlapX = newPlayerRight > qblockLeft && newPlayerLeft < qblockRight;
+				bool overlapY = playerBottom > qblockTop && playerTop < qblockBottom;
+
+				if (overlapX && overlapY) {
+					canMoveHorizontally = false;
+					break;
+				}
+			}
+		}
+
+		if (canMoveHorizontally) {
+			for (size_t i = 0; i < Images.tBlocks[Images.currentStage - 1].size(); i++) {
+				// 히든 스테이지에서 tblock1_3 (인덱스 2)는 충돌 차단에서 제외
+				if (Images.currentStage == HIDDEN && i == 2) continue;
+
+				const auto& tblock = Images.tBlocks[Images.currentStage - 1][i];
+				int tblockLeft = tblock.x;
+				int tblockRight = tblock.x + tblock.width;
+				int tblockTop = tblock.y;
+				int tblockBottom = tblock.y + tblock.height;
+
+				int newPlayerLeft = checkHitboxX;
+				int newPlayerRight = checkHitboxX + playerHitboxWidth;
+				int playerTop = playerHitboxY;
+				int playerBottom = playerHitboxY + playerHitboxHeight;
+
+				bool overlapX = newPlayerRight > tblockLeft && newPlayerLeft < tblockRight;
+				bool overlapY = playerBottom > tblockTop && playerTop < tblockBottom;
+
+				if (overlapX && overlapY) {
+					canMoveHorizontally = false;
+					break;
+				}
+			}
+		}
+
+		if (canMoveHorizontally) {
+			x_ = newX;
+		}
+		else {
+			move_ = true;
+			imageNum = 0;
+		}
+	}
+
+	if (isJumping_) {
+		y_ += static_cast<int>(jumpVelocity_);
+		jumpVelocity_ += GRAVITY;
+	}
+
+	GetHitbox(playerHitboxX, playerHitboxY, playerHitboxWidth, playerHitboxHeight);
+
+	bool onBlock = false;
+	int newGroundY = defaultGroundY_;
+
+	for (const auto& block : Images.blocks[Images.currentStage - 1]) {
+		int blockLeft = block.x;
+		int blockRight = block.x + block.width;
+		int blockTop = block.y;
+		int blockBottom = block.y + block.height;
+
+		int playerLeft = hitbox_.left;
+		int playerRight = hitbox_.right;
+		int playerTop = hitbox_.top;
+		int playerBottom = hitbox_.bottom;
+
+		bool overlapX = playerRight > blockLeft && playerLeft < blockRight;
+		bool overlapY = playerBottom > blockTop && playerTop < blockBottom;
+
+		if (overlapX && overlapY) {
+			int prevPlayerBottom = prevY + playerHitboxHeight;
+			if (prevPlayerBottom <= blockTop + 5 && jumpVelocity_ > 0) {
+				y_ = blockTop - playerHitboxHeight;
+				isJumping_ = false;
+				jumpVelocity_ = 0.0f;
+				onBlock = true;
+				newGroundY = blockTop - playerHitboxHeight;
+			}
+			else if (prevY >= blockBottom && jumpVelocity_ < 0) {
+				y_ = blockBottom;
+				jumpVelocity_ = 0.0f;
+			}
+		}
+	}
+
+	if (!onBlock) {
+		for (auto& qblock : Images.questionBlocks[Images.currentStage - 1]) {
+			int qblockLeft = qblock.x;
+			int qblockRight = qblock.x + qblock.width;
+			int qblockTop = qblock.y;
+			int qblockBottom = qblock.y + qblock.height;
+
+			int playerLeft = hitbox_.left;
+			int playerRight = hitbox_.right;
+			int playerTop = hitbox_.top;
+			int playerBottom = hitbox_.bottom;
+
+			bool overlapX = playerRight > qblockLeft && playerLeft < qblockRight;
+			bool overlapY = playerBottom > qblockTop && playerTop < qblockBottom;
+
+			if (overlapX && overlapY) {
+				int prevPlayerBottom = prevY + playerHitboxHeight;
+				int prevPlayerTop = prevY;
+				if (prevPlayerBottom <= qblockTop && jumpVelocity_ > 0) {
+					y_ = qblockTop - playerHitboxHeight;
+					isJumping_ = false;
+					jumpVelocity_ = 0.0f;
+					onBlock = true;
+					newGroundY = qblockTop - playerHitboxHeight;
+				}
+				else if (prevPlayerTop >= qblockBottom && jumpVelocity_ < 0) {
+					if (!qblock.hit) {
+						qblock.hit = true;
+						eatFlower_ = true;
+					}
+					y_ = qblockBottom;
+					jumpVelocity_ = 0.0f;
+				}
+			}
+		}
+	}
+
+	if (!onBlock) {
+		for (const auto& tblock : Images.tBlocks[Images.currentStage - 1]) {
+			int tblockLeft = tblock.x;
+			int tblockRight = tblock.x + tblock.width;
+			int tblockTop = tblock.y;
+			int tblockBottom = tblock.y + tblock.height;
+
+			int playerLeft = playerHitboxX;
+			int playerRight = playerHitboxX + playerHitboxWidth;
+			int playerTop = playerHitboxY;
+			int playerBottom = playerHitboxY + playerHitboxHeight;
+
+			bool overlapX = playerRight > tblockLeft && playerLeft < tblockRight;
+			bool overlapY = playerBottom > tblockTop && playerTop < tblockBottom;
+
+			if (overlapX && overlapY) {
+				int prevPlayerBottom = prevY + playerHitboxHeight;
+				int prevPlayerTop = prevY;
+
+				if (prevPlayerBottom <= tblockTop && jumpVelocity_ > 0) {
+					y_ = tblockTop - playerHitboxHeight;
+					isJumping_ = false;
+					jumpVelocity_ = 0.0f;
+					onBlock = true;
+					newGroundY = tblockTop - playerHitboxHeight;
+				}
+				else if (prevPlayerTop >= tblockBottom && jumpVelocity_ < 0) {
+					y_ = tblockBottom;
+					jumpVelocity_ = 0.0f;
+				}
+			}
+		}
+	}
+
+	if (!onBlock) {
+		for (const auto& hole : Images.holes[Images.currentStage - 1]) {
+			int holeLeft = hole.x;
+			int holeRight = hole.x + hole.width;
+			int holeTop = hole.y;
+
+			int playerBottomCenterX = hitbox_.left + (hitbox_.right - hitbox_.left) / 2;
+			int playerBottomY = hitbox_.bottom;
+
+			bool withinHoleX = playerBottomCenterX >= holeLeft && playerBottomCenterX <= holeRight;
+
+			int prevPlayerBottom = prevY + playerHitboxHeight;
+			bool atHoleTop = prevPlayerBottom >= holeTop - 5 && isJumping_ == FALSE;
+
+			if (withinHoleX && atHoleTop) {
+				isJumping_ = false;
+				isFallingIntoHole = true;
+				fallProgress_ = 0.0f;
+				break;
+			}
+		}
+	}
+
+	// 스테이지1 -> 히든 입장
+	if (!isFallingIntoHole && !Images.tBlocks[Images.currentStage - 1].empty() && Images.tBlocks[Images.currentStage - 1].size() >= 4) {
+		const auto& tblock4 = Images.tBlocks[Images.currentStage - 1][3]; // tblock0_4 in Stage 1
+		int tblockLeft = tblock4.x;
+		int tblockRight = tblock4.x + tblock4.width;
+		int tblockTop = tblock4.y;
+
+		int playerLeft = playerHitboxX;
+		int playerRight = playerHitboxX + playerHitboxWidth;
+		bool overlapX = playerRight > tblockLeft && playerLeft < tblockRight;
+
+		if (overlapX && y_ == tblockTop - playerHitboxHeight && GetAsyncKeyState(VK_DOWN) & 0x8000) {
+			Images.EnterHiddenStage();
+		}
+	}
+
+	// 히든 -> 스테이지1 복귀
+	if (!isFallingIntoHole && Images.currentStage == HIDDEN && !Images.tBlocks[Images.currentStage - 1].empty()) {
+		const auto& tblock3 = Images.tBlocks[Images.currentStage - 1][2]; // tblock1_3 in Hidden Stage
+		int tblockLeft = tblock3.x; // 614
+		int tblockTop = tblock3.y; // 388
+		int tblockBottom = tblock3.y + tblock3.height; // 474
+
+		// 현재 히트박스
+		int playerRight = hitbox_.right;
+		int playerTop = hitbox_.top;
+		int playerBottom = hitbox_.bottom;
+
+		// 이전 프레임의 히트박스 오른쪽 위치 계산
+		int prevHitboxX, prevHitboxY, prevHitboxWidth, prevHitboxHeight;
+		int tempX = x_;
+		x_ = prevX; // 이전 위치로 임시 변경
+		GetHitbox(prevHitboxX, prevHitboxY, prevHitboxWidth, prevHitboxHeight); // 이전 히트박스 계산
+		int prevPlayerRight = prevHitboxX + prevHitboxWidth; // 이전 히트박스의 오른쪽 위치
+		x_ = tempX; // 원래 위치로 복원
+
+		// 충돌 조건: 오른쪽으로 이동 중, 현재 오른쪽 면이 tblockLeft에 도달, 이전 오른쪽 면은 tblockLeft보다 왼쪽에 있었음
+		bool collideWithLeftFace = intendToMoveRight && playerRight + 4 >= tblockLeft && prevPlayerRight < tblockLeft;
+		bool yOverlap = playerBottom > tblockTop && playerTop < tblockBottom;
+
+		if (collideWithLeftFace && yOverlap) {
+			Images.QuitHiddenStage();
+			x_ = 2616;
+			y_ = 372;
+			groundY_ = 447;
+			defaultGroundY_ = 447;
+			move_ = false;
+			isJumping_ = true;
+			jumpVelocity_ = 0.0f;
+			isFallingIntoHole = false;
+			direct_ = RIGHT;
+			fallProgress_ = 0.0f;
+		}
+	}
+
+	if (!isFallingIntoHole && groundY_ != defaultGroundY_) {
+		bool stillOnBlock = false;
+
+		for (const auto& block : Images.blocks[Images.currentStage - 1]) {
+			int blockLeft = block.x;
+			int blockRight = block.x + block.width;
+			int blockTop = block.y;
+
+			int playerLeft = hitbox_.left;
+			int playerRight = hitbox_.right;
+			bool overlapX = playerRight > blockLeft && playerLeft < blockRight;
+
+			if (overlapX && groundY_ == blockTop - playerHitboxHeight) {
+				stillOnBlock = true;
+				break;
+			}
+		}
+
+		if (!stillOnBlock) {
+			for (const auto& qblock : Images.questionBlocks[Images.currentStage - 1]) {
+				int qblockLeft = qblock.x;
+				int qblockRight = qblock.x + qblock.width;
+				int qblockTop = qblock.y;
+
+				int playerLeft = hitbox_.left;
+				int playerRight = hitbox_.right;
+				bool overlapX = playerRight > qblockLeft && playerLeft < qblockRight;
+
+				if (overlapX && groundY_ == qblockTop - playerHitboxHeight) {
+					stillOnBlock = true;
+					break;
+				}
+			}
+		}
+
+		if (!stillOnBlock) {
+			for (const auto& tblock : Images.tBlocks[Images.currentStage - 1]) {
+				int tblockLeft = tblock.x;
+				int tblockRight = tblock.x + tblock.width;
+				int tblockTop = tblock.y;
+
+				int playerLeft = playerHitboxX;
+				int playerRight = playerHitboxX + playerHitboxWidth;
+				bool overlapX = playerRight > tblockLeft && playerLeft < tblockRight;
+
+				if (overlapX && groundY_ == tblockTop - playerHitboxHeight) {
+					stillOnBlock = true;
+					break;
+				}
+			}
+		}
+
+		if (!stillOnBlock) {
+			groundY_ = defaultGroundY_;
+			if (y_ < defaultGroundY_) {
+				isJumping_ = true;
+			}
+		}
+	}
+
+	if (onBlock) {
+		groundY_ = newGroundY;
+	}
+
+	if (!onBlock && !isFallingIntoHole && y_ >= defaultGroundY_) {
+		y_ = defaultGroundY_;
+		isJumping_ = false;
+		jumpVelocity_ = 0.0f;
+	}
+
+	int stageWidth = (Images.NowStage() == TUTORIAL ? Pimage.mStageTutorial.GetWidth() :
+		Images.NowStage() == STAGE1 ? Pimage.mStage1.GetWidth() :
+		Images.NowStage() == STAGE2 ? Pimage.mStage2.GetWidth() :
+		Images.NowStage() == HIDDEN ? Pimage.mStageHidden.GetWidth() : 0);
+
+	int playerWidth = 0;
+	switch (State()) {
+	case TINO: playerWidth = 36; break;
+	case PAIRI: playerWidth = 39; break;
+	case LIZAD: playerWidth = 46; break;
+	case LIZAMONG: playerWidth = 66; break;
+	default: playerWidth = 36;
+	}
+
+	if (x_ < 0) {
+		x_ = 0;
+		move_ = true;
+		imageNum = 0;
+	}
+	if (x_ + playerWidth > stageWidth) {
+		x_ = stageWidth - playerWidth; // 맵 끝에 고정
+		move_ = true;
+		imageNum = 0;
+	}
+
+	if (!moved) {
+		move_ = false;
+		if (!isJumping_) imageNum = 0;
+		else if (isJumping_) {
+			time++;
+			if (time == 3) {
+				if (State() == PAIRI) {
+					imageNum = (imageNum + 1) % 3;
+				}
+				else if (State() == LIZAMONG) {
+					imageNum = (imageNum + 1) % 4;
+				}
+				time = 0;
+			}
+		}
+	}
+	else if (!canMoveHorizontally && (intendToMoveLeft || intendToMoveRight) && !isJumping_) {
+		move_ = true;
+		imageNum = 0;
+	}
+	if (fireballCooldown > 0) {
+		fireballCooldown--;
+	}
+	State();
 }
 
 void Player_::Attack() {
-    if (!eatFlower_) return;
+	if (!eatFlower_) return;
 
-    int playerHitboxX, playerHitboxY, playerHitboxWidth, playerHitboxHeight;
-    GetHitbox(playerHitboxX, playerHitboxY, playerHitboxWidth, playerHitboxHeight);
+	int playerHitboxX, playerHitboxY, playerHitboxWidth, playerHitboxHeight;
+	GetHitbox(playerHitboxX, playerHitboxY, playerHitboxWidth, playerHitboxHeight);
 
-    Image_::Fireball fireball;
-    fireball.width = 20;
-    fireball.height = 20;
-    fireball.active = true;
+	Image_::Fireball fireball;
+	fireball.width = 20;
+	fireball.height = 20;
+	fireball.active = true;
 
-    if (direct_ == RIGHT) {
-        fireball.x = hitbox_.right;
-        fireball.velocityX = 6.0f;
-    }
-    else {
-        fireball.x = hitbox_.left - fireball.width;
-        fireball.velocityX = -6.0f;
-    }
-    fireball.y = playerHitboxY + playerHitboxHeight / 2;
-    fireball.velocityY = 0.0f;
+	if (direct_ == RIGHT) {
+		fireball.x = hitbox_.right;
+		fireball.velocityX = 6.0f;
+	}
+	else {
+		fireball.x = hitbox_.left - fireball.width;
+		fireball.velocityX = -6.0f;
+	}
+	fireball.y = playerHitboxY + playerHitboxHeight / 2;
+	fireball.velocityY = 0.0f;
 
-    Images.fireballs.push_back(fireball);
-    fireballCooldown = 2;
+	Images.fireballs.push_back(fireball);
+	fireballCooldown = 2;
 
-    WCHAR buffer[100];
-    swprintf_s(buffer, L"Fireball shot: x=%d, y=%d, velocityX=%.2f\n", fireball.x, fireball.y, fireball.velocityX);
-    OutputDebugStringW(buffer);
+	WCHAR buffer[100];
+	swprintf_s(buffer, L"Fireball shot: x=%d, y=%d, velocityX=%.2f\n", fireball.x, fireball.y, fireball.velocityX);
+	OutputDebugStringW(buffer);
 }
 
 void Player_::FireballMove() {
-    if (!Images.fireballs.empty()) {
-        auto& fireballs = Images.fireballs;
-        for (auto it = fireballs.begin(); it != fireballs.end(); /* 증가 연산은 내부에서 */) {
-            if (!it->active) {
-                ++it;
-                continue;
-            }
+	if (!Images.fireballs.empty()) {
+		auto& fireballs = Images.fireballs;
+		for (auto it = fireballs.begin(); it != fireballs.end(); /* 증가 연산은 내부에서 */) {
+			if (!it->active) {
+				++it;
+				continue;
+			}
 
-            it->x += static_cast<int>(it->velocityX);
-            it->y += static_cast<int>(it->velocityY);
-            it->velocityY += GRAVITY;
+			it->x += static_cast<int>(it->velocityX);
+			it->y += static_cast<int>(it->velocityY);
+			it->velocityY += GRAVITY;
 
-            int cameraX = x_ - 400;
-            if (cameraX < 0) cameraX = 0;
-            int stageWidth = (Images.NowStage() == TUTORIAL ? Images.mStageTutorial.GetWidth() :
-                Images.NowStage() == STAGE1 ? Images.mStage1.GetWidth() :
-                Images.NowStage() == STAGE2 ? Images.mStage2.GetWidth() :
-                Images.NowStage() == HIDDEN ? Images.mStageHidden.GetWidth() : 0);
-            if (cameraX > stageWidth - wRect.right) {
-                cameraX = stageWidth - wRect.right;
-            }
+			int cameraX = x_ - 400;
+			if (cameraX < 0) cameraX = 0;
+			int stageWidth = (Images.NowStage() == TUTORIAL ? Images.mStageTutorial.GetWidth() :
+				Images.NowStage() == STAGE1 ? Images.mStage1.GetWidth() :
+				Images.NowStage() == STAGE2 ? Images.mStage2.GetWidth() :
+				Images.NowStage() == HIDDEN ? Images.mStageHidden.GetWidth() : 0);
+			if (cameraX > stageWidth - wRect.right) {
+				cameraX = stageWidth - wRect.right;
+			}
 
-            int fireballScreenX = it->x - cameraX;
-            if (fireballScreenX + it->width < 0 || fireballScreenX > wRect.right) {
-                it = fireballs.erase(it);
-                continue;
-            }
+			int fireballScreenX = it->x - cameraX;
+			if (fireballScreenX + it->width < 0 || fireballScreenX > wRect.right) {
+				it = fireballs.erase(it);
+				continue;
+			}
 
-            if (it->y + it->height >= defaultGroundY_) {
-                it->y = defaultGroundY_ - it->height;
-                it->velocityY = -4.0f;
-            }
+			if (it->y + it->height >= defaultGroundY_) {
+				it->y = defaultGroundY_ - it->height;
+				it->velocityY = -4.0f;
+			}
 
-            bool hitWall = false;
-            for (const auto& block : Images.blocks[Images.currentStage - 1]) {
-                int blockLeft = block.x;
-                int blockRight = block.x + block.width;
-                int blockTop = block.y;
-                int blockBottom = block.y + block.height;
+			bool hitWall = false;
+			for (const auto& block : Images.blocks[Images.currentStage - 1]) {
+				int blockLeft = block.x;
+				int blockRight = block.x + block.width;
+				int blockTop = block.y;
+				int blockBottom = block.y + block.height;
 
-                int fireballLeft = it->x;
-                int fireballRight = it->x + it->width;
-                int fireballTop = it->y;
-                int fireballBottom = it->y + it->height;
+				int fireballLeft = it->x;
+				int fireballRight = it->x + it->width;
+				int fireballTop = it->y;
+				int fireballBottom = it->y + it->height;
 
-                bool overlapX = fireballRight > blockLeft && fireballLeft < blockRight;
-                bool overlapY = fireballBottom > blockTop && fireballTop < blockBottom;
+				bool overlapX = fireballRight > blockLeft && fireballLeft < blockRight;
+				bool overlapY = fireballBottom > blockTop && fireballTop < blockBottom;
 
-                if (overlapX && overlapY) {
-                    hitWall = true;
-                    break;
-                }
-            }
+				if (overlapX && overlapY) {
+					hitWall = true;
+					break;
+				}
+			}
 
-            if (!hitWall) {
-                for (const auto& qblock : Images.questionBlocks[Images.currentStage - 1]) {
-                    int qblockLeft = qblock.x;
-                    int qblockRight = qblock.x + qblock.width;
-                    int qblockTop = qblock.y;
-                    int qblockBottom = qblock.y + qblock.height;
+			if (!hitWall) {
+				for (const auto& qblock : Images.questionBlocks[Images.currentStage - 1]) {
+					int qblockLeft = qblock.x;
+					int qblockRight = qblock.x + qblock.width;
+					int qblockTop = qblock.y;
+					int qblockBottom = qblock.y + qblock.height;
 
-                    int fireballLeft = it->x;
-                    int fireballRight = it->x + it->width;
-                    int fireballTop = it->y;
-                    int fireballBottom = it->y + it->height;
+					int fireballLeft = it->x;
+					int fireballRight = it->x + it->width;
+					int fireballTop = it->y;
+					int fireballBottom = it->y + it->height;
 
-                    bool overlapX = fireballRight > qblockLeft && fireballLeft < qblockRight;
-                    bool overlapY = fireballBottom > qblockTop && fireballTop < qblockBottom;
+					bool overlapX = fireballRight > qblockLeft && fireballLeft < qblockRight;
+					bool overlapY = fireballBottom > qblockTop && fireballTop < qblockBottom;
 
-                    if (overlapX && overlapY) {
-                        hitWall = true;
-                        break;
-                    }
-                }
-            }
+					if (overlapX && overlapY) {
+						hitWall = true;
+						break;
+					}
+				}
+			}
 
-            if (!hitWall) {
-                for (size_t i = 0; i < Images.tBlocks[Images.currentStage - 1].size(); i++) {
-                    const auto& tblock = Images.tBlocks[Images.currentStage - 1][i];
-                    int tblockLeft = tblock.x;
-                    int tblockRight = tblock.x + tblock.width;
-                    int tblockTop = tblock.y;
-                    int tblockBottom = tblock.y + tblock.height;
+			if (!hitWall) {
+				for (size_t i = 0; i < Images.tBlocks[Images.currentStage - 1].size(); i++) {
+					const auto& tblock = Images.tBlocks[Images.currentStage - 1][i];
+					int tblockLeft = tblock.x;
+					int tblockRight = tblock.x + tblock.width;
+					int tblockTop = tblock.y;
+					int tblockBottom = tblock.y + tblock.height;
 
-                    int fireballLeft = it->x;
-                    int fireballRight = it->x + it->width;
-                    int fireballTop = it->y;
-                    int fireballBottom = it->y + it->height;
+					int fireballLeft = it->x;
+					int fireballRight = it->x + it->width;
+					int fireballTop = it->y;
+					int fireballBottom = it->y + it->height;
 
-                    bool overlapX = fireballRight > tblockLeft && fireballLeft < tblockRight;
-                    bool overlapY = fireballBottom > tblockTop && fireballTop < tblockBottom;
+					bool overlapX = fireballRight > tblockLeft && fireballLeft < tblockRight;
+					bool overlapY = fireballBottom > tblockTop && fireballTop < tblockBottom;
 
-                    if (overlapX && overlapY) {
-                        hitWall = true;
-                        break;
-                    }
-                }
-            }
+					if (overlapX && overlapY) {
+						hitWall = true;
+						break;
+					}
+				}
+			}
 
-            if (hitWall || it->x < 0 || it->x + it->width > stageWidth) {
-                it = fireballs.erase(it);
-                continue;
-            }
-            it->time++;
-            if (it->time == 3) {
-                it->imageNum = (it->imageNum + 1) % 4;
-                it->time = 0;
-            }
-            ++it;
-        }
-    }
+			if (hitWall || it->x < 0 || it->x + it->width > stageWidth) {
+				it = fireballs.erase(it);
+				continue;
+			}
+			it->time++;
+			if (it->time == 3) {
+				it->imageNum = (it->imageNum + 1) % 4;
+				it->time = 0;
+			}
+			++it;
+		}
+	}
 }
 
 int Player_::State() {
@@ -1542,7 +1546,7 @@ void Image_::ImageInit() {
 	questionBlockImage[0].Load(TEXT("Image/QuestionBlock.gif"));
 	questionBlockImage[1].Load(TEXT("Image/HitQuestionBlock.png"));
 
-    monster.Load(TEXT("Image/굼바.png")); // Stage 1 Monster
+	monster.Load(TEXT("Image/굼바.png")); // Stage 1 Monster
 
 	FireballImage.Load(TEXT("Image/Fireball.png"));
 
@@ -1967,37 +1971,37 @@ void Image_::DrawBackGround(int x, int y, HDC targetDC) {
 	}
 
 
-    if (!questionBlockImage[0].IsNull() && !questionBlockImage[1].IsNull()) {
-        for (const auto& qblock : questionBlocks[currentStage - 1]) {
-            int offsetX = qblock.x - cameraX;
-            if (offsetX + qblock.width > 0 && offsetX < wRect.right && !qblock.hit) {
-                questionBlockImage[0].StretchBlt(targetDC, offsetX, qblock.y, qblock.width, qblock.height, 0, 0, questionBlockImage[0].GetWidth(), questionBlockImage[0].GetHeight(), SRCCOPY);
-            }
-            else if (offsetX + qblock.width > 0 && offsetX < wRect.right && qblock.hit) {
-                questionBlockImage[1].StretchBlt(targetDC, offsetX, qblock.y, qblock.width, qblock.height, 0, 0, questionBlockImage[0].GetWidth(), questionBlockImage[0].GetHeight(), SRCCOPY);
-            }
-        }
-    }
+	if (!questionBlockImage[0].IsNull() && !questionBlockImage[1].IsNull()) {
+		for (const auto& qblock : questionBlocks[currentStage - 1]) {
+			int offsetX = qblock.x - cameraX;
+			if (offsetX + qblock.width > 0 && offsetX < wRect.right && !qblock.hit) {
+				questionBlockImage[0].StretchBlt(targetDC, offsetX, qblock.y, qblock.width, qblock.height, 0, 0, questionBlockImage[0].GetWidth(), questionBlockImage[0].GetHeight(), SRCCOPY);
+			}
+			else if (offsetX + qblock.width > 0 && offsetX < wRect.right && qblock.hit) {
+				questionBlockImage[1].StretchBlt(targetDC, offsetX, qblock.y, qblock.width, qblock.height, 0, 0, questionBlockImage[0].GetWidth(), questionBlockImage[0].GetHeight(), SRCCOPY);
+			}
+		}
+	}
 
-    // 몬스터 그리기 추가
-    if (!monster.IsNull()) {
-        for (const auto& m : monsters[currentStage - 1]) {
-            if (!m.isAlive) continue; // 죽은 몬스터는 그리지 않음
+	// 몬스터 그리기 추가
+	if (!monster.IsNull()) {
+		for (const auto& m : monsters[currentStage - 1]) {
+			if (!m.isAlive) continue; // 죽은 몬스터는 그리지 않음
 
-            int offsetX = m.x - cameraX;
-            if (offsetX + m.width > 0 && offsetX < wRect.right) {
-                if (m.direction == RIGHT) {
-                    // 오른쪽 방향: 원본 이미지 그대로
-                    monster.TransparentBlt(targetDC, offsetX, m.y, m.width, m.height, 0, 0, monster.GetWidth(), monster.GetHeight(), RGB(0, 255, 0));
-                }
-                else if (m.direction == LEFT) {
-                    // 왼쪽 방향: 이미지 좌우 반전
-                    monster.TransparentBlt(targetDC, offsetX, m.y, m.width, m.height, 0, 0, monster.GetWidth(), monster.GetHeight(), RGB(0, 255, 0));
-                }
-                
-            }
-        }
-    }
+			int offsetX = m.x - cameraX;
+			if (offsetX + m.width > 0 && offsetX < wRect.right) {
+				if (m.direction == RIGHT) {
+					// 오른쪽 방향: 원본 이미지 그대로
+					monster.TransparentBlt(targetDC, offsetX, m.y, m.width, m.height, 0, 0, monster.GetWidth(), monster.GetHeight(), RGB(0, 255, 0));
+				}
+				else if (m.direction == LEFT) {
+					// 왼쪽 방향: 이미지 좌우 반전
+					monster.TransparentBlt(targetDC, offsetX, m.y, m.width, m.height, 0, 0, monster.GetWidth(), monster.GetHeight(), RGB(0, 255, 0));
+				}
+
+			}
+		}
+	}
 }
 
 void Image_::NextStage() {
@@ -2099,10 +2103,8 @@ void Image_::DrawHitBox(HDC targetDC) {
 	SelectObject(targetDC, qblockBrush);
 
 	for (const auto& qblock : questionBlocks[currentStage - 1]) {
-		if (!qblock.hit) {
-			RECT screenHitbox = { qblock.x - cameraX, qblock.y, qblock.x + qblock.width - cameraX, qblock.y + qblock.height };
-			Rectangle(targetDC, screenHitbox.left, screenHitbox.top, screenHitbox.right, screenHitbox.bottom);
-		}
+		RECT screenHitbox = { qblock.x - cameraX, qblock.y, qblock.x + qblock.width - cameraX, qblock.y + qblock.height };
+		Rectangle(targetDC, screenHitbox.left, screenHitbox.top, screenHitbox.right, screenHitbox.bottom);
 	}
 	DeleteObject(qblockPen);
 	DeleteObject(qblockBrush);
@@ -2158,27 +2160,27 @@ void Image_::DrawHitBox(HDC targetDC) {
 	}
 	DeleteObject(fireballPen);
 	DeleteObject(fireballBrush);
-    for (const auto& flag : flagBlocks[currentStage - 1]) {
-        RECT screenHitbox = { flag.x - cameraX, flag.y, flag.x + flag.width - cameraX, flag.y + flag.height };
-        Rectangle(targetDC, screenHitbox.left, screenHitbox.top, screenHitbox.right, screenHitbox.bottom);
-    }
-    DeleteObject(flagPen);
-    DeleteObject(flagBrush);
+	for (const auto& flag : flagBlocks[currentStage - 1]) {
+		RECT screenHitbox = { flag.x - cameraX, flag.y, flag.x + flag.width - cameraX, flag.y + flag.height };
+		Rectangle(targetDC, screenHitbox.left, screenHitbox.top, screenHitbox.right, screenHitbox.bottom);
+	}
+	DeleteObject(flagPen);
+	DeleteObject(flagBrush);
 
-    // 몬스터 히트박스 그리기
-    HPEN monsterPen = CreatePen(PS_DASH, 3, RGB(255, 0, 0)); // 빨간색으로 표시
-    HBRUSH monsterBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
-    SelectObject(targetDC, monsterPen);
-    SelectObject(targetDC, monsterBrush);
+	// 몬스터 히트박스 그리기
+	HPEN monsterPen = CreatePen(PS_DASH, 3, RGB(255, 0, 0)); // 빨간색으로 표시
+	HBRUSH monsterBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
+	SelectObject(targetDC, monsterPen);
+	SelectObject(targetDC, monsterBrush);
 
-    for (const auto& monster : monsters[currentStage - 1]) {
-        if (monster.isAlive) {
-            RECT screenHitbox = { monster.x - cameraX, monster.y, monster.x + monster.width - cameraX, monster.y + monster.height };
-            Rectangle(targetDC, screenHitbox.left, screenHitbox.top, screenHitbox.right, screenHitbox.bottom);
-        }
-    }
-    DeleteObject(monsterPen);
-    DeleteObject(monsterBrush);
+	for (const auto& monster : monsters[currentStage - 1]) {
+		if (monster.isAlive) {
+			RECT screenHitbox = { monster.x - cameraX, monster.y, monster.x + monster.width - cameraX, monster.y + monster.height };
+			Rectangle(targetDC, screenHitbox.left, screenHitbox.top, screenHitbox.right, screenHitbox.bottom);
+		}
+	}
+	DeleteObject(monsterPen);
+	DeleteObject(monsterBrush);
 }
 
 int GetCameraX(int playerX, int stageWidth) {
