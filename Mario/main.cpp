@@ -21,10 +21,10 @@
 #define JUMP_VELOCITY -13
 #define GRAVITY 0.5
 
-#define STAGE1 1
-#define HIDDEN 2
+#define TUTORIAL 1
+#define STAGE1 2
 #define STAGE2 3
-#define STAGE3 4
+#define HIDDEN 4
 
 HINSTANCE g_hInst;
 LPCTSTR lpszClass = L"Window Class Name";
@@ -36,12 +36,12 @@ int GetCameraX(int playerX, int stageWidth);
 
 class Image_ {
 public:
-    bool stage1, hidden, stage2, stage3;
+    bool stage1, hidden, tutorial, stage2;
     int currentStage;
 
     CImage Player_Move_Tino, Player_Move_Pairi, Player_Move_Lizard, Player_Move_Lizamong;
     CImage Player_Attack_Tino, Player_Attack_Pairi, Player_Attack_Lizamong;
-    CImage mStage1, mStageHidden, mStage2, mStage3;
+    CImage mStage1, mStageHidden, mStageTutorial, mStage2;
     CImage blockImage;
     CImage questionBlockImage[2];
     CImage monster;
@@ -134,6 +134,10 @@ public:
     };
     void turnMushroom() {
         eatMushroom_ = !eatMushroom_;
+        if (eatMushroom_) {
+            groundY_ -= 13;
+            y_ -= 13;
+        }
         State();
     };
 
@@ -192,7 +196,7 @@ private:
             if (direct_ == RIGHT) hitboxX += 26;
             else hitboxX += 6;
             hitboxWidth = 32;
-            hitboxHeight = 51;
+            hitboxHeight = 54;
             break;
         default:
             hitboxWidth = 36;
@@ -263,7 +267,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
         hBitmap = CreateCompatibleBitmap(hDC, wRect.right, wRect.bottom);
         SelectObject(mDC, hBitmap);
         SetTimer(hWnd, 1, 16, NULL);
-        Images.stage1 = true;
+        Images.tutorial = true;
         Images.BlockInit();
         ReleaseDC(hWnd, hDC);
         break;
@@ -297,10 +301,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 
         int cameraX = Player.x() - 400;
         if (cameraX < 0) cameraX = 0;
-        int stageWidth = (Images.NowStage() == STAGE1 ? Images.mStage1.GetWidth() :
-            Images.NowStage() == HIDDEN ? Images.mStageHidden.GetWidth() :
+        int stageWidth = (Images.NowStage() == TUTORIAL ? Images.mStageTutorial.GetWidth() :
+            Images.NowStage() == STAGE1 ? Images.mStage1.GetWidth() :
             Images.NowStage() == STAGE2 ? Images.mStage2.GetWidth() :
-            Images.NowStage() == STAGE3 ? Images.mStage3.GetWidth() : 0);
+            Images.NowStage() == HIDDEN ? Images.mStageHidden.GetWidth() : 0);
         if (stageWidth <= wRect.right) {
             cameraX = 0;
         }
@@ -392,32 +396,33 @@ void Player_::ResetPosition() {
     direct_ = RIGHT;
     fallProgress = 0.0f;
     time = 0;
-    if (Images.NowStage() == 1) {
-        x_ = 10;
-        y_ = 447;
-        groundY_ = 447;
-        defaultGroundY_ = 447;
-    }
-    else if (Images.NowStage() == 2) {
-        x_ = 50;
-        y_ = 435;
-        groundY_ = 435;
-        defaultGroundY_ = 435;
-    }
-    else if (Images.NowStage() == 3) {
+    if (Images.NowStage() == TUTORIAL) {
         x_ = 30;
         y_ = 447;
         groundY_ = 447;
         defaultGroundY_ = 447;
     }
-    else if (Images.NowStage() == 4) {
+    else if (Images.NowStage() == STAGE1) {
+        x_ = 10;
+        y_ = 447;
+        groundY_ = 447;
+        defaultGroundY_ = 447;
+    }
+    else if (Images.NowStage() == STAGE2) {
         x_ = 5;
         y_ = 223;
         groundY_ = 223;
         defaultGroundY_ = 447;
     }
+    else if (Images.NowStage() == HIDDEN) {
+        x_ = 50;
+        y_ = 0;
+        isJumping_ = true;
+        groundY_ = 435;
+        defaultGroundY_ = 435;
+    }
 
-    if (Images.NowStage() != 2) {
+    if (Images.NowStage() != HIDDEN) {
         eatFlower_ = false;
         eatMushroom_ = false;
     }
@@ -433,10 +438,10 @@ void Player_::DrawPlayer(HDC targetDC) {
     if (!Pimage.Player_Move_Pairi.IsNull()) {
         int cameraX = x_ - 400;
         if (cameraX < 0) cameraX = 0;
-        int stageWidth = (Images.NowStage() == STAGE1 ? Pimage.mStage1.GetWidth() :
-            Images.NowStage() == HIDDEN ? Pimage.mStageHidden.GetWidth() :
+        int stageWidth = (Images.NowStage() == TUTORIAL ? Pimage.mStageTutorial.GetWidth() :
+            Images.NowStage() == STAGE1 ? Pimage.mStage1.GetWidth() :
             Images.NowStage() == STAGE2 ? Pimage.mStage2.GetWidth() :
-            Images.NowStage() == STAGE3 ? Pimage.mStage3.GetWidth() : 0);
+            Images.NowStage() == HIDDEN ? Pimage.mStageHidden.GetWidth() : 0);
 
         if (stageWidth <= wRect.right) {
             cameraX = 0;
@@ -894,13 +899,14 @@ void Player_::Move() {
     }
 
     if (State() == LIZAMONG || State() == LARGETINO) {
-        if (Images.NowStage() == STAGE1 || Images.NowStage() == STAGE2 || Images.NowStage() == STAGE3) defaultGroundY_ = 433;
+        if (Images.NowStage() == TUTORIAL || Images.NowStage() == STAGE1 || Images.NowStage() == STAGE2) defaultGroundY_ = 433;
         else if (Images.NowStage() == HIDDEN) defaultGroundY_ = 421;
     }
     else {
-        if (Images.NowStage() == STAGE1 || Images.NowStage() == STAGE2 || Images.NowStage() == STAGE3) defaultGroundY_ = 447;
+        if (Images.NowStage() == TUTORIAL || Images.NowStage() == STAGE1 || Images.NowStage() == STAGE2) defaultGroundY_ = 447;
         else if (Images.NowStage() == HIDDEN) defaultGroundY_ = 435;
     }
+
     bool canMoveHorizontally = true;
     if (intendToMoveLeft) newX -= MOVE;
     if (intendToMoveRight) newX += MOVE;
@@ -1174,7 +1180,7 @@ void Player_::Move() {
         x_ = tempX; // 원래 위치로 복원
 
         // 충돌 조건: 오른쪽으로 이동 중, 현재 오른쪽 면이 tblockLeft에 도달, 이전 오른쪽 면은 tblockLeft보다 왼쪽에 있었음
-        bool collideWithLeftFace = intendToMoveRight && playerRight >= tblockLeft && prevPlayerRight < tblockLeft;
+        bool collideWithLeftFace = intendToMoveRight && playerRight + 4 >= tblockLeft && prevPlayerRight < tblockLeft;
         bool yOverlap = playerBottom > tblockTop && playerTop < tblockBottom;
 
         if (collideWithLeftFace && yOverlap) {
@@ -1262,10 +1268,10 @@ void Player_::Move() {
         jumpVelocity_ = 0.0f;
     }
 
-    int stageWidth = (Images.NowStage() == STAGE1 ? Pimage.mStage1.GetWidth() :
-        Images.NowStage() == HIDDEN ? Pimage.mStageHidden.GetWidth() :
+    int stageWidth = (Images.NowStage() == TUTORIAL ? Pimage.mStageTutorial.GetWidth() :
+        Images.NowStage() == STAGE1 ? Pimage.mStage1.GetWidth() :
         Images.NowStage() == STAGE2 ? Pimage.mStage2.GetWidth() :
-        Images.NowStage() == STAGE3 ? Pimage.mStage3.GetWidth() : 0);
+        Images.NowStage() == HIDDEN ? Pimage.mStageHidden.GetWidth() : 0);
 
     int playerWidth = 0;
     switch (State()) {
@@ -1331,23 +1337,23 @@ void Image_::ImageInit() {
     Player_Attack_Pairi.Load(TEXT("Image/파이리 스프라이트.png"));
     Player_Attack_Lizamong.Load(TEXT("Image/리자몽 스프라이트.png"));
 
+    mStageTutorial.Load(TEXT("Image/튜토리얼.png"));
 	monster.Load(TEXT("Image/굼바.png")); // Stage 1 Monster
 
     mStage1.Load(TEXT("Image/월드 1.png"));
-    mStageHidden.Load(TEXT("Image/히든 스테이지.png"));
     mStage2.Load(TEXT("Image/월드 2.png"));
-    mStage3.Load(TEXT("Image/월드 3.png"));
+    mStageHidden.Load(TEXT("Image/히든 스테이지.png"));
 
     blockImage.Load(TEXT("Image/BrickBlockBrown.png"));
     questionBlockImage[0].Load(TEXT("Image/QuestionBlock.gif"));
     questionBlockImage[1].Load(TEXT("Image/HitQuestionBlock.png"));
 
-    stage1 = hidden = stage2 = stage3 = false;
-    currentStage = STAGE1;
+    tutorial = stage1 = stage2 = hidden = false;
+    currentStage = TUTORIAL;
 }
 
 void Image_::BlockInit() {
-    if (currentStage == STAGE1) {
+    if (currentStage == TUTORIAL) {
         if (!blocks[1].empty()) {
             blocks[1].clear();
             questionBlocks[1].clear();
@@ -1370,111 +1376,30 @@ void Image_::BlockInit() {
             flagBlocks[3].clear();
         }
         if (blocks[0].empty()) {
-            // Stage 1 Objects (currentStage == STAGE1)
-            Block block0_1 = { 320, 335, 16, 32 };
-            Block block0_2 = { 352, 335, 16, 32 };
-            Block block0_3 = { 384, 335, 16, 32 };
-            Block block0_4 = { 256, 335, 16, 42 };
-            Block block0_5 = { 352, 185, 16, 42 };
-            Block block0_6 = { 1280, 185, 130, 42 };
-            Block block0_7 = { 1232, 335, 16, 32 };
-            Block block0_8 = { 1264, 335, 16, 32 };
-            Block block0_9 = { 1456, 185, 16, 32 };
-            Block block0_10 = { 1472, 185, 16, 32 };
-            Block block0_11 = { 1488, 185, 16, 32 };
-            Block block0_12 = { 1600, 335, 16, 32 };
-            Block block0_13 = { 1616, 335, 16, 32 };
-            Block block0_14 = { 1744, 185, 16, 42 };
-            Block block0_15 = { 1888, 335, 16, 42 };
-            Block block0_16 = { 1936, 185, 16, 42 };
-            Block block0_17 = { 1952, 185, 16, 42 };
-            Block block0_18 = { 1968, 185, 16, 42 };
-            Block block0_19 = { 2048, 185, 16, 32 };
-            Block block0_20 = { 2096, 185, 16, 32 };
-            Block block0_21 = { 2064, 335, 16, 42 };
-            Block block0_22 = { 2080, 335, 16, 42 };
-            Block block0_23 = { 2688, 335, 16, 32 };
-            Block block0_24 = { 2704, 335, 16, 32 };
-            Block block0_25 = { 2736, 335, 16, 32 };
-            blocks[0].push_back(block0_1);
-            blocks[0].push_back(block0_2);
-            blocks[0].push_back(block0_3);
-            blocks[0].push_back(block0_4);
-            blocks[0].push_back(block0_5);
-            blocks[0].push_back(block0_6);
-            blocks[0].push_back(block0_7);
-            blocks[0].push_back(block0_8);
-            blocks[0].push_back(block0_9);
-            blocks[0].push_back(block0_10);
-            blocks[0].push_back(block0_11);
-            blocks[0].push_back(block0_12);
-            blocks[0].push_back(block0_13);
-            blocks[0].push_back(block0_14);
-            blocks[0].push_back(block0_15);
-            blocks[0].push_back(block0_16);
-            blocks[0].push_back(block0_17);
-            blocks[0].push_back(block0_18);
-            blocks[0].push_back(block0_19);
-            blocks[0].push_back(block0_20);
-            blocks[0].push_back(block0_21);
-            blocks[0].push_back(block0_22);
-            blocks[0].push_back(block0_23);
-            blocks[0].push_back(block0_24);
-            blocks[0].push_back(block0_25);
+            TBlock tblock0_1 = { 291, 450, 57, 32 };
+            TBlock tblock0_2 = { 386, 338, 122, 32 };
+            TBlock tblock0_3 = { 419, 188, 73, 32 };
+            TBlock tblock0_4 = { 514, 450, 42, 32 };
+            TBlock tblock0_5 = { 291, 450, 57, 32 };
+            TBlock tblock0_6 = { 563, 300, 72, 32 };
+            TBlock tblock0_7 = { 643, 151, 103, 32 };
+            TBlock tblock0_8 = { 802, 488, 58, 32 };
+            TBlock tblock0_9 = { 945, 488, 72, 32 };
+            TBlock tblock0_10 = { 1042, 488, 72, 32 };
+            TBlock tblock0_11 = { 962, 189, 57, 32 };
+            TBlock tblock0_12 = { 1122, 339, 42, 32 };
+            TBlock tblock0_13 = { 1218, 226, 90, 32 };
+            TBlock tblock0_14 = { 1569, 414, 57, 32 };
+            TBlock tblock0_15 = { 1810, 488, 42, 32 };
+            TBlock tblock0_16 = { 1858, 339, 58, 32 };
+            TBlock tblock0_17 = { 1666, 263, 122, 32 };
+            TBlock tblock0_18 = { 1954, 339, 58, 32 };
+            TBlock tblock0_19 = { 0, 488, 252, 32 };
+            TBlock tblock0_20 = { 2209, 338, 93, 150 };
+            TBlock tblock0_21 = { 2241, 261, 62, 78 };
+            TBlock tblock0_22 = { 2271, 188, 32, 72 };
+            TBlock tblock0_23 = { 2065, 487, 751, 72 };
 
-            QuestionBlock qblock0_1 = { 336, 335, 16, 42, false };
-            QuestionBlock qblock0_2 = { 368, 335, 16, 42, false };
-            QuestionBlock qblock0_3 = { 1248, 335, 16, 42, false };
-            QuestionBlock qblock0_4 = { 1504, 335, 16, 42, false };
-            QuestionBlock qblock0_5 = { 1504, 185, 16, 42, false };
-            QuestionBlock qblock0_6 = { 1696, 335, 16, 42, false };
-            QuestionBlock qblock0_7 = { 1744, 335, 16, 42, false };
-            QuestionBlock qblock0_8 = { 1792, 335, 16, 42, false };
-            QuestionBlock qblock0_9 = { 2064, 185, 16, 42, false };
-            QuestionBlock qblock0_10 = { 2080, 185, 16, 42, false };
-            QuestionBlock qblock0_11 = { 2720, 335, 16, 42, false };
-            questionBlocks[0].push_back(qblock0_1);
-            questionBlocks[0].push_back(qblock0_2);
-            questionBlocks[0].push_back(qblock0_3);
-            questionBlocks[0].push_back(qblock0_4);
-            questionBlocks[0].push_back(qblock0_5);
-            questionBlocks[0].push_back(qblock0_6);
-            questionBlocks[0].push_back(qblock0_7);
-            questionBlocks[0].push_back(qblock0_8);
-            questionBlocks[0].push_back(qblock0_9);
-            questionBlocks[0].push_back(qblock0_10);
-            questionBlocks[0].push_back(qblock0_11);
-
-            TBlock tblock0_1 = { 448, 413, 32, 76 };
-            TBlock tblock0_2 = { 608, 375, 32, 110 };
-            TBlock tblock0_3 = { 736, 336, 32, 150 };
-            TBlock tblock0_4 = { 912, 336, 32, 150 };
-            TBlock tblock0_5 = { 2140, 448, 59, 38 };
-            TBlock tblock0_6 = { 2156, 410, 43, 38 };
-            TBlock tblock0_7 = { 2172, 372, 27, 38 };
-            TBlock tblock0_8 = { 2188, 334, 11, 38 };
-            TBlock tblock0_9 = { 2238, 334, 16, 38 };
-            TBlock tblock0_10 = { 2238, 372, 32, 38 };
-            TBlock tblock0_11 = { 2238, 410, 48, 38 };
-            TBlock tblock0_12 = { 2238, 448, 64, 38 };
-            TBlock tblock0_13 = { 2366, 448, 75, 38 };
-            TBlock tblock0_14 = { 2382, 410, 59, 38 };
-            TBlock tblock0_15 = { 2398, 372, 43, 38 };
-            TBlock tblock0_16 = { 2414, 334, 27, 38 };
-            TBlock tblock0_17 = { 2480, 334, 16, 38 };
-            TBlock tblock0_18 = { 2480, 372, 32, 38 };
-            TBlock tblock0_19 = { 2480, 410, 48, 38 };
-            TBlock tblock0_20 = { 2480, 448, 64, 38 };
-            TBlock tblock0_21 = { 2608, 413, 32, 76 };
-            TBlock tblock0_22 = { 2864, 413, 32, 76 };
-            TBlock tblock0_23 = { 2896, 448, 144, 38 };
-            TBlock tblock0_24 = { 2912, 410, 128, 38 };
-            TBlock tblock0_25 = { 2928, 372, 112, 38 };
-            TBlock tblock0_26 = { 2944, 334, 96, 38 };
-            TBlock tblock0_27 = { 2960, 296, 80, 38 };
-            TBlock tblock0_28 = { 2976, 258, 64, 38 };
-            TBlock tblock0_29 = { 2992, 220, 48, 38 };
-            TBlock tblock0_30 = { 3008, 182, 32, 38 };
             tBlocks[0].push_back(tblock0_1);
             tBlocks[0].push_back(tblock0_2);
             tBlocks[0].push_back(tblock0_3);
@@ -1498,20 +1423,9 @@ void Image_::BlockInit() {
             tBlocks[0].push_back(tblock0_21);
             tBlocks[0].push_back(tblock0_22);
             tBlocks[0].push_back(tblock0_23);
-            tBlocks[0].push_back(tblock0_24);
-            tBlocks[0].push_back(tblock0_25);
-            tBlocks[0].push_back(tblock0_26);
-            tBlocks[0].push_back(tblock0_27);
-            tBlocks[0].push_back(tblock0_28);
-            tBlocks[0].push_back(tblock0_29);
-            tBlocks[0].push_back(tblock0_30);
 
-            Hole hole0_1 = { 1104, 487, 32, 74 };
-            Hole hole0_2 = { 1376, 487, 48, 74 };
-            Hole hole0_3 = { 2448, 487, 32, 74 };
-            holes[0].push_back(hole0_1);
-            holes[0].push_back(hole0_2);
-            holes[0].push_back(hole0_3);
+            QuestionBlock qblock0_1 = { 944, 376, 16, 36, false };
+            questionBlocks[0].push_back(qblock0_1);
 
             // 깃발 블럭 추가 (Stage 1 끝부분)
             FlagBlock flagBlock0_1 = { 3168, 94, 16, 392 }; // x=3100, 높이 286 (맨 아래 y=486
@@ -1532,7 +1446,7 @@ void Image_::BlockInit() {
             monsters[0].push_back(monster0_1);
         }
         }
-    else if (currentStage == HIDDEN) {
+    else if (currentStage == STAGE1) {
         if (!blocks[0].empty()) {
             blocks[0].clear();
             questionBlocks[0].clear();
@@ -1552,15 +1466,152 @@ void Image_::BlockInit() {
             holes[3].clear();
         }
         if (blocks[1].empty()) {
-            TBlock tblock1_1 = { 188, 346, 330, 126 };
-            TBlock tblock1_2 = { 0, 0, 48, 474 };
-            TBlock tblock1_3 = { 614, 388, 102, 86 };
-            TBlock tblock1_4 = { 716, 0, 84, 392 };
+            // Stage 1 Objects (currentStage == STAGE1)
+            Block block1_1 = { 320, 335, 16, 32 };
+            Block block1_2 = { 352, 335, 16, 32 };
+            Block block1_3 = { 384, 335, 16, 32 };
+            Block block1_4 = { 256, 335, 16, 42 };
+            Block block1_5 = { 352, 185, 16, 42 };
+            Block block1_6 = { 1280, 185, 130, 42 };
+            Block block1_7 = { 1232, 335, 16, 32 };
+            Block block1_8 = { 1264, 335, 16, 32 };
+            Block block1_9 = { 1456, 185, 16, 32 };
+            Block block1_10 = { 1472, 185, 16, 32 };
+            Block block1_11 = { 1488, 185, 16, 32 };
+            Block block1_12 = { 1600, 335, 16, 32 };
+            Block block1_13 = { 1616, 335, 16, 32 };
+            Block block1_14 = { 1744, 185, 16, 42 };
+            Block block1_15 = { 1888, 335, 16, 42 };
+            Block block1_16 = { 1936, 185, 16, 42 };
+            Block block1_17 = { 1952, 185, 16, 42 };
+            Block block1_18 = { 1968, 185, 16, 42 };
+            Block block1_19 = { 2048, 185, 16, 32 };
+            Block block1_20 = { 2096, 185, 16, 32 };
+            Block block1_21 = { 2064, 335, 16, 42 };
+            Block block1_22 = { 2080, 335, 16, 42 };
+            Block block1_23 = { 2688, 335, 16, 32 };
+            Block block1_24 = { 2704, 335, 16, 32 };
+            Block block1_25 = { 2736, 335, 16, 32 };
+            blocks[1].push_back(block1_1);
+            blocks[1].push_back(block1_2);
+            blocks[1].push_back(block1_3);
+            blocks[1].push_back(block1_4);
+            blocks[1].push_back(block1_5);
+            blocks[1].push_back(block1_6);
+            blocks[1].push_back(block1_7);
+            blocks[1].push_back(block1_8);
+            blocks[1].push_back(block1_9);
+            blocks[1].push_back(block1_10);
+            blocks[1].push_back(block1_11);
+            blocks[1].push_back(block1_12);
+            blocks[1].push_back(block1_13);
+            blocks[1].push_back(block1_14);
+            blocks[1].push_back(block1_15);
+            blocks[1].push_back(block1_16);
+            blocks[1].push_back(block1_17);
+            blocks[1].push_back(block1_18);
+            blocks[1].push_back(block1_19);
+            blocks[1].push_back(block1_20);
+            blocks[1].push_back(block1_21);
+            blocks[1].push_back(block1_22);
+            blocks[1].push_back(block1_23);
+            blocks[1].push_back(block1_24);
+            blocks[1].push_back(block1_25);
 
+            QuestionBlock qblock1_1 = { 336, 335, 16, 42, false };
+            QuestionBlock qblock1_2 = { 368, 335, 16, 42, false };
+            QuestionBlock qblock1_3 = { 1248, 335, 16, 42, false };
+            QuestionBlock qblock1_4 = { 1504, 335, 16, 42, false };
+            QuestionBlock qblock1_5 = { 1504, 185, 16, 42, false };
+            QuestionBlock qblock1_6 = { 1696, 335, 16, 42, false };
+            QuestionBlock qblock1_7 = { 1744, 335, 16, 42, false };
+            QuestionBlock qblock1_8 = { 1792, 335, 16, 42, false };
+            QuestionBlock qblock1_9 = { 2064, 185, 16, 42, false };
+            QuestionBlock qblock1_10 = { 2080, 185, 16, 42, false };
+            QuestionBlock qblock1_11 = { 2720, 335, 16, 42, false };
+            questionBlocks[1].push_back(qblock1_1);
+            questionBlocks[1].push_back(qblock1_2);
+            questionBlocks[1].push_back(qblock1_3);
+            questionBlocks[1].push_back(qblock1_4);
+            questionBlocks[1].push_back(qblock1_5);
+            questionBlocks[1].push_back(qblock1_6);
+            questionBlocks[1].push_back(qblock1_7);
+            questionBlocks[1].push_back(qblock1_8);
+            questionBlocks[1].push_back(qblock1_9);
+            questionBlocks[1].push_back(qblock1_10);
+            questionBlocks[1].push_back(qblock1_11);
+
+            TBlock tblock1_1 = { 448, 413, 32, 76 };
+            TBlock tblock1_2 = { 608, 375, 32, 110 };
+            TBlock tblock1_3 = { 736, 336, 32, 150 };
+            TBlock tblock1_4 = { 912, 336, 32, 150 };
+            TBlock tblock1_5 = { 2140, 448, 59, 38 };
+            TBlock tblock1_6 = { 2156, 410, 43, 38 };
+            TBlock tblock1_7 = { 2172, 372, 27, 38 };
+            TBlock tblock1_8 = { 2188, 334, 11, 38 };
+            TBlock tblock1_9 = { 2238, 334, 16, 38 };
+            TBlock tblock1_10 = { 2238, 372, 32, 38 };
+            TBlock tblock1_11 = { 2238, 410, 48, 38 };
+            TBlock tblock1_12 = { 2238, 448, 64, 38 };
+            TBlock tblock1_13 = { 2366, 448, 75, 38 };
+            TBlock tblock1_14 = { 2382, 410, 59, 38 };
+            TBlock tblock1_15 = { 2398, 372, 43, 38 };
+            TBlock tblock1_16 = { 2414, 334, 27, 38 };
+            TBlock tblock1_17 = { 2480, 334, 16, 38 };
+            TBlock tblock1_18 = { 2480, 372, 32, 38 };
+            TBlock tblock1_19 = { 2480, 410, 48, 38 };
+            TBlock tblock1_20 = { 2480, 448, 64, 38 };
+            TBlock tblock1_21 = { 2608, 413, 32, 76 };
+            TBlock tblock1_22 = { 2864, 413, 32, 76 };
+            TBlock tblock1_23 = { 2896, 448, 144, 38 };
+            TBlock tblock1_24 = { 2912, 410, 128, 38 };
+            TBlock tblock1_25 = { 2928, 372, 112, 38 };
+            TBlock tblock1_26 = { 2944, 334, 96, 38 };
+            TBlock tblock1_27 = { 2960, 296, 80, 38 };
+            TBlock tblock1_28 = { 2976, 258, 64, 38 };
+            TBlock tblock1_29 = { 2992, 220, 48, 38 };
+            TBlock tblock1_30 = { 3008, 182, 32, 38 };
             tBlocks[1].push_back(tblock1_1);
             tBlocks[1].push_back(tblock1_2);
             tBlocks[1].push_back(tblock1_3);
             tBlocks[1].push_back(tblock1_4);
+            tBlocks[1].push_back(tblock1_5);
+            tBlocks[1].push_back(tblock1_6);
+            tBlocks[1].push_back(tblock1_7);
+            tBlocks[1].push_back(tblock1_8);
+            tBlocks[1].push_back(tblock1_9);
+            tBlocks[1].push_back(tblock1_10);
+            tBlocks[1].push_back(tblock1_11);
+            tBlocks[1].push_back(tblock1_12);
+            tBlocks[1].push_back(tblock1_13);
+            tBlocks[1].push_back(tblock1_14);
+            tBlocks[1].push_back(tblock1_15);
+            tBlocks[1].push_back(tblock1_16);
+            tBlocks[1].push_back(tblock1_17);
+            tBlocks[1].push_back(tblock1_18);
+            tBlocks[1].push_back(tblock1_19);
+            tBlocks[1].push_back(tblock1_20);
+            tBlocks[1].push_back(tblock1_21);
+            tBlocks[1].push_back(tblock1_22);
+            tBlocks[1].push_back(tblock1_23);
+            tBlocks[1].push_back(tblock1_24);
+            tBlocks[1].push_back(tblock1_25);
+            tBlocks[1].push_back(tblock1_26);
+            tBlocks[1].push_back(tblock1_27);
+            tBlocks[1].push_back(tblock1_28);
+            tBlocks[1].push_back(tblock1_29);
+            tBlocks[1].push_back(tblock1_30);
+
+            Hole hole1_1 = { 1104, 487, 32, 74 };
+            Hole hole1_2 = { 1376, 487, 48, 74 };
+            Hole hole1_3 = { 2448, 487, 32, 74 };
+            holes[1].push_back(hole1_1);
+            holes[1].push_back(hole1_2);
+            holes[1].push_back(hole1_3);
+
+            // 깃발 블럭 추가 (Stage 1 끝부분)
+            FlagBlock flagBlock1_1 = { 3168, 94, 16, 392 }; // x=3100, 높이 286 (맨 아래 y=486
+            flagBlocks[1].push_back(flagBlock1_1);
         }
     }
     else if (currentStage == STAGE2) {
@@ -1583,29 +1634,37 @@ void Image_::BlockInit() {
             holes[3].clear();
         }
         if (blocks[2].empty()) {
-            TBlock tblock2_1 = { 291, 450, 57, 32 };
-            TBlock tblock2_2 = { 386, 338, 122, 32 };
-            TBlock tblock2_3 = { 419, 188, 73, 32 };
-            TBlock tblock2_4 = { 514, 450, 42, 32 };
-            TBlock tblock2_5 = { 291, 450, 57, 32 };
-            TBlock tblock2_6 = { 563, 300, 72, 32 };
-            TBlock tblock2_7 = { 643, 151, 103, 32 };
-            TBlock tblock2_8 = { 802, 488, 58, 32 };
-            TBlock tblock2_9 = { 945, 488, 72, 32 };
-            TBlock tblock2_10 = { 1042, 488, 72, 32 };
-            TBlock tblock2_11 = { 962, 189, 57, 32 };
-            TBlock tblock2_12 = { 1122, 339, 42, 32 };
-            TBlock tblock2_13 = { 1218, 226, 90, 32 };
-            TBlock tblock2_14 = { 1569, 414, 57, 32 };
-            TBlock tblock2_15 = { 1810, 488, 42, 32 };
-            TBlock tblock2_16 = { 1858, 339, 58, 32 };
-            TBlock tblock2_17 = { 1666, 263, 122, 32 };
-            TBlock tblock2_18 = { 1954, 339, 58, 32 };
-            TBlock tblock2_19 = { 0, 488, 252, 32 };
-            TBlock tblock2_20 = { 2209, 338, 93, 150 };
-            TBlock tblock2_21 = { 2241, 261, 62, 78 };
-            TBlock tblock2_22 = { 2271, 188, 32, 72 };
-            TBlock tblock2_23 = { 2065, 487, 751, 72 };
+            QuestionBlock qblock2_1 = { 480, 226, 16, 36, false };
+            questionBlocks[2].push_back(qblock2_1);
+
+            TBlock tblock2_1 = { 0, 262, 48, 36 };
+            TBlock tblock2_2 = { 48, 300, 16, 36 };
+            TBlock tblock2_3 = { 64, 336, 16, 36 };
+            TBlock tblock2_4 = { 80, 372, 128, 72 };
+            TBlock tblock2_5 = { 240, 372, 176, 108 };
+            TBlock tblock2_6 = { 0, 112, 386, 72 };
+            TBlock tblock2_7 = { 368, 184, 16, 36 };
+            TBlock tblock2_8 = { 464, 372, 48, 108 };
+            TBlock tblock2_9 = { 386, 74, 204, 36 };
+            TBlock tblock2_10 = { 590, 74, 562, 144 };
+            TBlock tblock2_11 = { 560, 336, 594, 144 };
+            TBlock tblock2_12 = { 1150, 74, 402, 36 };
+            TBlock tblock2_13 = { 1150, 374, 514, 108 };
+            TBlock tblock2_14 = { 1552, 74, 112, 108 };
+            TBlock tblock2_15 = { 1280, 110, 16, 36 };
+            TBlock tblock2_16 = { 1408, 110, 16, 36 };
+            TBlock tblock2_17 = { 1664, 482, 192, 36 };
+            TBlock tblock2_18 = { 1664, 74, 304, 36 };
+            TBlock tblock2_19 = { 1856, 374, 64, 108 };
+            TBlock tblock2_20 = { 1920, 482, 48, 36 };
+            TBlock tblock2_21 = { 1968, 374, 80, 108 };
+            TBlock tblock2_22 = { 1968, 74, 80, 108 };
+            TBlock tblock2_23 = { 2048, 374, 206, 36 };
+            TBlock tblock2_24 = { 2270, 74, 32, 144 };
+            TBlock tblock2_25 = { 2048, 74, 222, 36 };
+            TBlock tblock2_26 = { 2254, 336, 50, 144 };
+            TBlock tblock2_27 = { 2302, 74, 254, 36 };
+            TBlock tblock2_28 = { 2302, 484, 254, 36 };
 
             tBlocks[2].push_back(tblock2_1);
             tBlocks[2].push_back(tblock2_2);
@@ -1630,15 +1689,22 @@ void Image_::BlockInit() {
             tBlocks[2].push_back(tblock2_21);
             tBlocks[2].push_back(tblock2_22);
             tBlocks[2].push_back(tblock2_23);
+            tBlocks[2].push_back(tblock2_24);
+            tBlocks[2].push_back(tblock2_25);
+            tBlocks[2].push_back(tblock2_26);
+            tBlocks[2].push_back(tblock2_27);
+            tBlocks[2].push_back(tblock2_28);
 
-            QuestionBlock qblock2_1 = { 944, 376, 16, 36, false };
-            questionBlocks[2].push_back(qblock2_1);
-
-            Hole hole2_1 = { 257, 500, 1803, 69 };
+            Hole hole2_1 = { 208, 442, 32, 32 };
+            Hole hole2_2 = { 416, 480, 48, 32 };
+            Hole hole2_3 = { 512, 480, 48, 32 };
             holes[2].push_back(hole2_1);
+            holes[2].push_back(hole2_2);
+            holes[2].push_back(hole2_3);
+            
         }
         }
-    else if (currentStage == STAGE3) {
+    else if (currentStage == HIDDEN) {
             if (!blocks[0].empty()) {
                 blocks[0].clear();
                 questionBlocks[0].clear();
@@ -1658,73 +1724,17 @@ void Image_::BlockInit() {
                 holes[2].clear();
             }
             if (blocks[3].empty()) {
-                QuestionBlock qblock3_1 = { 480, 226, 16, 36, false };
-                questionBlocks[3].push_back(qblock3_1);
-
-                TBlock tblock3_1 = { 0, 262, 48, 36 };
-                TBlock tblock3_2 = { 48, 300, 16, 36 };
-                TBlock tblock3_3 = { 64, 336, 16, 36 };
-                TBlock tblock3_4 = { 80, 372, 128, 72 };
-                TBlock tblock3_5 = { 240, 372, 176, 108 };
-                TBlock tblock3_6 = { 0, 112, 386, 72 };
-                TBlock tblock3_7 = { 368, 184, 16, 36 };
-                TBlock tblock3_8 = { 464, 372, 48, 108 };
-                TBlock tblock3_9 = { 386, 74, 204, 36 };
-                TBlock tblock3_10 = { 590, 74, 562, 144 };
-                TBlock tblock3_11 = { 560, 336, 594, 144 };
-                TBlock tblock3_12 = { 1150, 74, 402, 36 };
-                TBlock tblock3_13 = { 1150, 374, 514, 108 };
-                TBlock tblock3_14 = { 1552, 74, 112, 108 };
-                TBlock tblock3_15 = { 1280, 110, 16, 36 };
-                TBlock tblock3_16 = { 1408, 110, 16, 36 };
-                TBlock tblock3_17 = { 1664, 482, 192, 36 };
-                TBlock tblock3_18 = { 1664, 74, 304, 36 };
-                TBlock tblock3_19 = { 1856, 374, 64, 108 };
-                TBlock tblock3_20 = { 1920, 482, 48, 36 };
-                TBlock tblock3_21 = { 1968, 374, 80, 108 };
-                TBlock tblock3_22 = { 1968, 74, 80, 108 };
-                TBlock tblock3_23 = { 2048, 374, 206, 36 };
-                TBlock tblock3_24 = { 2270, 74, 32, 144 };
-                TBlock tblock3_25 = { 2048, 74, 222, 36 };
-                TBlock tblock3_26 = { 2254, 336, 50, 144 };
-                TBlock tblock3_27 = { 2302, 74, 254, 36 };
-                TBlock tblock3_28 = { 2302, 484, 254, 36 };
+                TBlock tblock3_1 = { 188, 346, 330, 126 };
+                TBlock tblock3_2 = { 0, 0, 48, 474 };
+                TBlock tblock3_3 = { 614, 388, 102, 86 };
+                TBlock tblock3_4 = { 716, 0, 84, 392 };
+                TBlock tblock3_5 = { 188, 0, 330, 40 };
 
                 tBlocks[3].push_back(tblock3_1);
                 tBlocks[3].push_back(tblock3_2);
                 tBlocks[3].push_back(tblock3_3);
                 tBlocks[3].push_back(tblock3_4);
                 tBlocks[3].push_back(tblock3_5);
-                tBlocks[3].push_back(tblock3_6);
-                tBlocks[3].push_back(tblock3_7);
-                tBlocks[3].push_back(tblock3_8);
-                tBlocks[3].push_back(tblock3_9);
-                tBlocks[3].push_back(tblock3_10);
-                tBlocks[3].push_back(tblock3_11);
-                tBlocks[3].push_back(tblock3_12);
-                tBlocks[3].push_back(tblock3_13);
-                tBlocks[3].push_back(tblock3_14);
-                tBlocks[3].push_back(tblock3_15);
-                tBlocks[3].push_back(tblock3_16);
-                tBlocks[3].push_back(tblock3_17);
-                tBlocks[3].push_back(tblock3_18);
-                tBlocks[3].push_back(tblock3_19);
-                tBlocks[3].push_back(tblock3_20);
-                tBlocks[3].push_back(tblock3_21);
-                tBlocks[3].push_back(tblock3_22);
-                tBlocks[3].push_back(tblock3_23);
-                tBlocks[3].push_back(tblock3_24);
-                tBlocks[3].push_back(tblock3_25);
-                tBlocks[3].push_back(tblock3_26);
-                tBlocks[3].push_back(tblock3_27);
-                tBlocks[3].push_back(tblock3_28);
-
-                Hole hole3_1 = { 208, 442, 32, 32 };
-                Hole hole3_2 = { 416, 480, 48, 32 };
-                Hole hole3_3 = { 512, 480, 48, 32 };
-                holes[3].push_back(hole3_1);
-                holes[3].push_back(hole3_2);
-                holes[3].push_back(hole3_3);
             }
             }
 }
@@ -1733,10 +1743,10 @@ void Image_::DrawBackGround(int x, int y, HDC targetDC) {
     int cameraX = x - 400;
     if (cameraX < 0) cameraX = 0;
 
-    int srcWidth = (stage1 ? mStage1.GetWidth() : stage2 ? mStage2.GetWidth() :
-        stage3 ? mStage3.GetHeight() : mStageHidden.GetWidth());
-    int srcHeight = (stage1 ? mStage1.GetHeight() : stage2 ? mStage2.GetHeight() :
-        stage3 ? mStage3.GetHeight() : mStageHidden.GetHeight());
+    int srcWidth = (stage1 ? mStage1.GetWidth() : tutorial ? mStageTutorial.GetWidth() :
+        stage2 ? mStage2.GetWidth() : mStageHidden.GetWidth());
+    int srcHeight = (stage1 ? mStage1.GetHeight() : tutorial ? mStageTutorial.GetHeight() :
+        stage2 ? mStage2.GetHeight() : mStageHidden.GetHeight());
 
     if (srcWidth <= wRect.right) {
         cameraX = 0;
@@ -1748,14 +1758,14 @@ void Image_::DrawBackGround(int x, int y, HDC targetDC) {
     int destWidth = wRect.right;
     int destHeight = wRect.bottom;
 
-    if (stage1 && !mStage1.IsNull()) {
+    if (tutorial && !mStageTutorial.IsNull()) {
+        mStageTutorial.StretchBlt(targetDC, 0, 0, destWidth, destHeight, cameraX, 0, wRect.right, srcHeight, SRCCOPY);
+    }
+    else if (stage1 && !mStage1.IsNull()) {
         mStage1.StretchBlt(targetDC, 0, 0, destWidth, destHeight, cameraX, 0, wRect.right, srcHeight, SRCCOPY);
     }
     else if (stage2 && !mStage2.IsNull()) {
         mStage2.StretchBlt(targetDC, 0, 0, destWidth, destHeight, cameraX, 0, wRect.right, srcHeight, SRCCOPY);
-    }
-    else if (stage3 && !mStage3.IsNull()) {
-        mStage3.StretchBlt(targetDC, 0, 0, destWidth, destHeight, cameraX, 0, wRect.right, srcHeight, SRCCOPY);
     }
     else if (hidden && !mStageHidden.IsNull()) {
         mStageHidden.StretchBlt(targetDC, 0, 0, destWidth, destHeight, cameraX, 0, wRect.right, srcHeight, SRCCOPY);
@@ -1807,32 +1817,31 @@ void Image_::DrawBackGround(int x, int y, HDC targetDC) {
 }
 
 void Image_::NextStage() {
-    if (currentStage == 1) currentStage += 2;
-    else currentStage++;
-    if (currentStage > 4) currentStage = 1;
+    currentStage++;
+    if (currentStage > 3) currentStage = 1;
+    tutorial = (currentStage == TUTORIAL);
     stage1 = (currentStage == STAGE1);
     stage2 = (currentStage == STAGE2);
-    stage3 = (currentStage == STAGE3);
     Player.ResetPosition();
     BlockInit();
 }
 
 void Image_::EnterHiddenStage() {
     currentStage = HIDDEN;
+    tutorial = (currentStage == TUTORIAL);
     stage1 = (currentStage == STAGE1);
-    hidden = (currentStage == HIDDEN);
     stage2 = (currentStage == STAGE2);
-    stage3 = (currentStage == STAGE3);
+    hidden = (currentStage == HIDDEN);
     Player.ResetPosition();
     BlockInit();
 }
 
 void Image_::QuitHiddenStage() {
     currentStage = STAGE1;
+    tutorial = (currentStage == TUTORIAL);
     stage1 = (currentStage == STAGE1);
-    hidden = (currentStage == HIDDEN);
     stage2 = (currentStage == STAGE2);
-    stage3 = (currentStage == STAGE3);
+    hidden = (currentStage == HIDDEN);
     BlockInit();
 }
 
@@ -1842,10 +1851,10 @@ void Image_::Destroy() {
     Player_Move_Lizamong.Destroy();
     Player_Attack_Pairi.Destroy();
     Player_Attack_Lizamong.Destroy();
+    mStageTutorial.Destroy();
     mStage1.Destroy();
-    mStageHidden.Destroy();
     mStage2.Destroy();
-    mStage3.Destroy();
+    mStageHidden.Destroy();
     blockImage.Destroy();
     questionBlockImage[0].Destroy();
     questionBlockImage[1].Destroy();
@@ -1855,6 +1864,7 @@ void Image_::Destroy() {
             questionBlocks[i].clear();
             tBlocks[i].clear();
             holes[i].clear();
+            flagBlocks[i].clear();
         }
     }
 }
@@ -1863,10 +1873,10 @@ void Player_::DrawHitbox(HDC targetDC) {
     int hitboxX, hitboxY, hitboxWidth, hitboxHeight;
     GetHitbox(hitboxX, hitboxY, hitboxWidth, hitboxHeight);
 
-    int cameraX = GetCameraX(x_, Images.NowStage() == 1 ? Images.mStage1.GetWidth() :
-        Images.NowStage() == 2 ? Images.mStageHidden.GetWidth() :
-        Images.NowStage() == 3 ? Images.mStage2.GetWidth() :
-        Images.NowStage() == 4 ? Images.mStage3.GetWidth() : 0);
+    int cameraX = GetCameraX(x_, Images.NowStage() == TUTORIAL ? Images.mStageTutorial.GetWidth() :
+        Images.NowStage() == STAGE1 ? Images.mStage1.GetWidth() :
+        Images.NowStage() == STAGE2 ? Images.mStage2.GetWidth() :
+        Images.NowStage() == HIDDEN ? Images.mStageHidden.GetWidth() : 0);
 
     RECT screenHitbox = { hitbox_.left - cameraX, hitbox_.top, hitbox_.right - cameraX, hitbox_.bottom };
 
@@ -1879,10 +1889,10 @@ void Player_::DrawHitbox(HDC targetDC) {
 }
 
 void Image_::DrawHitBox(HDC targetDC) {
-    int cameraX = GetCameraX(Player.x(), NowStage() == STAGE1 ? mStage1.GetWidth() :
-        NowStage() == HIDDEN ? mStageHidden.GetWidth() :
+    int cameraX = GetCameraX(Player.x(), NowStage() == TUTORIAL ? mStageTutorial.GetWidth() :
+        NowStage() == STAGE1 ? mStage1.GetWidth() :
         NowStage() == STAGE2 ? mStage2.GetWidth() :
-        NowStage() == STAGE3 ? mStage3.GetWidth() : 0);
+        NowStage() == HIDDEN ? mStageHidden.GetWidth() : 0);
 
     // 블록 히트박스 그리기 (기존 코드 유지)
     HPEN blockPen = CreatePen(PS_DASH, 3, RGB(255, 255, 0));
