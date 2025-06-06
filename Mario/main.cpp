@@ -40,6 +40,7 @@ public:
 
     CImage Player_Move_Tino, Player_Move_Pairi, Player_Move_Lizard, Player_Move_Lizamong;
     CImage Player_Attack_Tino, Player_Attack_Pairi, Player_Attack_Lizamong;
+    CImage FireballImage;
     CImage mStage1, mStageHidden, mStageTutorial, mStage2;
     CImage blockImage;
     CImage questionBlockImage[2];
@@ -64,11 +65,21 @@ public:
         int x, y;
         int width, height;
     };
+    struct Fireball {
+        int x, y;
+        float velocityX;
+        float velocityY;
+        bool active;
+        int width, height;
+        int imageNum{};
+        int time{};
+    };
     std::vector<Block> blocks[4]{};
     std::vector<QuestionBlock> questionBlocks[4]{};
     std::vector<TBlock> tBlocks[4]{};
     std::vector<Hole> holes[4]{};
     std::vector<FlagBlock> flagBlocks[4]{};
+    std::vector<Fireball> fireballs; // 단일 벡터로 관리
 
     Image_() {
         for (int i = 0; i < 4; ++i) {
@@ -78,7 +89,8 @@ public:
             holes[i].clear();
             flagBlocks[i].clear();
         }
-        currentStage = 1;
+        fireballs.clear();
+        currentStage = TUTORIAL;
     };
     ~Image_() {};
 
@@ -98,12 +110,16 @@ public:
     Image_ Pimage;
     int imageNum;
     int time{};
+    int fireballCooldown;
+    bool attackKeyPressed;
+    bool jumpKeyPressed; // 점프 키 상태 추적
 
     void PlayerInit();
     void ResetPosition();
     void DrawPlayer(HDC targetDC);
     void Move();
     void Attack();
+    void FireballMove();
     bool Moving() { return move_; };
     void DrawHitbox(HDC targetDC);
 
@@ -118,11 +134,11 @@ public:
         State();
     };
     void turnMushroom() {
-        eatMushroom_ = !eatMushroom_;
-        if (eatMushroom_) {
-            groundY_ -= 13;
-            y_ -= 13;
+        if (State() == TINO || State() == PAIRI) {
+            groundY_ -= 15;
+            y_ -= 15;
         }
+        eatMushroom_ = !eatMushroom_;
         State();
     };
 
@@ -130,6 +146,7 @@ private:
     int x_, y_;
     int direct_;
     bool move_;
+    bool shoot_;
     bool eatFlower_;
     bool eatMushroom_;
     bool isJumping_;
@@ -137,7 +154,7 @@ private:
     int groundY_;
     int defaultGroundY_;
     bool isFallingIntoHole;
-    float fallProgress;
+    float fallProgress_;
     RECT hitbox_;
     bool isTouchingFlag; // 깃발 블럭에 닿았는지 여부
     float flagSlideProgress; // 깃발을 타고 내려가는 진행률
@@ -307,6 +324,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
         switch (wParam) {
         case 1: {
             Player.Move();
+            Player.FireballMove();
             break;
         }
         }
@@ -362,7 +380,7 @@ void Player_::PlayerInit() {
     groundY_ = 447;
     defaultGroundY_ = 447;
     isFallingIntoHole = false;
-    fallProgress = 0.0f;
+    fallProgress_ = 0.0f;
     Pimage = Images;
     hitbox_ = { x_ + 14, y_, x_ + 39, y_ + 39 };
     isTouchingFlag = false;
@@ -371,26 +389,32 @@ void Player_::PlayerInit() {
     flagBottomY = 0;
     isMovingRightAfterFlag = false;
     flagBlockStage = 0;
+    fireballCooldown = 0;
+    attackKeyPressed = false;
+    jumpKeyPressed = false;
 }
 
 void Player_::ResetPosition() {
     move_ = false;
     isJumping_ = false;
     jumpVelocity_ = 0.0f;
+    jumpKeyPressed = false;
     isFallingIntoHole = false;
     direct_ = RIGHT;
-    fallProgress = 0.0f;
+    fallProgress_ = 0.0f;
     time = 0;
+    fireballCooldown = 0;
+    attackKeyPressed = false;
     if (Images.NowStage() == TUTORIAL) {
-        x_ = 30;
-        y_ = 447;
-        groundY_ = 447;
-        defaultGroundY_ = 447;
+        x_ = 0;
+        y_ = 30;
+        groundY_ = 0;
+        defaultGroundY_ = 465;
     }
     else if (Images.NowStage() == STAGE1) {
         x_ = 10;
-        y_ = 447;
-        groundY_ = 447;
+        y_ = 0;
+        groundY_ = 1;
         defaultGroundY_ = 447;
     }
     else if (Images.NowStage() == STAGE2) {
@@ -420,7 +444,7 @@ void Player_::ResetPosition() {
 }
 
 void Player_::DrawPlayer(HDC targetDC) {
-    if (!Pimage.Player_Move_Pairi.IsNull()) {
+    if (!Pimage.Player_Move_Tino.IsNull()) {
         int cameraX = x_ - 400;
         if (cameraX < 0) cameraX = 0;
         int stageWidth = (Images.NowStage() == TUTORIAL ? Pimage.mStageTutorial.GetWidth() :
@@ -452,14 +476,26 @@ void Player_::DrawPlayer(HDC targetDC) {
             offsetX = 0;
         }
 
+        if (!Images.FireballImage.IsNull() && !Images.fireballs.empty()) {
+            for (auto& fireball : Images.fireballs) {
+                if (fireball.active) {
+                    int fireballOffsetX = fireball.x - cameraX;
+                    if (fireballOffsetX + fireball.width > 0 && fireballOffsetX < wRect.right) {
+                        Images.FireballImage.TransparentBlt(targetDC, fireballOffsetX, fireball.y, fireball.width, fireball.height,
+                            fireball.imageNum * 8, 0, 8, 8, RGB(146, 144, 255));
+                    }
+                }
+            }
+        }
+
         if (move_) {
             if (!eatFlower_) {
                 if (!eatMushroom_) { // TINO
                     if (direct_ == LEFT) {
                         if (isJumping_)
-                            Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, 10, 177, 36, 39, RGB(0, 255, 0));
+                            Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, 10, 175, 36, 39, RGB(0, 255, 0));
                         else
-                            Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, (2 - imageNum) * 56 + 10, 125, 36, 39, RGB(0, 255, 0));
+                            Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, (2 - imageNum) * 56 + 10, 124, 36, 39, RGB(0, 255, 0));
                     }
                     else if (direct_ == RIGHT) {
                         if (isJumping_)
@@ -471,9 +507,9 @@ void Player_::DrawPlayer(HDC targetDC) {
                 else if (eatMushroom_) { // LARGETINO
                     if (direct_ == LEFT) {
                         if (isJumping_)
-                            Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 49, 54, 10, 177, 36, 39, RGB(0, 255, 0));
+                            Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 49, 54, 10, 175, 36, 39, RGB(0, 255, 0));
                         else
-                            Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 49, 54, (2 - imageNum) * 56 + 10, 125, 36, 39, RGB(0, 255, 0));
+                            Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 49, 54, (2 - imageNum) * 56 + 10, 124, 36, 39, RGB(0, 255, 0));
                     }
                     else if (direct_ == RIGHT) {
                         if (isJumping_)
@@ -519,9 +555,9 @@ void Player_::DrawPlayer(HDC targetDC) {
                 if (!eatMushroom_) { // TINO
                     if (direct_ == LEFT) {
                         if (isJumping_)
-                            Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, 10, 177, 36, 39, RGB(0, 255, 0));
+                            Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, 10, 175, 36, 39, RGB(0, 255, 0));
                         else
-                            Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, (2 - imageNum) * 56 + 10, 177, 36, 39, RGB(0, 255, 0));
+                            Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 36, 39, (2 - imageNum) * 56 + 10, 175, 36, 39, RGB(0, 255, 0));
                     }
                     else if (direct_ == RIGHT) {
                         if (isJumping_)
@@ -533,9 +569,9 @@ void Player_::DrawPlayer(HDC targetDC) {
                 else if (eatMushroom_) { // LARGETINO
                     if (direct_ == LEFT) {
                         if (isJumping_)
-                            Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 49, 54, 10, 177, 36, 39, RGB(0, 255, 0));
+                            Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 49, 54, 10, 175, 36, 39, RGB(0, 255, 0));
                         else
-                            Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 49, 54, (2 - imageNum) * 56 + 10, 177, 36, 39, RGB(0, 255, 0));
+                            Pimage.Player_Move_Tino.TransparentBlt(targetDC, offsetX, y_, 49, 54, (2 - imageNum) * 56 + 10, 175, 36, 39, RGB(0, 255, 0));
                     }
                     else if (direct_ == RIGHT) {
                         if (isJumping_)
@@ -585,10 +621,10 @@ void Player_::DrawPlayer(HDC targetDC) {
 void Player_::Move() {
     if (isFallingIntoHole) {
         const float fallSpeed = 2.0f;
-        fallProgress += fallSpeed;
+        fallProgress_ += fallSpeed;
         y_ += static_cast<int>(fallSpeed);
 
-        if (fallProgress >= 100.0f) {
+        if (fallProgress_ >= 100.0f) {
             PostQuitMessage(0);
         }
         return;
@@ -676,20 +712,35 @@ void Player_::Move() {
         }
     }
 
-   
+    // 키 입력 처리
+    intendToMoveLeft = (GetAsyncKeyState(VK_LEFT) & 0x8000) != 0;
+    intendToMoveRight = (GetAsyncKeyState(VK_RIGHT) & 0x8000) != 0;
+    bool intendToJump = (GetAsyncKeyState(VK_UP) & 0x8000) != 0 && !jumpKeyPressed;
+    bool intendToAttack = (GetAsyncKeyState(VK_SPACE) & 0x8000) != 0 && !attackKeyPressed;
 
-    if (GetAsyncKeyState(VK_LEFT) & 0x8000) {
+    if (intendToMoveLeft) {
         direct_ = LEFT;
-        intendToMoveLeft = true;
         move_ = true;
         moved = true;
     }
-    if (GetAsyncKeyState(VK_RIGHT) & 0x8000) {
+    if (intendToMoveRight) {
         direct_ = RIGHT;
-        intendToMoveRight = true;
         move_ = true;
         moved = true;
     }
+    if (intendToJump && !isJumping_ && !isFallingIntoHole) {
+        isJumping_ = true;
+        jumpVelocity_ = JUMP_VELOCITY;
+        jumpKeyPressed = true;
+    }
+    if (intendToAttack) {
+        Attack();
+        attackKeyPressed = true;
+    }
+
+    // 키 해제 시 플래그 리셋
+    if (!(GetAsyncKeyState(VK_UP) & 0x8000)) jumpKeyPressed = false;
+    if (!(GetAsyncKeyState(VK_SPACE) & 0x8000)) attackKeyPressed = false;
 
     if (move_) {
         time++;
@@ -706,12 +757,14 @@ void Player_::Move() {
     }
 
     if (State() == LIZAMONG || State() == LARGETINO) {
-        if (Images.NowStage() == TUTORIAL || Images.NowStage() == STAGE1 || Images.NowStage() == STAGE2) defaultGroundY_ = 433;
+        if (Images.NowStage() == STAGE1 || Images.NowStage() == STAGE2) defaultGroundY_ = 433;
         else if (Images.NowStage() == HIDDEN) defaultGroundY_ = 421;
+        else if (Images.NowStage() == TUTORIAL) defaultGroundY_ = 451;
     }
     else {
-        if (Images.NowStage() == TUTORIAL || Images.NowStage() == STAGE1 || Images.NowStage() == STAGE2) defaultGroundY_ = 447;
+        if (Images.NowStage() == STAGE1 || Images.NowStage() == STAGE2) defaultGroundY_ = 447;
         else if (Images.NowStage() == HIDDEN) defaultGroundY_ = 435;
+        else if (Images.NowStage() == TUTORIAL) defaultGroundY_ = 465;
     }
 
     bool canMoveHorizontally = true;
@@ -810,11 +863,6 @@ void Player_::Move() {
             move_ = true;
             imageNum = 0;
         }
-    }
-
-    if (GetAsyncKeyState(VK_UP) & 0x8000 && !isJumping_) {
-        isJumping_ = true;
-        jumpVelocity_ = JUMP_VELOCITY;
     }
 
     if (isJumping_) {
@@ -943,8 +991,9 @@ void Player_::Move() {
             bool atHoleTop = prevPlayerBottom >= holeTop - 5 && isJumping_ == FALSE;
 
             if (withinHoleX && atHoleTop) {
+                isJumping_ = false;
                 isFallingIntoHole = true;
-                fallProgress = 0.0f;
+                fallProgress_ = 0.0f;
                 break;
             }
         }
@@ -1001,7 +1050,7 @@ void Player_::Move() {
             jumpVelocity_ = 0.0f;
             isFallingIntoHole = false;
             direct_ = RIGHT;
-            fallProgress = 0.0f;
+            fallProgress_ = 0.0f;
         }
     }
 
@@ -1104,638 +1153,804 @@ void Player_::Move() {
         move_ = false;
         if (!isJumping_) imageNum = 0;
         else if (isJumping_) {
-            if (State() == PAIRI) {
-                imageNum = (imageNum + 1) % 3;
-            }
-            else if (State() == LIZAMONG) {
-                imageNum = (imageNum + 1) % 4;
+            time++;
+            if (time == 3) {
+                if (State() == PAIRI) {
+                    imageNum = (imageNum + 1) % 3;
+                }
+                else if (State() == LIZAMONG) {
+                    imageNum = (imageNum + 1) % 4;
+                }
+                time = 0;
             }
         }
-        time = 0;
     }
     else if (!canMoveHorizontally && (intendToMoveLeft || intendToMoveRight) && !isJumping_) {
         move_ = true;
         imageNum = 0;
     }
-
+    if (fireballCooldown > 0) {
+        fireballCooldown--;
+    }
     State();
 }
 
-void Player_::Attack() {}
+void Player_::Attack() {
+    if (!eatFlower_) return;
 
-int Player_::State() {
-    if (!eatFlower_) {
-        if (!eatMushroom_) return TINO;
-        else if (eatMushroom_) return LARGETINO;
+    int playerHitboxX, playerHitboxY, playerHitboxWidth, playerHitboxHeight;
+    GetHitbox(playerHitboxX, playerHitboxY, playerHitboxWidth, playerHitboxHeight);
+
+    Image_::Fireball fireball;
+    fireball.width = 20;
+    fireball.height = 20;
+    fireball.active = true;
+
+    if (direct_ == RIGHT) {
+        fireball.x = hitbox_.right;
+        fireball.velocityX = 6.0f;
     }
     else {
-        if (!eatMushroom_) return PAIRI;
-        else return LIZAMONG;
+        fireball.x = hitbox_.left - fireball.width;
+        fireball.velocityX = -6.0f;
     }
+    fireball.y = playerHitboxY + playerHitboxHeight / 2;
+    fireball.velocityY = 0.0f;
+
+    Images.fireballs.push_back(fireball);
+    fireballCooldown = 2;
+
+    WCHAR buffer[100];
+    swprintf_s(buffer, L"Fireball shot: x=%d, y=%d, velocityX=%.2f\n", fireball.x, fireball.y, fireball.velocityX);
+    OutputDebugStringW(buffer);
+}
+
+void Player_::FireballMove() {
+    if (!Images.fireballs.empty()) {
+        auto& fireballs = Images.fireballs;
+        for (auto it = fireballs.begin(); it != fireballs.end(); /* 증가 연산은 내부에서 */) {
+            if (!it->active) {
+                ++it;
+                continue;
+            }
+
+            it->x += static_cast<int>(it->velocityX);
+            it->y += static_cast<int>(it->velocityY);
+            it->velocityY += GRAVITY;
+
+            int cameraX = x_ - 400;
+            if (cameraX < 0) cameraX = 0;
+            int stageWidth = (Images.NowStage() == TUTORIAL ? Images.mStageTutorial.GetWidth() :
+                Images.NowStage() == STAGE1 ? Images.mStage1.GetWidth() :
+                Images.NowStage() == STAGE2 ? Images.mStage2.GetWidth() :
+                Images.NowStage() == HIDDEN ? Images.mStageHidden.GetWidth() : 0);
+            if (cameraX > stageWidth - wRect.right) {
+                cameraX = stageWidth - wRect.right;
+            }
+
+            int fireballScreenX = it->x - cameraX;
+            if (fireballScreenX + it->width < 0 || fireballScreenX > wRect.right) {
+                it = fireballs.erase(it);
+                continue;
+            }
+
+            if (it->y + it->height >= defaultGroundY_) {
+                it->y = defaultGroundY_ - it->height;
+                it->velocityY = -4.0f;
+            }
+
+            bool hitWall = false;
+            for (const auto& block : Images.blocks[Images.currentStage - 1]) {
+                int blockLeft = block.x;
+                int blockRight = block.x + block.width;
+                int blockTop = block.y;
+                int blockBottom = block.y + block.height;
+
+                int fireballLeft = it->x;
+                int fireballRight = it->x + it->width;
+                int fireballTop = it->y;
+                int fireballBottom = it->y + it->height;
+
+                bool overlapX = fireballRight > blockLeft && fireballLeft < blockRight;
+                bool overlapY = fireballBottom > blockTop && fireballTop < blockBottom;
+
+                if (overlapX && overlapY) {
+                    hitWall = true;
+                    break;
+                }
+            }
+
+            if (!hitWall) {
+                for (const auto& qblock : Images.questionBlocks[Images.currentStage - 1]) {
+                    int qblockLeft = qblock.x;
+                    int qblockRight = qblock.x + qblock.width;
+                    int qblockTop = qblock.y;
+                    int qblockBottom = qblock.y + qblock.height;
+
+                    int fireballLeft = it->x;
+                    int fireballRight = it->x + it->width;
+                    int fireballTop = it->y;
+                    int fireballBottom = it->y + it->height;
+
+                    bool overlapX = fireballRight > qblockLeft && fireballLeft < qblockRight;
+                    bool overlapY = fireballBottom > qblockTop && fireballTop < qblockBottom;
+
+                    if (overlapX && overlapY) {
+                        hitWall = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!hitWall) {
+                for (size_t i = 0; i < Images.tBlocks[Images.currentStage - 1].size(); i++) {
+                    const auto& tblock = Images.tBlocks[Images.currentStage - 1][i];
+                    int tblockLeft = tblock.x;
+                    int tblockRight = tblock.x + tblock.width;
+                    int tblockTop = tblock.y;
+                    int tblockBottom = tblock.y + tblock.height;
+
+                    int fireballLeft = it->x;
+                    int fireballRight = it->x + it->width;
+                    int fireballTop = it->y;
+                    int fireballBottom = it->y + it->height;
+
+                    bool overlapX = fireballRight > tblockLeft && fireballLeft < tblockRight;
+                    bool overlapY = fireballBottom > tblockTop && fireballTop < tblockBottom;
+
+                    if (overlapX && overlapY) {
+                        hitWall = true;
+                        break;
+                    }
+                }
+            }
+
+            if (hitWall || it->x < 0 || it->x + it->width > stageWidth) {
+                it = fireballs.erase(it);
+                continue;
+            }
+            it->time++;
+            if (it->time == 3) {
+                it->imageNum = (it->imageNum + 1) % 4;
+                it->time = 0;
+            }
+            ++it;
+        }
+    }
+}
+
+int Player_::State() {
+	if (!eatFlower_) {
+		if (!eatMushroom_) return TINO;
+		else if (eatMushroom_) {
+			return LARGETINO;
+		}
+	}
+	else {
+		if (!eatMushroom_) return PAIRI;
+		else return LIZAMONG;
+	}
 }
 
 void Image_::ImageInit() {
-    Player_Move_Tino.Load(TEXT("Image/티노 스프라이트.png"));
-    Player_Move_Pairi.Load(TEXT("Image/파이리 스프라이트.png"));
-    Player_Move_Lizard.Load(TEXT("Image/리자드 스프라이트.png"));
-    Player_Move_Lizamong.Load(TEXT("Image/리자몽 스프라이트.png"));
+	Player_Move_Tino.Load(TEXT("Image/티노 스프라이트.png"));
+	Player_Move_Pairi.Load(TEXT("Image/파이리 스프라이트.png"));
+	Player_Move_Lizard.Load(TEXT("Image/리자드 스프라이트.png"));
+	Player_Move_Lizamong.Load(TEXT("Image/리자몽 스프라이트.png"));
 
-    Player_Attack_Tino.Load(TEXT("Image/티노 스프라이트.png"));
-    Player_Attack_Pairi.Load(TEXT("Image/파이리 스프라이트.png"));
-    Player_Attack_Lizamong.Load(TEXT("Image/리자몽 스프라이트.png"));
+	Player_Attack_Tino.Load(TEXT("Image/티노 스프라이트.png"));
+	Player_Attack_Pairi.Load(TEXT("Image/파이리 스프라이트.png"));
+	Player_Attack_Lizamong.Load(TEXT("Image/리자몽 스프라이트.png"));
 
-    mStageTutorial.Load(TEXT("Image/튜토리얼.png"));
-    mStage1.Load(TEXT("Image/월드 1.png"));
-    mStage2.Load(TEXT("Image/월드 2.png"));
-    mStageHidden.Load(TEXT("Image/히든 스테이지.png"));
+	mStageTutorial.Load(TEXT("Image/튜토리얼.png"));
+	mStage1.Load(TEXT("Image/월드 1.png"));
+	mStage2.Load(TEXT("Image/월드 2.png"));
+	mStageHidden.Load(TEXT("Image/히든 스테이지.png"));
 
-    blockImage.Load(TEXT("Image/BrickBlockBrown.png"));
-    questionBlockImage[0].Load(TEXT("Image/QuestionBlock.gif"));
-    questionBlockImage[1].Load(TEXT("Image/HitQuestionBlock.png"));
+	blockImage.Load(TEXT("Image/BrickBlockBrown.png"));
+	questionBlockImage[0].Load(TEXT("Image/QuestionBlock.gif"));
+	questionBlockImage[1].Load(TEXT("Image/HitQuestionBlock.png"));
 
-    tutorial = stage1 = stage2 = hidden = false;
-    currentStage = TUTORIAL;
+	FireballImage.Load(TEXT("Image/Fireball.png"));
+
+	tutorial = stage1 = stage2 = hidden = false;
+	currentStage = TUTORIAL;
 }
 
 void Image_::BlockInit() {
-    if (currentStage == TUTORIAL) {
-        if (!blocks[1].empty()) {
-            blocks[1].clear();
-            questionBlocks[1].clear();
-            tBlocks[1].clear();
-            holes[1].clear();
-            flagBlocks[1].clear();
-        }
-        if (!blocks[2].empty()) {
-            blocks[2].clear();
-            questionBlocks[2].clear();
-            tBlocks[2].clear();
-            holes[2].clear();
-            flagBlocks[2].clear();
-        }
-        if (!blocks[3].empty()) {
-            blocks[3].clear();
-            questionBlocks[3].clear();
-            tBlocks[3].clear();
-            holes[3].clear();
-            flagBlocks[3].clear();
-        }
-        if (blocks[0].empty()) {
-            TBlock tblock0_1 = { 291, 450, 57, 32 };
-            TBlock tblock0_2 = { 386, 338, 122, 32 };
-            TBlock tblock0_3 = { 419, 188, 73, 32 };
-            TBlock tblock0_4 = { 514, 450, 42, 32 };
-            TBlock tblock0_5 = { 291, 450, 57, 32 };
-            TBlock tblock0_6 = { 563, 300, 72, 32 };
-            TBlock tblock0_7 = { 643, 151, 103, 32 };
-            TBlock tblock0_8 = { 802, 488, 58, 32 };
-            TBlock tblock0_9 = { 945, 488, 72, 32 };
-            TBlock tblock0_10 = { 1042, 488, 72, 32 };
-            TBlock tblock0_11 = { 962, 189, 57, 32 };
-            TBlock tblock0_12 = { 1122, 339, 42, 32 };
-            TBlock tblock0_13 = { 1218, 226, 90, 32 };
-            TBlock tblock0_14 = { 1569, 414, 57, 32 };
-            TBlock tblock0_15 = { 1810, 488, 42, 32 };
-            TBlock tblock0_16 = { 1858, 339, 58, 32 };
-            TBlock tblock0_17 = { 1666, 263, 122, 32 };
-            TBlock tblock0_18 = { 1954, 339, 58, 32 };
-            TBlock tblock0_19 = { 0, 488, 252, 32 };
-            TBlock tblock0_20 = { 2209, 338, 93, 150 };
-            TBlock tblock0_21 = { 2241, 261, 62, 78 };
-            TBlock tblock0_22 = { 2271, 188, 32, 72 };
-            TBlock tblock0_23 = { 2065, 487, 751, 72 };
+	if (currentStage == TUTORIAL) {
+		if (!blocks[1].empty()) {
+			blocks[1].clear();
+			questionBlocks[1].clear();
+			tBlocks[1].clear();
+			holes[1].clear();
+			flagBlocks[1].clear();
+		}
+		if (!blocks[2].empty()) {
+			blocks[2].clear();
+			questionBlocks[2].clear();
+			tBlocks[2].clear();
+			holes[2].clear();
+			flagBlocks[2].clear();
+		}
+		if (!blocks[3].empty()) {
+			blocks[3].clear();
+			questionBlocks[3].clear();
+			tBlocks[3].clear();
+			holes[3].clear();
+			flagBlocks[3].clear();
+		}
+		if (blocks[0].empty()) {
+			TBlock tblock0_1 = { 291, 450, 57, 32 };
+			TBlock tblock0_2 = { 386, 338, 122, 32 };
+			TBlock tblock0_3 = { 419, 188, 73, 32 };
+			TBlock tblock0_4 = { 514, 450, 42, 32 };
+			TBlock tblock0_5 = { 291, 450, 57, 32 };
+			TBlock tblock0_6 = { 563, 300, 72, 32 };
+			TBlock tblock0_7 = { 643, 151, 103, 32 };
+			TBlock tblock0_8 = { 802, 488, 58, 32 };
+			TBlock tblock0_9 = { 945, 488, 72, 32 };
+			TBlock tblock0_10 = { 1042, 488, 72, 32 };
+			TBlock tblock0_11 = { 962, 189, 57, 32 };
+			TBlock tblock0_12 = { 1122, 339, 42, 32 };
+			TBlock tblock0_13 = { 1218, 226, 90, 32 };
+			TBlock tblock0_14 = { 1569, 414, 57, 32 };
+			TBlock tblock0_15 = { 1810, 488, 42, 32 };
+			TBlock tblock0_16 = { 1858, 339, 58, 32 };
+			TBlock tblock0_17 = { 1666, 263, 122, 32 };
+			TBlock tblock0_18 = { 1954, 339, 58, 32 };
+			TBlock tblock0_19 = { 0, 488, 252, 32 };
+			TBlock tblock0_20 = { 2209, 338, 93, 150 };
+			TBlock tblock0_21 = { 2241, 261, 62, 78 };
+			TBlock tblock0_22 = { 2271, 188, 32, 72 };
+			TBlock tblock0_23 = { 2065, 487, 751, 72 };
 
-            tBlocks[0].push_back(tblock0_1);
-            tBlocks[0].push_back(tblock0_2);
-            tBlocks[0].push_back(tblock0_3);
-            tBlocks[0].push_back(tblock0_4);
-            tBlocks[0].push_back(tblock0_5);
-            tBlocks[0].push_back(tblock0_6);
-            tBlocks[0].push_back(tblock0_7);
-            tBlocks[0].push_back(tblock0_8);
-            tBlocks[0].push_back(tblock0_9);
-            tBlocks[0].push_back(tblock0_10);
-            tBlocks[0].push_back(tblock0_11);
-            tBlocks[0].push_back(tblock0_12);
-            tBlocks[0].push_back(tblock0_13);
-            tBlocks[0].push_back(tblock0_14);
-            tBlocks[0].push_back(tblock0_15);
-            tBlocks[0].push_back(tblock0_16);
-            tBlocks[0].push_back(tblock0_17);
-            tBlocks[0].push_back(tblock0_18);
-            tBlocks[0].push_back(tblock0_19);
-            tBlocks[0].push_back(tblock0_20);
-            tBlocks[0].push_back(tblock0_21);
-            tBlocks[0].push_back(tblock0_22);
-            tBlocks[0].push_back(tblock0_23);
+			tBlocks[0].push_back(tblock0_1);
+			tBlocks[0].push_back(tblock0_2);
+			tBlocks[0].push_back(tblock0_3);
+			tBlocks[0].push_back(tblock0_4);
+			tBlocks[0].push_back(tblock0_5);
+			tBlocks[0].push_back(tblock0_6);
+			tBlocks[0].push_back(tblock0_7);
+			tBlocks[0].push_back(tblock0_8);
+			tBlocks[0].push_back(tblock0_9);
+			tBlocks[0].push_back(tblock0_10);
+			tBlocks[0].push_back(tblock0_11);
+			tBlocks[0].push_back(tblock0_12);
+			tBlocks[0].push_back(tblock0_13);
+			tBlocks[0].push_back(tblock0_14);
+			tBlocks[0].push_back(tblock0_15);
+			tBlocks[0].push_back(tblock0_16);
+			tBlocks[0].push_back(tblock0_17);
+			tBlocks[0].push_back(tblock0_18);
+			tBlocks[0].push_back(tblock0_19);
+			tBlocks[0].push_back(tblock0_20);
+			tBlocks[0].push_back(tblock0_21);
+			tBlocks[0].push_back(tblock0_22);
+			tBlocks[0].push_back(tblock0_23);
 
-            QuestionBlock qblock0_1 = { 944, 376, 16, 36, false };
-            questionBlocks[0].push_back(qblock0_1);
+			QuestionBlock qblock0_1 = { 944, 376, 16, 36, false };
+			questionBlocks[0].push_back(qblock0_1);
 
-            Hole hole0_1 = { 257, 500, 1803, 69 };
-            holes[0].push_back(hole0_1);
-        }
-        }
-    else if (currentStage == STAGE1) {
-        if (!blocks[0].empty()) {
-            blocks[0].clear();
-            questionBlocks[0].clear();
-            tBlocks[0].clear();
-            holes[0].clear();
-        }
-        if (!blocks[2].empty()) {
-            blocks[2].clear();
-            questionBlocks[2].clear();
-            tBlocks[2].clear();
-            holes[2].clear();
-        }
-        if (!blocks[3].empty()) {
-            blocks[3].clear();
-            questionBlocks[0].clear();
-            tBlocks[3].clear();
-            holes[3].clear();
-        }
-        if (blocks[1].empty()) {
-            // Stage 1 Objects (currentStage == STAGE1)
-            Block block1_1 = { 320, 335, 16, 32 };
-            Block block1_2 = { 352, 335, 16, 32 };
-            Block block1_3 = { 384, 335, 16, 32 };
-            Block block1_4 = { 256, 335, 16, 42 };
-            Block block1_5 = { 352, 185, 16, 42 };
-            Block block1_6 = { 1280, 185, 130, 42 };
-            Block block1_7 = { 1232, 335, 16, 32 };
-            Block block1_8 = { 1264, 335, 16, 32 };
-            Block block1_9 = { 1456, 185, 16, 32 };
-            Block block1_10 = { 1472, 185, 16, 32 };
-            Block block1_11 = { 1488, 185, 16, 32 };
-            Block block1_12 = { 1600, 335, 16, 32 };
-            Block block1_13 = { 1616, 335, 16, 32 };
-            Block block1_14 = { 1744, 185, 16, 42 };
-            Block block1_15 = { 1888, 335, 16, 42 };
-            Block block1_16 = { 1936, 185, 16, 42 };
-            Block block1_17 = { 1952, 185, 16, 42 };
-            Block block1_18 = { 1968, 185, 16, 42 };
-            Block block1_19 = { 2048, 185, 16, 32 };
-            Block block1_20 = { 2096, 185, 16, 32 };
-            Block block1_21 = { 2064, 335, 16, 42 };
-            Block block1_22 = { 2080, 335, 16, 42 };
-            Block block1_23 = { 2688, 335, 16, 32 };
-            Block block1_24 = { 2704, 335, 16, 32 };
-            Block block1_25 = { 2736, 335, 16, 32 };
-            blocks[1].push_back(block1_1);
-            blocks[1].push_back(block1_2);
-            blocks[1].push_back(block1_3);
-            blocks[1].push_back(block1_4);
-            blocks[1].push_back(block1_5);
-            blocks[1].push_back(block1_6);
-            blocks[1].push_back(block1_7);
-            blocks[1].push_back(block1_8);
-            blocks[1].push_back(block1_9);
-            blocks[1].push_back(block1_10);
-            blocks[1].push_back(block1_11);
-            blocks[1].push_back(block1_12);
-            blocks[1].push_back(block1_13);
-            blocks[1].push_back(block1_14);
-            blocks[1].push_back(block1_15);
-            blocks[1].push_back(block1_16);
-            blocks[1].push_back(block1_17);
-            blocks[1].push_back(block1_18);
-            blocks[1].push_back(block1_19);
-            blocks[1].push_back(block1_20);
-            blocks[1].push_back(block1_21);
-            blocks[1].push_back(block1_22);
-            blocks[1].push_back(block1_23);
-            blocks[1].push_back(block1_24);
-            blocks[1].push_back(block1_25);
+			Hole hole0_1 = { 257, 500, 1803, 69 };
+			holes[0].push_back(hole0_1);
+		}
+	}
+	else if (currentStage == STAGE1) {
+		if (!blocks[0].empty()) {
+			blocks[0].clear();
+			questionBlocks[0].clear();
+			tBlocks[0].clear();
+			holes[0].clear();
+		}
+		if (!blocks[2].empty()) {
+			blocks[2].clear();
+			questionBlocks[2].clear();
+			tBlocks[2].clear();
+			holes[2].clear();
+		}
+		if (!blocks[3].empty()) {
+			blocks[3].clear();
+			questionBlocks[0].clear();
+			tBlocks[3].clear();
+			holes[3].clear();
+		}
+		if (blocks[1].empty()) {
+			// Stage 1 Objects (currentStage == STAGE1)
+			Block block1_1 = { 320, 335, 16, 32 };
+			Block block1_2 = { 352, 335, 16, 32 };
+			Block block1_3 = { 384, 335, 16, 32 };
+			Block block1_4 = { 256, 335, 16, 42 };
+			Block block1_5 = { 352, 185, 16, 42 };
+			Block block1_6 = { 1280, 185, 130, 42 };
+			Block block1_7 = { 1232, 335, 16, 32 };
+			Block block1_8 = { 1264, 335, 16, 32 };
+			Block block1_9 = { 1456, 185, 16, 32 };
+			Block block1_10 = { 1472, 185, 16, 32 };
+			Block block1_11 = { 1488, 185, 16, 32 };
+			Block block1_12 = { 1600, 335, 16, 32 };
+			Block block1_13 = { 1616, 335, 16, 32 };
+			Block block1_14 = { 1744, 185, 16, 42 };
+			Block block1_15 = { 1888, 335, 16, 42 };
+			Block block1_16 = { 1936, 185, 16, 42 };
+			Block block1_17 = { 1952, 185, 16, 42 };
+			Block block1_18 = { 1968, 185, 16, 42 };
+			Block block1_19 = { 2048, 185, 16, 32 };
+			Block block1_20 = { 2096, 185, 16, 32 };
+			Block block1_21 = { 2064, 335, 16, 42 };
+			Block block1_22 = { 2080, 335, 16, 42 };
+			Block block1_23 = { 2688, 335, 16, 32 };
+			Block block1_24 = { 2704, 335, 16, 32 };
+			Block block1_25 = { 2736, 335, 16, 32 };
+			blocks[1].push_back(block1_1);
+			blocks[1].push_back(block1_2);
+			blocks[1].push_back(block1_3);
+			blocks[1].push_back(block1_4);
+			blocks[1].push_back(block1_5);
+			blocks[1].push_back(block1_6);
+			blocks[1].push_back(block1_7);
+			blocks[1].push_back(block1_8);
+			blocks[1].push_back(block1_9);
+			blocks[1].push_back(block1_10);
+			blocks[1].push_back(block1_11);
+			blocks[1].push_back(block1_12);
+			blocks[1].push_back(block1_13);
+			blocks[1].push_back(block1_14);
+			blocks[1].push_back(block1_15);
+			blocks[1].push_back(block1_16);
+			blocks[1].push_back(block1_17);
+			blocks[1].push_back(block1_18);
+			blocks[1].push_back(block1_19);
+			blocks[1].push_back(block1_20);
+			blocks[1].push_back(block1_21);
+			blocks[1].push_back(block1_22);
+			blocks[1].push_back(block1_23);
+			blocks[1].push_back(block1_24);
+			blocks[1].push_back(block1_25);
 
-            QuestionBlock qblock1_1 = { 336, 335, 16, 42, false };
-            QuestionBlock qblock1_2 = { 368, 335, 16, 42, false };
-            QuestionBlock qblock1_3 = { 1248, 335, 16, 42, false };
-            QuestionBlock qblock1_4 = { 1504, 335, 16, 42, false };
-            QuestionBlock qblock1_5 = { 1504, 185, 16, 42, false };
-            QuestionBlock qblock1_6 = { 1696, 335, 16, 42, false };
-            QuestionBlock qblock1_7 = { 1744, 335, 16, 42, false };
-            QuestionBlock qblock1_8 = { 1792, 335, 16, 42, false };
-            QuestionBlock qblock1_9 = { 2064, 185, 16, 42, false };
-            QuestionBlock qblock1_10 = { 2080, 185, 16, 42, false };
-            QuestionBlock qblock1_11 = { 2720, 335, 16, 42, false };
-            questionBlocks[1].push_back(qblock1_1);
-            questionBlocks[1].push_back(qblock1_2);
-            questionBlocks[1].push_back(qblock1_3);
-            questionBlocks[1].push_back(qblock1_4);
-            questionBlocks[1].push_back(qblock1_5);
-            questionBlocks[1].push_back(qblock1_6);
-            questionBlocks[1].push_back(qblock1_7);
-            questionBlocks[1].push_back(qblock1_8);
-            questionBlocks[1].push_back(qblock1_9);
-            questionBlocks[1].push_back(qblock1_10);
-            questionBlocks[1].push_back(qblock1_11);
+			QuestionBlock qblock1_1 = { 336, 335, 16, 42, false };
+			QuestionBlock qblock1_2 = { 368, 335, 16, 42, false };
+			QuestionBlock qblock1_3 = { 1248, 335, 16, 42, false };
+			QuestionBlock qblock1_4 = { 1504, 335, 16, 42, false };
+			QuestionBlock qblock1_5 = { 1504, 185, 16, 42, false };
+			QuestionBlock qblock1_6 = { 1696, 335, 16, 42, false };
+			QuestionBlock qblock1_7 = { 1744, 335, 16, 42, false };
+			QuestionBlock qblock1_8 = { 1792, 335, 16, 42, false };
+			QuestionBlock qblock1_9 = { 2064, 185, 16, 42, false };
+			QuestionBlock qblock1_10 = { 2080, 185, 16, 42, false };
+			QuestionBlock qblock1_11 = { 2720, 335, 16, 42, false };
+			questionBlocks[1].push_back(qblock1_1);
+			questionBlocks[1].push_back(qblock1_2);
+			questionBlocks[1].push_back(qblock1_3);
+			questionBlocks[1].push_back(qblock1_4);
+			questionBlocks[1].push_back(qblock1_5);
+			questionBlocks[1].push_back(qblock1_6);
+			questionBlocks[1].push_back(qblock1_7);
+			questionBlocks[1].push_back(qblock1_8);
+			questionBlocks[1].push_back(qblock1_9);
+			questionBlocks[1].push_back(qblock1_10);
+			questionBlocks[1].push_back(qblock1_11);
 
-            TBlock tblock1_1 = { 448, 413, 32, 76 };
-            TBlock tblock1_2 = { 608, 375, 32, 110 };
-            TBlock tblock1_3 = { 736, 336, 32, 150 };
-            TBlock tblock1_4 = { 912, 336, 32, 150 };
-            TBlock tblock1_5 = { 2140, 448, 59, 38 };
-            TBlock tblock1_6 = { 2156, 410, 43, 38 };
-            TBlock tblock1_7 = { 2172, 372, 27, 38 };
-            TBlock tblock1_8 = { 2188, 334, 11, 38 };
-            TBlock tblock1_9 = { 2238, 334, 16, 38 };
-            TBlock tblock1_10 = { 2238, 372, 32, 38 };
-            TBlock tblock1_11 = { 2238, 410, 48, 38 };
-            TBlock tblock1_12 = { 2238, 448, 64, 38 };
-            TBlock tblock1_13 = { 2366, 448, 75, 38 };
-            TBlock tblock1_14 = { 2382, 410, 59, 38 };
-            TBlock tblock1_15 = { 2398, 372, 43, 38 };
-            TBlock tblock1_16 = { 2414, 334, 27, 38 };
-            TBlock tblock1_17 = { 2480, 334, 16, 38 };
-            TBlock tblock1_18 = { 2480, 372, 32, 38 };
-            TBlock tblock1_19 = { 2480, 410, 48, 38 };
-            TBlock tblock1_20 = { 2480, 448, 64, 38 };
-            TBlock tblock1_21 = { 2608, 413, 32, 76 };
-            TBlock tblock1_22 = { 2864, 413, 32, 76 };
-            TBlock tblock1_23 = { 2896, 448, 144, 38 };
-            TBlock tblock1_24 = { 2912, 410, 128, 38 };
-            TBlock tblock1_25 = { 2928, 372, 112, 38 };
-            TBlock tblock1_26 = { 2944, 334, 96, 38 };
-            TBlock tblock1_27 = { 2960, 296, 80, 38 };
-            TBlock tblock1_28 = { 2976, 258, 64, 38 };
-            TBlock tblock1_29 = { 2992, 220, 48, 38 };
-            TBlock tblock1_30 = { 3008, 182, 32, 38 };
-            tBlocks[1].push_back(tblock1_1);
-            tBlocks[1].push_back(tblock1_2);
-            tBlocks[1].push_back(tblock1_3);
-            tBlocks[1].push_back(tblock1_4);
-            tBlocks[1].push_back(tblock1_5);
-            tBlocks[1].push_back(tblock1_6);
-            tBlocks[1].push_back(tblock1_7);
-            tBlocks[1].push_back(tblock1_8);
-            tBlocks[1].push_back(tblock1_9);
-            tBlocks[1].push_back(tblock1_10);
-            tBlocks[1].push_back(tblock1_11);
-            tBlocks[1].push_back(tblock1_12);
-            tBlocks[1].push_back(tblock1_13);
-            tBlocks[1].push_back(tblock1_14);
-            tBlocks[1].push_back(tblock1_15);
-            tBlocks[1].push_back(tblock1_16);
-            tBlocks[1].push_back(tblock1_17);
-            tBlocks[1].push_back(tblock1_18);
-            tBlocks[1].push_back(tblock1_19);
-            tBlocks[1].push_back(tblock1_20);
-            tBlocks[1].push_back(tblock1_21);
-            tBlocks[1].push_back(tblock1_22);
-            tBlocks[1].push_back(tblock1_23);
-            tBlocks[1].push_back(tblock1_24);
-            tBlocks[1].push_back(tblock1_25);
-            tBlocks[1].push_back(tblock1_26);
-            tBlocks[1].push_back(tblock1_27);
-            tBlocks[1].push_back(tblock1_28);
-            tBlocks[1].push_back(tblock1_29);
-            tBlocks[1].push_back(tblock1_30);
+			TBlock tblock1_1 = { 448, 413, 32, 76 };
+			TBlock tblock1_2 = { 608, 375, 32, 110 };
+			TBlock tblock1_3 = { 736, 336, 32, 150 };
+			TBlock tblock1_4 = { 912, 336, 32, 150 };
+			TBlock tblock1_5 = { 2140, 448, 59, 38 };
+			TBlock tblock1_6 = { 2156, 410, 43, 38 };
+			TBlock tblock1_7 = { 2172, 372, 27, 38 };
+			TBlock tblock1_8 = { 2188, 334, 11, 38 };
+			TBlock tblock1_9 = { 2238, 334, 16, 38 };
+			TBlock tblock1_10 = { 2238, 372, 32, 38 };
+			TBlock tblock1_11 = { 2238, 410, 48, 38 };
+			TBlock tblock1_12 = { 2238, 448, 64, 38 };
+			TBlock tblock1_13 = { 2366, 448, 75, 38 };
+			TBlock tblock1_14 = { 2382, 410, 59, 38 };
+			TBlock tblock1_15 = { 2398, 372, 43, 38 };
+			TBlock tblock1_16 = { 2414, 334, 27, 38 };
+			TBlock tblock1_17 = { 2480, 334, 16, 38 };
+			TBlock tblock1_18 = { 2480, 372, 32, 38 };
+			TBlock tblock1_19 = { 2480, 410, 48, 38 };
+			TBlock tblock1_20 = { 2480, 448, 64, 38 };
+			TBlock tblock1_21 = { 2608, 413, 32, 76 };
+			TBlock tblock1_22 = { 2864, 413, 32, 76 };
+			TBlock tblock1_23 = { 2896, 448, 144, 38 };
+			TBlock tblock1_24 = { 2912, 410, 128, 38 };
+			TBlock tblock1_25 = { 2928, 372, 112, 38 };
+			TBlock tblock1_26 = { 2944, 334, 96, 38 };
+			TBlock tblock1_27 = { 2960, 296, 80, 38 };
+			TBlock tblock1_28 = { 2976, 258, 64, 38 };
+			TBlock tblock1_29 = { 2992, 220, 48, 38 };
+			TBlock tblock1_30 = { 3008, 182, 32, 38 };
+			tBlocks[1].push_back(tblock1_1);
+			tBlocks[1].push_back(tblock1_2);
+			tBlocks[1].push_back(tblock1_3);
+			tBlocks[1].push_back(tblock1_4);
+			tBlocks[1].push_back(tblock1_5);
+			tBlocks[1].push_back(tblock1_6);
+			tBlocks[1].push_back(tblock1_7);
+			tBlocks[1].push_back(tblock1_8);
+			tBlocks[1].push_back(tblock1_9);
+			tBlocks[1].push_back(tblock1_10);
+			tBlocks[1].push_back(tblock1_11);
+			tBlocks[1].push_back(tblock1_12);
+			tBlocks[1].push_back(tblock1_13);
+			tBlocks[1].push_back(tblock1_14);
+			tBlocks[1].push_back(tblock1_15);
+			tBlocks[1].push_back(tblock1_16);
+			tBlocks[1].push_back(tblock1_17);
+			tBlocks[1].push_back(tblock1_18);
+			tBlocks[1].push_back(tblock1_19);
+			tBlocks[1].push_back(tblock1_20);
+			tBlocks[1].push_back(tblock1_21);
+			tBlocks[1].push_back(tblock1_22);
+			tBlocks[1].push_back(tblock1_23);
+			tBlocks[1].push_back(tblock1_24);
+			tBlocks[1].push_back(tblock1_25);
+			tBlocks[1].push_back(tblock1_26);
+			tBlocks[1].push_back(tblock1_27);
+			tBlocks[1].push_back(tblock1_28);
+			tBlocks[1].push_back(tblock1_29);
+			tBlocks[1].push_back(tblock1_30);
 
-            Hole hole1_1 = { 1104, 487, 32, 74 };
-            Hole hole1_2 = { 1376, 487, 48, 74 };
-            Hole hole1_3 = { 2448, 487, 32, 74 };
-            holes[1].push_back(hole1_1);
-            holes[1].push_back(hole1_2);
-            holes[1].push_back(hole1_3);
+			Hole hole1_1 = { 1104, 487, 32, 74 };
+			Hole hole1_2 = { 1376, 487, 48, 74 };
+			Hole hole1_3 = { 2448, 487, 32, 74 };
+			holes[1].push_back(hole1_1);
+			holes[1].push_back(hole1_2);
+			holes[1].push_back(hole1_3);
 
-            // 깃발 블럭 추가 (Stage 1 끝부분)
-            FlagBlock flagBlock1_1 = { 3168, 94, 16, 392 }; // x=3100, 높이 286 (맨 아래 y=486
-            flagBlocks[1].push_back(flagBlock1_1);
-        }
-    }
-    else if (currentStage == STAGE2) {
-        if (!blocks[0].empty()) {
-            blocks[0].clear();
-            questionBlocks[0].clear();
-            tBlocks[0].clear();
-            holes[0].clear();
-        }
-        if (!blocks[1].empty()) {
-            blocks[1].clear();
-            questionBlocks[1].clear();
-            tBlocks[1].clear();
-            holes[1].clear();
-        }
-        if (!blocks[3].empty()) {
-            blocks[3].clear();
-            questionBlocks[3].clear();
-            tBlocks[3].clear();
-            holes[3].clear();
-        }
-        if (blocks[2].empty()) {
-            QuestionBlock qblock2_1 = { 480, 226, 16, 36, false };
-            questionBlocks[2].push_back(qblock2_1);
+			// 깃발 블럭 추가 (Stage 1 끝부분)
+			FlagBlock flagBlock1_1 = { 3168, 94, 16, 392 }; // x=3100, 높이 286 (맨 아래 y=486
+			flagBlocks[1].push_back(flagBlock1_1);
+		}
+	}
+	else if (currentStage == STAGE2) {
+		if (!blocks[0].empty()) {
+			blocks[0].clear();
+			questionBlocks[0].clear();
+			tBlocks[0].clear();
+			holes[0].clear();
+		}
+		if (!blocks[1].empty()) {
+			blocks[1].clear();
+			questionBlocks[1].clear();
+			tBlocks[1].clear();
+			holes[1].clear();
+		}
+		if (!blocks[3].empty()) {
+			blocks[3].clear();
+			questionBlocks[3].clear();
+			tBlocks[3].clear();
+			holes[3].clear();
+		}
+		if (blocks[2].empty()) {
+			QuestionBlock qblock2_1 = { 480, 226, 16, 36, false };
+			questionBlocks[2].push_back(qblock2_1);
 
-            TBlock tblock2_1 = { 0, 262, 48, 36 };
-            TBlock tblock2_2 = { 48, 300, 16, 36 };
-            TBlock tblock2_3 = { 64, 336, 16, 36 };
-            TBlock tblock2_4 = { 80, 372, 128, 72 };
-            TBlock tblock2_5 = { 240, 372, 176, 108 };
-            TBlock tblock2_6 = { 0, 112, 386, 72 };
-            TBlock tblock2_7 = { 368, 184, 16, 36 };
-            TBlock tblock2_8 = { 464, 372, 48, 108 };
-            TBlock tblock2_9 = { 386, 74, 204, 36 };
-            TBlock tblock2_10 = { 590, 74, 562, 144 };
-            TBlock tblock2_11 = { 560, 336, 594, 144 };
-            TBlock tblock2_12 = { 1150, 74, 402, 36 };
-            TBlock tblock2_13 = { 1150, 374, 514, 108 };
-            TBlock tblock2_14 = { 1552, 74, 112, 108 };
-            TBlock tblock2_15 = { 1280, 110, 16, 36 };
-            TBlock tblock2_16 = { 1408, 110, 16, 36 };
-            TBlock tblock2_17 = { 1664, 482, 192, 36 };
-            TBlock tblock2_18 = { 1664, 74, 304, 36 };
-            TBlock tblock2_19 = { 1856, 374, 64, 108 };
-            TBlock tblock2_20 = { 1920, 482, 48, 36 };
-            TBlock tblock2_21 = { 1968, 374, 80, 108 };
-            TBlock tblock2_22 = { 1968, 74, 80, 108 };
-            TBlock tblock2_23 = { 2048, 374, 206, 36 };
-            TBlock tblock2_24 = { 2270, 74, 32, 144 };
-            TBlock tblock2_25 = { 2048, 74, 222, 36 };
-            TBlock tblock2_26 = { 2254, 336, 50, 144 };
-            TBlock tblock2_27 = { 2302, 74, 254, 36 };
-            TBlock tblock2_28 = { 2302, 484, 254, 36 };
+			TBlock tblock2_1 = { 0, 262, 48, 36 };
+			TBlock tblock2_2 = { 48, 300, 16, 36 };
+			TBlock tblock2_3 = { 64, 336, 16, 36 };
+			TBlock tblock2_4 = { 80, 372, 128, 72 };
+			TBlock tblock2_5 = { 240, 372, 176, 108 };
+			TBlock tblock2_6 = { 0, 112, 386, 72 };
+			TBlock tblock2_7 = { 368, 184, 16, 36 };
+			TBlock tblock2_8 = { 464, 372, 48, 108 };
+			TBlock tblock2_9 = { 386, 74, 204, 36 };
+			TBlock tblock2_10 = { 590, 74, 562, 144 };
+			TBlock tblock2_11 = { 560, 336, 594, 144 };
+			TBlock tblock2_12 = { 1150, 74, 402, 36 };
+			TBlock tblock2_13 = { 1150, 374, 514, 108 };
+			TBlock tblock2_14 = { 1552, 74, 112, 108 };
+			TBlock tblock2_15 = { 1280, 110, 16, 36 };
+			TBlock tblock2_16 = { 1408, 110, 16, 36 };
+			TBlock tblock2_17 = { 1664, 482, 192, 36 };
+			TBlock tblock2_18 = { 1664, 74, 304, 36 };
+			TBlock tblock2_19 = { 1856, 374, 64, 108 };
+			TBlock tblock2_20 = { 1920, 482, 48, 36 };
+			TBlock tblock2_21 = { 1968, 374, 80, 108 };
+			TBlock tblock2_22 = { 1968, 74, 80, 108 };
+			TBlock tblock2_23 = { 2048, 374, 206, 36 };
+			TBlock tblock2_24 = { 2270, 74, 32, 144 };
+			TBlock tblock2_25 = { 2048, 74, 222, 36 };
+			TBlock tblock2_26 = { 2254, 336, 50, 144 };
+			TBlock tblock2_27 = { 2302, 74, 254, 36 };
+			TBlock tblock2_28 = { 2302, 484, 254, 36 };
 
-            tBlocks[2].push_back(tblock2_1);
-            tBlocks[2].push_back(tblock2_2);
-            tBlocks[2].push_back(tblock2_3);
-            tBlocks[2].push_back(tblock2_4);
-            tBlocks[2].push_back(tblock2_5);
-            tBlocks[2].push_back(tblock2_6);
-            tBlocks[2].push_back(tblock2_7);
-            tBlocks[2].push_back(tblock2_8);
-            tBlocks[2].push_back(tblock2_9);
-            tBlocks[2].push_back(tblock2_10);
-            tBlocks[2].push_back(tblock2_11);
-            tBlocks[2].push_back(tblock2_12);
-            tBlocks[2].push_back(tblock2_13);
-            tBlocks[2].push_back(tblock2_14);
-            tBlocks[2].push_back(tblock2_15);
-            tBlocks[2].push_back(tblock2_16);
-            tBlocks[2].push_back(tblock2_17);
-            tBlocks[2].push_back(tblock2_18);
-            tBlocks[2].push_back(tblock2_19);
-            tBlocks[2].push_back(tblock2_20);
-            tBlocks[2].push_back(tblock2_21);
-            tBlocks[2].push_back(tblock2_22);
-            tBlocks[2].push_back(tblock2_23);
-            tBlocks[2].push_back(tblock2_24);
-            tBlocks[2].push_back(tblock2_25);
-            tBlocks[2].push_back(tblock2_26);
-            tBlocks[2].push_back(tblock2_27);
-            tBlocks[2].push_back(tblock2_28);
+			tBlocks[2].push_back(tblock2_1);
+			tBlocks[2].push_back(tblock2_2);
+			tBlocks[2].push_back(tblock2_3);
+			tBlocks[2].push_back(tblock2_4);
+			tBlocks[2].push_back(tblock2_5);
+			tBlocks[2].push_back(tblock2_6);
+			tBlocks[2].push_back(tblock2_7);
+			tBlocks[2].push_back(tblock2_8);
+			tBlocks[2].push_back(tblock2_9);
+			tBlocks[2].push_back(tblock2_10);
+			tBlocks[2].push_back(tblock2_11);
+			tBlocks[2].push_back(tblock2_12);
+			tBlocks[2].push_back(tblock2_13);
+			tBlocks[2].push_back(tblock2_14);
+			tBlocks[2].push_back(tblock2_15);
+			tBlocks[2].push_back(tblock2_16);
+			tBlocks[2].push_back(tblock2_17);
+			tBlocks[2].push_back(tblock2_18);
+			tBlocks[2].push_back(tblock2_19);
+			tBlocks[2].push_back(tblock2_20);
+			tBlocks[2].push_back(tblock2_21);
+			tBlocks[2].push_back(tblock2_22);
+			tBlocks[2].push_back(tblock2_23);
+			tBlocks[2].push_back(tblock2_24);
+			tBlocks[2].push_back(tblock2_25);
+			tBlocks[2].push_back(tblock2_26);
+			tBlocks[2].push_back(tblock2_27);
+			tBlocks[2].push_back(tblock2_28);
 
-            Hole hole2_1 = { 208, 442, 32, 32 };
-            Hole hole2_2 = { 416, 480, 48, 32 };
-            Hole hole2_3 = { 512, 480, 48, 32 };
-            holes[2].push_back(hole2_1);
-            holes[2].push_back(hole2_2);
-            holes[2].push_back(hole2_3);
-            
-        }
-        }
-    else if (currentStage == HIDDEN) {
-            if (!blocks[0].empty()) {
-                blocks[0].clear();
-                questionBlocks[0].clear();
-                tBlocks[0].clear();
-                holes[0].clear();
-            }
-            if (!blocks[1].empty()) {
-                blocks[1].clear();
-                questionBlocks[1].clear();
-                tBlocks[1].clear();
-                holes[1].clear();
-            }
-            if (!blocks[2].empty()) {
-                blocks[2].clear();
-                questionBlocks[2].clear();
-                tBlocks[2].clear();
-                holes[2].clear();
-            }
-            if (blocks[3].empty()) {
-                TBlock tblock3_1 = { 188, 346, 330, 126 };
-                TBlock tblock3_2 = { 0, 0, 48, 474 };
-                TBlock tblock3_3 = { 614, 388, 102, 86 };
-                TBlock tblock3_4 = { 716, 0, 84, 392 };
-                TBlock tblock3_5 = { 188, 0, 330, 40 };
+			Hole hole2_1 = { 208, 442, 32, 32 };
+			Hole hole2_2 = { 416, 480, 48, 32 };
+			Hole hole2_3 = { 512, 480, 48, 32 };
+			holes[2].push_back(hole2_1);
+			holes[2].push_back(hole2_2);
+			holes[2].push_back(hole2_3);
 
-                tBlocks[3].push_back(tblock3_1);
-                tBlocks[3].push_back(tblock3_2);
-                tBlocks[3].push_back(tblock3_3);
-                tBlocks[3].push_back(tblock3_4);
-                tBlocks[3].push_back(tblock3_5);
-            }
-            }
+		}
+	}
+	else if (currentStage == HIDDEN) {
+		if (!blocks[0].empty()) {
+			blocks[0].clear();
+			questionBlocks[0].clear();
+			tBlocks[0].clear();
+			holes[0].clear();
+		}
+		if (!blocks[1].empty()) {
+			blocks[1].clear();
+			questionBlocks[1].clear();
+			tBlocks[1].clear();
+			holes[1].clear();
+		}
+		if (!blocks[2].empty()) {
+			blocks[2].clear();
+			questionBlocks[2].clear();
+			tBlocks[2].clear();
+			holes[2].clear();
+		}
+		if (blocks[3].empty()) {
+			TBlock tblock3_1 = { 188, 346, 330, 126 };
+			TBlock tblock3_2 = { 0, 0, 48, 474 };
+			TBlock tblock3_3 = { 614, 388, 102, 86 };
+			TBlock tblock3_4 = { 716, 0, 84, 392 };
+			TBlock tblock3_5 = { 188, 0, 330, 40 };
+
+			tBlocks[3].push_back(tblock3_1);
+			tBlocks[3].push_back(tblock3_2);
+			tBlocks[3].push_back(tblock3_3);
+			tBlocks[3].push_back(tblock3_4);
+			tBlocks[3].push_back(tblock3_5);
+		}
+	}
 }
 
 void Image_::DrawBackGround(int x, int y, HDC targetDC) {
-    int cameraX = x - 400;
-    if (cameraX < 0) cameraX = 0;
+	int cameraX = x - 400;
+	if (cameraX < 0) cameraX = 0;
 
-    int srcWidth = (stage1 ? mStage1.GetWidth() : tutorial ? mStageTutorial.GetWidth() :
-        stage2 ? mStage2.GetWidth() : mStageHidden.GetWidth());
-    int srcHeight = (stage1 ? mStage1.GetHeight() : tutorial ? mStageTutorial.GetHeight() :
-        stage2 ? mStage2.GetHeight() : mStageHidden.GetHeight());
+	int srcWidth = (stage1 ? mStage1.GetWidth() : tutorial ? mStageTutorial.GetWidth() :
+		stage2 ? mStage2.GetWidth() : mStageHidden.GetWidth());
+	int srcHeight = (stage1 ? mStage1.GetHeight() : tutorial ? mStageTutorial.GetHeight() :
+		stage2 ? mStage2.GetHeight() : mStageHidden.GetHeight());
 
-    if (srcWidth <= wRect.right) {
-        cameraX = 0;
-    }
-    else if (cameraX > srcWidth - wRect.right) {
-        cameraX = srcWidth - wRect.right;
-    }
+	if (srcWidth <= wRect.right) {
+		cameraX = 0;
+	}
+	else if (cameraX > srcWidth - wRect.right) {
+		cameraX = srcWidth - wRect.right;
+	}
 
-    int destWidth = wRect.right;
-    int destHeight = wRect.bottom;
+	int destWidth = wRect.right;
+	int destHeight = wRect.bottom;
 
-    if (tutorial && !mStageTutorial.IsNull()) {
-        mStageTutorial.StretchBlt(targetDC, 0, 0, destWidth, destHeight, cameraX, 0, wRect.right, srcHeight, SRCCOPY);
-    }
-    else if (stage1 && !mStage1.IsNull()) {
-        mStage1.StretchBlt(targetDC, 0, 0, destWidth, destHeight, cameraX, 0, wRect.right, srcHeight, SRCCOPY);
-    }
-    else if (stage2 && !mStage2.IsNull()) {
-        mStage2.StretchBlt(targetDC, 0, 0, destWidth, destHeight, cameraX, 0, wRect.right, srcHeight, SRCCOPY);
-    }
-    else if (hidden && !mStageHidden.IsNull()) {
-        mStageHidden.StretchBlt(targetDC, 0, 0, destWidth, destHeight, cameraX, 0, wRect.right, srcHeight, SRCCOPY);
-    }
-    else {
-        OutputDebugString(L"No valid background image\n");
-    }
+	if (tutorial && !mStageTutorial.IsNull()) {
+		mStageTutorial.StretchBlt(targetDC, 0, 0, destWidth, destHeight, cameraX, 0, wRect.right, srcHeight, SRCCOPY);
+	}
+	else if (stage1 && !mStage1.IsNull()) {
+		mStage1.StretchBlt(targetDC, 0, 0, destWidth, destHeight, cameraX, 0, wRect.right, srcHeight, SRCCOPY);
+	}
+	else if (stage2 && !mStage2.IsNull()) {
+		mStage2.StretchBlt(targetDC, 0, 0, destWidth, destHeight, cameraX, 0, wRect.right, srcHeight, SRCCOPY);
+	}
+	else if (hidden && !mStageHidden.IsNull()) {
+		mStageHidden.StretchBlt(targetDC, 0, 0, destWidth, destHeight, cameraX, 0, wRect.right, srcHeight, SRCCOPY);
+	}
+	else {
+		OutputDebugString(L"No valid background image\n");
+	}
 
-    if (!blockImage.IsNull()) {
-        for (const auto& block : blocks[currentStage - 1]) {
-            int offsetX = block.x - cameraX;
-            if (offsetX + block.width > 0 && offsetX < wRect.right) {
-                blockImage.StretchBlt(targetDC, offsetX, block.y, block.width, 42, 0, 0, blockImage.GetWidth(), blockImage.GetHeight(), SRCCOPY);
-            }
-        }
-    }
+	if (!blockImage.IsNull()) {
+		for (const auto& block : blocks[currentStage - 1]) {
+			int offsetX = block.x - cameraX;
+			if (offsetX + block.width > 0 && offsetX < wRect.right) {
+				blockImage.StretchBlt(targetDC, offsetX, block.y, block.width, 42, 0, 0, blockImage.GetWidth(), blockImage.GetHeight(), SRCCOPY);
+			}
+		}
+	}
 
-    if (!questionBlockImage[0].IsNull() && !questionBlockImage[1].IsNull()) {
-        for (const auto& qblock : questionBlocks[currentStage - 1]) {
-            int offsetX = qblock.x - cameraX;
-            if (offsetX + qblock.width > 0 && offsetX < wRect.right && !qblock.hit) {
-                questionBlockImage[0].StretchBlt(targetDC, offsetX, qblock.y, qblock.width, qblock.height, 0, 0, questionBlockImage[0].GetWidth(), questionBlockImage[0].GetHeight(), SRCCOPY);
-            }
-            else if (offsetX + qblock.width > 0 && offsetX < wRect.right && qblock.hit) {
-                questionBlockImage[1].StretchBlt(targetDC, offsetX, qblock.y, qblock.width, qblock.height, 0, 0, questionBlockImage[0].GetWidth(), questionBlockImage[0].GetHeight(), SRCCOPY);
-            }
-        }
-    }
+	if (!questionBlockImage[0].IsNull() && !questionBlockImage[1].IsNull()) {
+		for (const auto& qblock : questionBlocks[currentStage - 1]) {
+			int offsetX = qblock.x - cameraX;
+			if (offsetX + qblock.width > 0 && offsetX < wRect.right && !qblock.hit) {
+				questionBlockImage[0].StretchBlt(targetDC, offsetX, qblock.y, qblock.width, qblock.height, 0, 0, questionBlockImage[0].GetWidth(), questionBlockImage[0].GetHeight(), SRCCOPY);
+			}
+			else if (offsetX + qblock.width > 0 && offsetX < wRect.right && qblock.hit) {
+				questionBlockImage[1].StretchBlt(targetDC, offsetX, qblock.y, qblock.width, qblock.height, 0, 0, questionBlockImage[0].GetWidth(), questionBlockImage[0].GetHeight(), SRCCOPY);
+			}
+		}
+	}
 }
 
 void Image_::NextStage() {
-    currentStage++;
-    if (currentStage > 3) currentStage = 1;
-    tutorial = (currentStage == TUTORIAL);
-    stage1 = (currentStage == STAGE1);
-    stage2 = (currentStage == STAGE2);
-    Player.ResetPosition();
-    BlockInit();
+	currentStage++;
+	if (currentStage > 3) currentStage = 1;
+	tutorial = (currentStage == TUTORIAL);
+	stage1 = (currentStage == STAGE1);
+	stage2 = (currentStage == STAGE2);
+	Player.ResetPosition();
+	BlockInit();
 }
 
 void Image_::EnterHiddenStage() {
-    currentStage = HIDDEN;
-    tutorial = (currentStage == TUTORIAL);
-    stage1 = (currentStage == STAGE1);
-    stage2 = (currentStage == STAGE2);
-    hidden = (currentStage == HIDDEN);
-    Player.ResetPosition();
-    BlockInit();
+	currentStage = HIDDEN;
+	tutorial = (currentStage == TUTORIAL);
+	stage1 = (currentStage == STAGE1);
+	stage2 = (currentStage == STAGE2);
+	hidden = (currentStage == HIDDEN);
+	Player.ResetPosition();
+	BlockInit();
 }
 
 void Image_::QuitHiddenStage() {
-    currentStage = STAGE1;
-    tutorial = (currentStage == TUTORIAL);
-    stage1 = (currentStage == STAGE1);
-    stage2 = (currentStage == STAGE2);
-    hidden = (currentStage == HIDDEN);
-    BlockInit();
+	currentStage = STAGE1;
+	tutorial = (currentStage == TUTORIAL);
+	stage1 = (currentStage == STAGE1);
+	stage2 = (currentStage == STAGE2);
+	hidden = (currentStage == HIDDEN);
+	BlockInit();
 }
 
 void Image_::Destroy() {
-    Player_Move_Pairi.Destroy();
-    Player_Move_Lizard.Destroy();
-    Player_Move_Lizamong.Destroy();
-    Player_Attack_Pairi.Destroy();
-    Player_Attack_Lizamong.Destroy();
-    mStageTutorial.Destroy();
-    mStage1.Destroy();
-    mStage2.Destroy();
-    mStageHidden.Destroy();
-    blockImage.Destroy();
-    questionBlockImage[0].Destroy();
-    questionBlockImage[1].Destroy();
-    for (int i = 0; i < 4; ++i) {
-        if (!blocks[i].empty()) {
-            blocks[i].clear();
-            questionBlocks[i].clear();
-            tBlocks[i].clear();
-            holes[i].clear();
-            flagBlocks[i].clear();
-        }
-    }
+	Player_Move_Pairi.Destroy();
+	Player_Move_Lizard.Destroy();
+	Player_Move_Lizamong.Destroy();
+	Player_Attack_Pairi.Destroy();
+	Player_Attack_Lizamong.Destroy();
+	mStageTutorial.Destroy();
+	mStage1.Destroy();
+	mStage2.Destroy();
+	mStageHidden.Destroy();
+	blockImage.Destroy();
+	questionBlockImage[0].Destroy();
+	questionBlockImage[1].Destroy();
+	fireballs.clear();
+	for (int i = 0; i < 4; ++i) {
+		if (!blocks[i].empty()) {
+			blocks[i].clear();
+			questionBlocks[i].clear();
+			tBlocks[i].clear();
+			holes[i].clear();
+			flagBlocks[i].clear();
+		}
+	}
 }
 
 void Player_::DrawHitbox(HDC targetDC) {
-    int hitboxX, hitboxY, hitboxWidth, hitboxHeight;
-    GetHitbox(hitboxX, hitboxY, hitboxWidth, hitboxHeight);
+	int hitboxX, hitboxY, hitboxWidth, hitboxHeight;
+	GetHitbox(hitboxX, hitboxY, hitboxWidth, hitboxHeight);
 
-    int cameraX = GetCameraX(x_, Images.NowStage() == TUTORIAL ? Images.mStageTutorial.GetWidth() :
-        Images.NowStage() == STAGE1 ? Images.mStage1.GetWidth() :
-        Images.NowStage() == STAGE2 ? Images.mStage2.GetWidth() :
-        Images.NowStage() == HIDDEN ? Images.mStageHidden.GetWidth() : 0);
+	int cameraX = GetCameraX(x_, Images.NowStage() == TUTORIAL ? Images.mStageTutorial.GetWidth() :
+		Images.NowStage() == STAGE1 ? Images.mStage1.GetWidth() :
+		Images.NowStage() == STAGE2 ? Images.mStage2.GetWidth() :
+		Images.NowStage() == HIDDEN ? Images.mStageHidden.GetWidth() : 0);
 
-    RECT screenHitbox = { hitbox_.left - cameraX, hitbox_.top, hitbox_.right - cameraX, hitbox_.bottom };
+	RECT screenHitbox = { hitbox_.left - cameraX, hitbox_.top, hitbox_.right - cameraX, hitbox_.bottom };
 
-    HPEN pen = CreatePen(PS_DASH, 3, RGB(255, 0, 0));
-    HBRUSH hBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
-    SelectObject(targetDC, pen);
-    SelectObject(targetDC, hBrush);
-    Rectangle(targetDC, screenHitbox.left, screenHitbox.top, screenHitbox.right, screenHitbox.bottom);
-    DeleteObject(pen);
+	HPEN pen = CreatePen(PS_DASH, 3, RGB(255, 0, 0));
+	HBRUSH hBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
+	SelectObject(targetDC, pen);
+	SelectObject(targetDC, hBrush);
+	Rectangle(targetDC, screenHitbox.left, screenHitbox.top, screenHitbox.right, screenHitbox.bottom);
+	DeleteObject(pen);
 }
 
 void Image_::DrawHitBox(HDC targetDC) {
-    int cameraX = GetCameraX(Player.x(), NowStage() == TUTORIAL ? mStageTutorial.GetWidth() :
-        NowStage() == STAGE1 ? mStage1.GetWidth() :
-        NowStage() == STAGE2 ? mStage2.GetWidth() :
-        NowStage() == HIDDEN ? mStageHidden.GetWidth() : 0);
+	int cameraX = GetCameraX(Player.x(), NowStage() == TUTORIAL ? mStageTutorial.GetWidth() :
+		NowStage() == STAGE1 ? mStage1.GetWidth() :
+		NowStage() == STAGE2 ? mStage2.GetWidth() :
+		NowStage() == HIDDEN ? mStageHidden.GetWidth() : 0);
 
-    // 블록 히트박스 그리기
-    HPEN blockPen = CreatePen(PS_DASH, 3, RGB(255, 255, 0));
-    HBRUSH blockBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
-    SelectObject(targetDC, blockPen);
-    SelectObject(targetDC, blockBrush);
+	// 블록 히트박스 그리기
+	HPEN blockPen = CreatePen(PS_DASH, 3, RGB(255, 255, 0));
+	HBRUSH blockBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
+	SelectObject(targetDC, blockPen);
+	SelectObject(targetDC, blockBrush);
 
-    for (const auto& block : blocks[currentStage - 1]) {
-        RECT screenHitbox = { block.x - cameraX, block.y, block.x + block.width - cameraX, block.y + block.height };
-        Rectangle(targetDC, screenHitbox.left, screenHitbox.top, screenHitbox.right, screenHitbox.bottom);
-    }
-    DeleteObject(blockPen);
-    DeleteObject(blockBrush);
+	for (const auto& block : blocks[currentStage - 1]) {
+		RECT screenHitbox = { block.x - cameraX, block.y, block.x + block.width - cameraX, block.y + block.height };
+		Rectangle(targetDC, screenHitbox.left, screenHitbox.top, screenHitbox.right, screenHitbox.bottom);
+	}
+	DeleteObject(blockPen);
+	DeleteObject(blockBrush);
 
-    // 물음표 블럭 히트박스 그리기
-    HPEN qblockPen = CreatePen(PS_DASH, 3, RGB(0, 255, 0));
-    HBRUSH qblockBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
-    SelectObject(targetDC, qblockPen);
-    SelectObject(targetDC, qblockBrush);
+	// 물음표 블럭 히트박스 그리기
+	HPEN qblockPen = CreatePen(PS_DASH, 3, RGB(0, 255, 0));
+	HBRUSH qblockBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
+	SelectObject(targetDC, qblockPen);
+	SelectObject(targetDC, qblockBrush);
 
-    for (const auto& qblock : questionBlocks[currentStage - 1]) {
-        if (!qblock.hit) {
-            RECT screenHitbox = { qblock.x - cameraX, qblock.y, qblock.x + qblock.width - cameraX, qblock.y + qblock.height };
-            Rectangle(targetDC, screenHitbox.left, screenHitbox.top, screenHitbox.right, screenHitbox.bottom);
-        }
-    }
-    DeleteObject(qblockPen);
-    DeleteObject(qblockBrush);
+	for (const auto& qblock : questionBlocks[currentStage - 1]) {
+		if (!qblock.hit) {
+			RECT screenHitbox = { qblock.x - cameraX, qblock.y, qblock.x + qblock.width - cameraX, qblock.y + qblock.height };
+			Rectangle(targetDC, screenHitbox.left, screenHitbox.top, screenHitbox.right, screenHitbox.bottom);
+		}
+	}
+	DeleteObject(qblockPen);
+	DeleteObject(qblockBrush);
 
-    // 파이프, 계단 블록 히트박스 그리기
-    HPEN tblockPen = CreatePen(PS_DASH, 3, RGB(255, 0, 255));
-    HBRUSH tblockBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
-    SelectObject(targetDC, tblockPen);
-    SelectObject(targetDC, tblockBrush);
+	// 파이프, 계단 블록 히트박스 그리기
+	HPEN tblockPen = CreatePen(PS_DASH, 3, RGB(255, 0, 255));
+	HBRUSH tblockBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
+	SelectObject(targetDC, tblockPen);
+	SelectObject(targetDC, tblockBrush);
 
-    for (const auto& tblock : tBlocks[currentStage - 1]) {
-        RECT screenHitbox = { tblock.x - cameraX, tblock.y, tblock.x + tblock.width - cameraX, tblock.y + tblock.height };
-        Rectangle(targetDC, screenHitbox.left, screenHitbox.top, screenHitbox.right, screenHitbox.bottom);
-    }
-    DeleteObject(tblockPen);
-    DeleteObject(tblockBrush);
+	for (const auto& tblock : tBlocks[currentStage - 1]) {
+		RECT screenHitbox = { tblock.x - cameraX, tblock.y, tblock.x + tblock.width - cameraX, tblock.y + tblock.height };
+		Rectangle(targetDC, screenHitbox.left, screenHitbox.top, screenHitbox.right, screenHitbox.bottom);
+	}
+	DeleteObject(tblockPen);
+	DeleteObject(tblockBrush);
 
-    // 구멍 히트박스 그리기
-    HPEN holePen = CreatePen(PS_DASH, 3, RGB(0, 222, 0));
-    HBRUSH holeBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
-    SelectObject(targetDC, holePen);
-    SelectObject(targetDC, holeBrush);
+	// 구멍 히트박스 그리기
+	HPEN holePen = CreatePen(PS_DASH, 3, RGB(0, 222, 0));
+	HBRUSH holeBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
+	SelectObject(targetDC, holePen);
+	SelectObject(targetDC, holeBrush);
 
-    for (const auto& hole : holes[currentStage - 1]) {
-        RECT screenHitbox = { hole.x - cameraX, hole.y, hole.x + hole.width - cameraX, hole.y + hole.height };
-        Rectangle(targetDC, screenHitbox.left, screenHitbox.top, screenHitbox.right, screenHitbox.bottom);
-    }
-    DeleteObject(holePen);
-    DeleteObject(holeBrush);
+	for (const auto& hole : holes[currentStage - 1]) {
+		RECT screenHitbox = { hole.x - cameraX, hole.y, hole.x + hole.width - cameraX, hole.y + hole.height };
+		Rectangle(targetDC, screenHitbox.left, screenHitbox.top, screenHitbox.right, screenHitbox.bottom);
+	}
+	DeleteObject(holePen);
+	DeleteObject(holeBrush);
 
-    HPEN flagPen = CreatePen(PS_DASH, 3, RGB(0, 222, 0));
-    HBRUSH flagBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
-    SelectObject(targetDC, flagPen);
-    SelectObject(targetDC, flagBrush);
+	// 깃발 히트박스 그리기
+	HPEN flagPen = CreatePen(PS_DASH, 3, RGB(0, 222, 0));
+	HBRUSH flagBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
+	SelectObject(targetDC, flagPen);
+	SelectObject(targetDC, flagBrush);
 
-    for (const auto& flag : flagBlocks[currentStage - 1]) {
-        RECT screenHitbox = { flag.x - cameraX, flag.y, flag.x + flag.width - cameraX, flag.y + flag.height };
-        Rectangle(targetDC, screenHitbox.left, screenHitbox.top, screenHitbox.right, screenHitbox.bottom);
-    }
-    DeleteObject(flagPen);
-    DeleteObject(flagBrush);
+	for (const auto& flag : flagBlocks[currentStage - 1]) {
+		RECT screenHitbox = { flag.x - cameraX, flag.y, flag.x + flag.width - cameraX, flag.y + flag.height };
+		Rectangle(targetDC, screenHitbox.left, screenHitbox.top, screenHitbox.right, screenHitbox.bottom);
+	}
+	DeleteObject(flagPen);
+	DeleteObject(flagBrush);
+
+	// 파이어볼 히트박스 그리기
+	HPEN fireballPen = CreatePen(PS_DASH, 3, RGB(0, 222, 0));
+	HBRUSH fireballBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
+	SelectObject(targetDC, fireballPen);
+	SelectObject(targetDC, fireballBrush);
+
+	for (const auto& fireball : fireballs) {
+		RECT screenHitbox = { fireball.x - cameraX, fireball.y, fireball.x + fireball.width - cameraX, fireball.y + fireball.height };
+		Rectangle(targetDC, screenHitbox.left, screenHitbox.top, screenHitbox.right, screenHitbox.bottom);
+	}
+	DeleteObject(fireballPen);
+	DeleteObject(fireballBrush);
 }
 
 int GetCameraX(int playerX, int stageWidth) {
-    int cameraX = playerX - 400; // 플레이어가 화면 중앙에 오도록 설정
-    if (cameraX < 0) cameraX = 0; // 스테이지 왼쪽 경계
-    if (stageWidth > wRect.right && cameraX > stageWidth - wRect.right) {
-        cameraX = stageWidth - wRect.right; // 스테이지 오른쪽 경계
-    }
-    return cameraX;
+	int cameraX = playerX - 400; // 플레이어가 화면 중앙에 오도록 설정
+	if (cameraX < 0) cameraX = 0; // 스테이지 왼쪽 경계
+	if (stageWidth > wRect.right && cameraX > stageWidth - wRect.right) {
+		cameraX = stageWidth - wRect.right; // 스테이지 오른쪽 경계
+	}
+	return cameraX;
 }
