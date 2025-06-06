@@ -89,6 +89,8 @@ public:
     void NextStage();
     int NowStage() { return currentStage; };
     void DrawHitBox(HDC targetDC);
+    void EnterHiddenStage();
+    void QuitHiddenStage();
 };
 
 class Player_ {
@@ -254,6 +256,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
     case WM_KEYDOWN: {
         if (wParam == 'S' || wParam == 's') {
             Images.NextStage();
+            InvalidateRect(hWnd, NULL, FALSE);
+        }
+        if (wParam == 'd' || wParam == 'D') {
+            Images.EnterHiddenStage();
             InvalidateRect(hWnd, NULL, FALSE);
         }
         else if (wParam == 'q' || wParam == 'Q') {
@@ -586,7 +592,7 @@ void Player_::Move() {
     // 깃발 블럭을 타고 내려가는 중이거나 오른쪽으로 이동 중이면 다른 입력 무시
     if (isTouchingFlag || isMovingRightAfterFlag) {
         if (isTouchingFlag) {
-            const float slideSpeed = 2.0f; // 내려가는 속도
+            const float slideSpeed = 4.0f; // 내려가는 속도
             flagSlideProgress += slideSpeed;
             y_ += static_cast<int>(slideSpeed);
 
@@ -594,7 +600,6 @@ void Player_::Move() {
             if (y_ >= defaultGroundY_) {
                 y_ = defaultGroundY_;
                 isTouchingFlag = false;
-                move_ = true;
                 direct_ = RIGHT;
                 move_ = false;
                 isMovingRightAfterFlag = true;
@@ -606,7 +611,18 @@ void Player_::Move() {
             const float moveRightDistance = 100.0f; // 오른쪽으로 이동할 거리
             flagMoveRightProgress += moveRightSpeed;
             x_ += static_cast<int>(moveRightSpeed);
-
+            move_ = true;
+            time++;
+            if (time == 3) {
+                if (State() == TINO || State() == LARGETINO || State() == LIZAMONG || State() == LIZAD) {
+                    imageNum = (imageNum + 1) % 3;
+                }
+                else if (State() == PAIRI) {
+                    if (isJumping_) imageNum = (imageNum + 1) % 5;
+                    else imageNum = (imageNum + 1) % 6;
+                }
+                time = 0;
+            }
             if (flagMoveRightProgress >= moveRightDistance) {
                 Images.NextStage();
                 isMovingRightAfterFlag = false;
@@ -699,7 +715,7 @@ void Player_::Move() {
     if (intendToMoveLeft || intendToMoveRight) {
         int checkHitboxX = newX;
         switch (State()) {
-        case TINO:  checkHitboxX += 10; break;
+        case TINO: checkHitboxX += 10; break;
         case LARGETINO:
             if (direct_ == RIGHT) checkHitboxX += 10;
             else checkHitboxX += 12;
@@ -928,7 +944,7 @@ void Player_::Move() {
         }
     }
 
-    // Logic: Go to Hidden Stage from Stage 1 when standing on tblock0_4 and pressing down
+    // 스테이지1 -> 히든 입장
     if (!isFallingIntoHole && !Images.tBlocks[Images.currentStage - 1].empty() && Images.tBlocks[Images.currentStage - 1].size() >= 4) {
         const auto& tblock4 = Images.tBlocks[Images.currentStage - 1][3]; // tblock0_4 in Stage 1
         int tblockLeft = tblock4.x;
@@ -940,11 +956,11 @@ void Player_::Move() {
         bool overlapX = playerRight > tblockLeft && playerLeft < tblockRight;
 
         if (overlapX && y_ == tblockTop - playerHitboxHeight && GetAsyncKeyState(VK_DOWN) & 0x8000) {
-            Images.NextStage();
+            Images.EnterHiddenStage();
         }
     }
 
-    // Logic: Return to Stage 1 from Hidden Stage when colliding with tblock1_3's left face
+    // 히든 -> 스테이지1 복귀
     if (!isFallingIntoHole && Images.currentStage == HIDDEN && !Images.tBlocks[Images.currentStage - 1].empty()) {
         const auto& tblock3 = Images.tBlocks[Images.currentStage - 1][2]; // tblock1_3 in Hidden Stage
         int tblockLeft = tblock3.x; // 614
@@ -969,12 +985,7 @@ void Player_::Move() {
         bool yOverlap = playerBottom > tblockTop && playerTop < tblockBottom;
 
         if (collideWithLeftFace && yOverlap) {
-            Images.currentStage = STAGE1;
-            Images.stage1 = true;
-            Images.hidden = false;
-            Images.stage2 = false;
-            Images.stage3 = false;
-            Images.BlockInit();
+            Images.QuitHiddenStage();
             x_ = 2616;
             y_ = 372;
             groundY_ = 447;
@@ -985,8 +996,6 @@ void Player_::Move() {
             isFallingIntoHole = false;
             direct_ = RIGHT;
             fallProgress = 0.0f;
-            eatFlower_ = false;
-            eatMushroom_ = false;
         }
     }
 
@@ -1569,13 +1578,32 @@ void Image_::DrawBackGround(int x, int y, HDC targetDC) {
 }
 
 void Image_::NextStage() {
-    currentStage++;
+    if (currentStage == 1) currentStage += 2;
+    else currentStage++;
     if (currentStage > 4) currentStage = 1;
+    stage1 = (currentStage == STAGE1);
+    stage2 = (currentStage == STAGE2);
+    stage3 = (currentStage == STAGE3);
+    Player.ResetPosition();
+    BlockInit();
+}
+
+void Image_::EnterHiddenStage() {
+    currentStage = HIDDEN;
     stage1 = (currentStage == STAGE1);
     hidden = (currentStage == HIDDEN);
     stage2 = (currentStage == STAGE2);
     stage3 = (currentStage == STAGE3);
     Player.ResetPosition();
+    BlockInit();
+}
+
+void Image_::QuitHiddenStage() {
+    currentStage = STAGE1;
+    stage1 = (currentStage == STAGE1);
+    hidden = (currentStage == HIDDEN);
+    stage2 = (currentStage == STAGE2);
+    stage3 = (currentStage == STAGE3);
     BlockInit();
 }
 
@@ -1604,18 +1632,17 @@ void Image_::Destroy() {
 
 void Player_::DrawHitbox(HDC targetDC) {
     int hitboxX, hitboxY, hitboxWidth, hitboxHeight;
-    GetHitbox(hitboxX, hitboxY, hitboxWidth, hitboxHeight); // hitbox_ 업데이트
+    GetHitbox(hitboxX, hitboxY, hitboxWidth, hitboxHeight);
 
     int cameraX = GetCameraX(x_, Images.NowStage() == 1 ? Images.mStage1.GetWidth() :
         Images.NowStage() == 2 ? Images.mStageHidden.GetWidth() :
         Images.NowStage() == 3 ? Images.mStage2.GetWidth() :
         Images.NowStage() == 4 ? Images.mStage3.GetWidth() : 0);
 
-    // 화면 좌표로 변환
     RECT screenHitbox = { hitbox_.left - cameraX, hitbox_.top, hitbox_.right - cameraX, hitbox_.bottom };
 
     HPEN pen = CreatePen(PS_DASH, 3, RGB(255, 0, 0));
-    HBRUSH hBrush = (HBRUSH)GetStockObject(NULL_BRUSH); // 내부 채우기 없음
+    HBRUSH hBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
     SelectObject(targetDC, pen);
     SelectObject(targetDC, hBrush);
     Rectangle(targetDC, screenHitbox.left, screenHitbox.top, screenHitbox.right, screenHitbox.bottom);
@@ -1658,7 +1685,7 @@ void Image_::DrawHitBox(HDC targetDC) {
 
     // 파이프, 계단 블록 히트박스 그리기
     HPEN tblockPen = CreatePen(PS_DASH, 3, RGB(255, 0, 255));
-    HBRUSH tblockBrush = (HBRUSH)GetStockObject(NULL_BRUSH); // 내부 채우기 없음
+    HBRUSH tblockBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
     SelectObject(targetDC, tblockPen);
     SelectObject(targetDC, tblockBrush);
 
@@ -1671,7 +1698,7 @@ void Image_::DrawHitBox(HDC targetDC) {
 
     // 구멍 히트박스 그리기
     HPEN holePen = CreatePen(PS_DASH, 3, RGB(0, 222, 0));
-    HBRUSH holeBrush = (HBRUSH)GetStockObject(NULL_BRUSH); // 내부 채우기 없음
+    HBRUSH holeBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
     SelectObject(targetDC, holePen);
     SelectObject(targetDC, holeBrush);
 
@@ -1681,6 +1708,18 @@ void Image_::DrawHitBox(HDC targetDC) {
     }
     DeleteObject(holePen);
     DeleteObject(holeBrush);
+
+    HPEN flagPen = CreatePen(PS_DASH, 3, RGB(0, 222, 0));
+    HBRUSH flagBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
+    SelectObject(targetDC, flagPen);
+    SelectObject(targetDC, flagBrush);
+
+    for (const auto& flag : flagBlocks[currentStage - 1]) {
+        RECT screenHitbox = { flag.x - cameraX, flag.y, flag.x + flag.width - cameraX, flag.y + flag.height };
+        Rectangle(targetDC, screenHitbox.left, screenHitbox.top, screenHitbox.right, screenHitbox.bottom);
+    }
+    DeleteObject(flagPen);
+    DeleteObject(flagBrush);
 }
 
 int GetCameraX(int playerX, int stageWidth) {
