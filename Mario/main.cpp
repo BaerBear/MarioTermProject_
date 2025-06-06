@@ -4,6 +4,7 @@
 #include <atlimage.h>
 #include <iostream>
 #include <vector>
+#include <algorithm>
 
 #pragma comment (lib, "msimg32.lib")
 
@@ -16,7 +17,7 @@
 #define LIZAMONG 4
 #define LARGETINO 5
 
-#define MOVE 10
+#define MOVE 13
 #define JUMP_VELOCITY -13
 #define GRAVITY 0.5
 
@@ -43,6 +44,7 @@ public:
     CImage mStage1, mStageHidden, mStage2, mStage3;
     CImage blockImage;
     CImage questionBlockImage[2];
+    CImage monster;
     struct Block {
         int x, y;
         int width, height;
@@ -64,6 +66,19 @@ public:
         int x, y;
         int width, height;
     };
+    struct Monster {
+        int x, y;
+        int width, height;
+        int direction; // LEFT(1) 또는 RIGHT(2)
+        float speed; // 이동 속도
+        bool isAlive; // 살아있는지 여부
+        bool isFalling; // 구멍에 빠졌는지 여부
+        float fallProgress; // 낙하 진행률
+        float directionTimer; // 방향 변경 타이머
+        float directionChangeInterval; // 방향 변경 간격 (5~10초)
+    };
+
+    std::vector<Monster> monsters[4]{};
     std::vector<Block> blocks[4]{};
     std::vector<QuestionBlock> questionBlocks[4]{};
     std::vector<TBlock> tBlocks[4]{};
@@ -638,9 +653,185 @@ void Player_::Move() {
     int playerHitboxX, playerHitboxY, playerHitboxWidth, playerHitboxHeight;
     GetHitbox(playerHitboxX, playerHitboxY, playerHitboxWidth, playerHitboxHeight);
 
-    int newX = x_;
-    bool intendToMoveLeft = false;
-    bool intendToMoveRight = false;
+    // 몬스터 이동 및 충돌 처리
+    if (!Images.monsters[Images.currentStage - 1].empty()) {
+        for (auto& monster : Images.monsters[Images.currentStage - 1]) {
+            if (!monster.isAlive) continue; // 죽은 몬스터는 처리하지 않음
+
+            // 구멍에 빠진 경우
+            if (monster.isFalling) {
+                const float fallSpeed = 2.0f;
+                monster.fallProgress += fallSpeed;
+                monster.y += static_cast<int>(fallSpeed);
+                if (monster.fallProgress >= 100.0f) {
+                    monster.isAlive = false; // 사라짐
+                }
+                continue;
+            }
+
+            // 방향 변경 타이머 업데이트
+            monster.directionTimer += 0.016f; // 16ms 프레임 기준
+            if (monster.directionTimer >= monster.directionChangeInterval) {
+                // 5~10초 사이에서 새로운 간격 설정
+                monster.directionChangeInterval = static_cast<float>(rand() % 6 + 5);
+                monster.directionTimer = 0.0f;
+                // 방향 반전
+                monster.direction = (monster.direction == LEFT) ? RIGHT : LEFT;
+            }
+
+            // 몬스터 이동
+            int newMonsterX = monster.x;
+            if (monster.direction == LEFT) {
+                newMonsterX -= static_cast<int>(monster.speed);
+            }
+            else if (monster.direction == RIGHT) {
+                newMonsterX += static_cast<int>(monster.speed);
+            }
+
+            // 블럭 충돌 체크
+            bool canMove = true;
+            for (const auto& block : Images.blocks[Images.currentStage - 1]) {
+                int blockLeft = block.x;
+                int blockRight = block.x + block.width;
+                int blockTop = block.y;
+                int blockBottom = block.y + block.height;
+
+                int monsterLeft = newMonsterX;
+                int monsterRight = newMonsterX + monster.width;
+                int monsterTop = monster.y;
+                int monsterBottom = monster.y + monster.height;
+
+                bool overlapX = monsterRight > blockLeft && monsterLeft < blockRight;
+                bool overlapY = monsterBottom > blockTop && monsterTop < blockBottom;
+
+                if (overlapX && overlapY) {
+                    canMove = false;
+                    monster.direction = (monster.direction == LEFT) ? RIGHT : LEFT; // 방향 반전
+                    break;
+                }
+            }
+
+            if (canMove) {
+                for (const auto& qblock : Images.questionBlocks[Images.currentStage - 1]) {
+                    int qblockLeft = qblock.x;
+                    int qblockRight = qblock.x + qblock.width;
+                    int qblockTop = qblock.y;
+                    int qblockBottom = qblock.y + qblock.height;
+
+                    int monsterLeft = newMonsterX;
+                    int monsterRight = newMonsterX + monster.width;
+                    int monsterTop = monster.y;
+                    int monsterBottom = monster.y + monster.height;
+
+                    bool overlapX = monsterRight > qblockLeft && monsterLeft < qblockRight;
+                    bool overlapY = monsterBottom > qblockTop && monsterTop < qblockBottom;
+
+                    if (overlapX && overlapY) {
+                        canMove = false;
+                        monster.direction = (monster.direction == LEFT) ? RIGHT : LEFT;
+                        break;
+                    }
+                }
+            }
+
+            if (canMove) {
+                for (size_t i = 0; i < Images.tBlocks[Images.currentStage - 1].size(); i++) {
+                    if (Images.currentStage == HIDDEN && i == 2) continue;
+
+                    const auto& tblock = Images.tBlocks[Images.currentStage - 1][i];
+                    int tblockLeft = tblock.x;
+                    int tblockRight = tblock.x + tblock.width;
+                    int tblockTop = tblock.y;
+                    int tblockBottom = tblock.y + tblock.height;
+
+                    int monsterLeft = newMonsterX;
+                    int monsterRight = newMonsterX + monster.width;
+                    int monsterTop = monster.y;
+                    int monsterBottom = monster.y + monster.height;
+
+                    bool overlapX = monsterRight > tblockLeft && monsterLeft < tblockRight;
+                    bool overlapY = monsterBottom > tblockTop && monsterTop < tblockBottom;
+
+                    if (overlapX && overlapY) {
+                        canMove = false;
+                        monster.direction = (monster.direction == LEFT) ? RIGHT : LEFT;
+                        break;
+                    }
+                }
+            }
+
+            if (canMove) {
+                monster.x = newMonsterX;
+            }
+
+            // 구멍 충돌 체크
+            for (const auto& hole : Images.holes[Images.currentStage - 1]) {
+                int holeLeft = hole.x;
+                int holeRight = hole.x + hole.width;
+                int holeTop = hole.y;
+
+                int monsterBottomCenterX = monster.x + monster.width / 2;
+                int monsterBottomY = monster.y + monster.height;
+
+                bool withinHoleX = monsterBottomCenterX >= holeLeft && monsterBottomCenterX <= holeRight;
+                int prevMonsterBottom = monster.y + monster.height;
+                bool atHoleTop = prevMonsterBottom >= holeTop - 5;
+
+                if (withinHoleX && atHoleTop) {
+                    monster.isFalling = true;
+                    monster.fallProgress = 0.0f;
+                    break;
+                }
+            }
+
+            // 플레이어와 충돌 체크
+            int monsterLeft = monster.x;
+            int monsterRight = monster.x + monster.width;
+            int monsterTop = monster.y;
+            int monsterBottom = monster.y + monster.height;
+
+            int playerLeft = hitbox_.left;
+            int playerRight = hitbox_.right;
+            int playerTop = hitbox_.top;
+            int playerBottom = hitbox_.bottom;
+
+            bool overlapX = playerRight > monsterLeft && playerLeft < monsterRight;
+            bool overlapY = playerBottom > monsterTop && playerTop < monsterBottom;
+
+            if (overlapX && overlapY) {
+                int prevPlayerBottom = prevY + playerHitboxHeight;
+                // 플레이어가 몬스터를 밟은 경우 (위에서 아래로)
+                if (prevPlayerBottom <= monsterTop + 5 && jumpVelocity_ > 0) {
+                    monster.isAlive = false; // 몬스터 죽음
+                    jumpVelocity_ = JUMP_VELOCITY/2; // 플레이어 점프
+				}
+                else {
+                    // 플레이어가 몬스터에 닿았을 때
+                    if (State() == TINO)  {
+                        ResetPosition(); // 플레이어 초기화
+                    }
+                    else if (State() == LARGETINO){
+                        eatMushroom_ = false;
+                        }
+                    else if (State() == PAIRI) {
+                        eatFlower_ = false; // 꽃 먹음
+                        eatMushroom_ = false; // 버섯 상태 해제
+                       
+                    }
+                    else if (State() == LIZAMONG) {
+                        eatFlower_ = true; // 꽃 상태 해제
+                        eatMushroom_ = false; // 버섯 상태 해제
+                       
+                    }
+                }
+            }
+        }
+
+        // 죽은 몬스터 제거
+        auto& monsterList = Images.monsters[Images.currentStage - 1];
+        monsterList.erase(std::remove_if(monsterList.begin(), monsterList.end(),
+            [](const Image_::Monster& m) { return !m.isAlive; }), monsterList.end());
+    }
 
     // 깃발 블럭 충돌 감지
     if (!isFallingIntoHole && !Images.flagBlocks[Images.currentStage - 1].empty()) {
@@ -671,7 +862,9 @@ void Player_::Move() {
         }
     }
 
-   
+    int newX = x_;
+    bool intendToMoveLeft = false;
+    bool intendToMoveRight = false;
 
     if (GetAsyncKeyState(VK_LEFT) & 0x8000) {
         direct_ = LEFT;
@@ -1138,6 +1331,8 @@ void Image_::ImageInit() {
     Player_Attack_Pairi.Load(TEXT("Image/파이리 스프라이트.png"));
     Player_Attack_Lizamong.Load(TEXT("Image/리자몽 스프라이트.png"));
 
+	monster.Load(TEXT("Image/굼바.png")); // Stage 1 Monster
+
     mStage1.Load(TEXT("Image/월드 1.png"));
     mStageHidden.Load(TEXT("Image/히든 스테이지.png"));
     mStage2.Load(TEXT("Image/월드 2.png"));
@@ -1321,6 +1516,20 @@ void Image_::BlockInit() {
             // 깃발 블럭 추가 (Stage 1 끝부분)
             FlagBlock flagBlock0_1 = { 3168, 94, 16, 392 }; // x=3100, 높이 286 (맨 아래 y=486
             flagBlocks[0].push_back(flagBlock0_1);
+
+            Monster monster0_1;
+            monster0_1.x = 500; // 초기 위치
+            monster0_1.y = 447; // 바닥에 위치
+            monster0_1.width = 32;
+            monster0_1.height = 32;
+            monster0_1.direction = RIGHT;
+            monster0_1.speed = 2.0f;
+            monster0_1.isAlive = true;
+            monster0_1.isFalling = false;
+            monster0_1.fallProgress = 0.0f;
+            monster0_1.directionTimer = 0.0f;
+            monster0_1.directionChangeInterval = static_cast<float>(rand() % 6 + 5); // 5~10초
+            monsters[0].push_back(monster0_1);
         }
         }
     else if (currentStage == HIDDEN) {
@@ -1525,7 +1734,7 @@ void Image_::DrawBackGround(int x, int y, HDC targetDC) {
     if (cameraX < 0) cameraX = 0;
 
     int srcWidth = (stage1 ? mStage1.GetWidth() : stage2 ? mStage2.GetWidth() :
-        stage3 ? mStage3.GetWidth() : mStageHidden.GetWidth());
+        stage3 ? mStage3.GetHeight() : mStageHidden.GetWidth());
     int srcHeight = (stage1 ? mStage1.GetHeight() : stage2 ? mStage2.GetHeight() :
         stage3 ? mStage3.GetHeight() : mStageHidden.GetHeight());
 
@@ -1572,6 +1781,26 @@ void Image_::DrawBackGround(int x, int y, HDC targetDC) {
             }
             else if (offsetX + qblock.width > 0 && offsetX < wRect.right && qblock.hit) {
                 questionBlockImage[1].StretchBlt(targetDC, offsetX, qblock.y, qblock.width, qblock.height, 0, 0, questionBlockImage[0].GetWidth(), questionBlockImage[0].GetHeight(), SRCCOPY);
+            }
+        }
+    }
+
+    // 몬스터 그리기 추가
+    if (!monster.IsNull()) {
+        for (const auto& m : monsters[currentStage - 1]) {
+            if (!m.isAlive) continue; // 죽은 몬스터는 그리지 않음
+
+            int offsetX = m.x - cameraX;
+            if (offsetX + m.width > 0 && offsetX < wRect.right) {
+                if (m.direction == RIGHT) {
+                    // 오른쪽 방향: 원본 이미지 그대로
+                    monster.TransparentBlt(targetDC, offsetX, m.y, m.width, m.height, 0, 0, monster.GetWidth(), monster.GetHeight(), RGB(0, 255, 0));
+                }
+                else if (m.direction == LEFT) {
+                    // 왼쪽 방향: 이미지 좌우 반전
+                    monster.TransparentBlt(targetDC, offsetX, m.y, m.width, m.height, 0, 0, monster.GetWidth(), monster.GetHeight(), RGB(0, 255, 0));
+                }
+                
             }
         }
     }
@@ -1655,7 +1884,7 @@ void Image_::DrawHitBox(HDC targetDC) {
         NowStage() == STAGE2 ? mStage2.GetWidth() :
         NowStage() == STAGE3 ? mStage3.GetWidth() : 0);
 
-    // 블록 히트박스 그리기
+    // 블록 히트박스 그리기 (기존 코드 유지)
     HPEN blockPen = CreatePen(PS_DASH, 3, RGB(255, 255, 0));
     HBRUSH blockBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
     SelectObject(targetDC, blockPen);
@@ -1668,7 +1897,7 @@ void Image_::DrawHitBox(HDC targetDC) {
     DeleteObject(blockPen);
     DeleteObject(blockBrush);
 
-    // 물음표 블럭 히트박스 그리기
+    // 물음표 블럭 히트박스 그리기 (기존 코드 유지)
     HPEN qblockPen = CreatePen(PS_DASH, 3, RGB(0, 255, 0));
     HBRUSH qblockBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
     SelectObject(targetDC, qblockPen);
@@ -1683,7 +1912,7 @@ void Image_::DrawHitBox(HDC targetDC) {
     DeleteObject(qblockPen);
     DeleteObject(qblockBrush);
 
-    // 파이프, 계단 블록 히트박스 그리기
+    // 파이프, 계단 블록 히트박스 그리기 (기존 코드 유지)
     HPEN tblockPen = CreatePen(PS_DASH, 3, RGB(255, 0, 255));
     HBRUSH tblockBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
     SelectObject(targetDC, tblockPen);
@@ -1696,7 +1925,7 @@ void Image_::DrawHitBox(HDC targetDC) {
     DeleteObject(tblockPen);
     DeleteObject(tblockBrush);
 
-    // 구멍 히트박스 그리기
+    // 구멍 히트박스 그리기 (기존 코드 유지)
     HPEN holePen = CreatePen(PS_DASH, 3, RGB(0, 222, 0));
     HBRUSH holeBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
     SelectObject(targetDC, holePen);
@@ -1709,6 +1938,7 @@ void Image_::DrawHitBox(HDC targetDC) {
     DeleteObject(holePen);
     DeleteObject(holeBrush);
 
+    // 깃발 블럭 히트박스 그리기 (기존 코드 유지)
     HPEN flagPen = CreatePen(PS_DASH, 3, RGB(0, 222, 0));
     HBRUSH flagBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
     SelectObject(targetDC, flagPen);
@@ -1720,6 +1950,21 @@ void Image_::DrawHitBox(HDC targetDC) {
     }
     DeleteObject(flagPen);
     DeleteObject(flagBrush);
+
+    // 몬스터 히트박스 그리기
+    HPEN monsterPen = CreatePen(PS_DASH, 3, RGB(255, 0, 0)); // 빨간색으로 표시
+    HBRUSH monsterBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
+    SelectObject(targetDC, monsterPen);
+    SelectObject(targetDC, monsterBrush);
+
+    for (const auto& monster : monsters[currentStage - 1]) {
+        if (monster.isAlive) {
+            RECT screenHitbox = { monster.x - cameraX, monster.y, monster.x + monster.width - cameraX, monster.y + monster.height };
+            Rectangle(targetDC, screenHitbox.left, screenHitbox.top, screenHitbox.right, screenHitbox.bottom);
+        }
+    }
+    DeleteObject(monsterPen);
+    DeleteObject(monsterBrush);
 }
 
 int GetCameraX(int playerX, int stageWidth) {
