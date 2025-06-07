@@ -128,6 +128,8 @@ public:
 	int fireballCooldown;
 	bool attackKeyPressed;
 	bool jumpKeyPressed; // 점프 키 상태 추적
+	int invincibleTime;  // 무적 시간 카운터 (프레임 단위)
+	bool isInvincible;   // 무적 상태 플래그
 
 	void PlayerInit();
 	void ResetPosition();
@@ -171,12 +173,12 @@ private:
 	bool isFallingIntoHole;
 	float fallProgress_;
 	RECT hitbox_;
-	bool isTouchingFlag; // 깃발 블럭에 닿았는지 여부
-	float flagSlideProgress; // 깃발을 타고 내려가는 진행률
-	float flagMoveRightProgress; // 오른쪽으로 이동하는 진행률
-	int flagBottomY; // 깃발 블럭의 맨 아래 y 좌표
-	bool isMovingRightAfterFlag; // 깃발 내려간 후 오른쪽 이동 중인지 여부
-	int flagBlockStage; // 깃발 블럭이 있는 스테이지 번호
+	bool isTouchingFlag;
+	float flagSlideProgress;
+	float flagMoveRightProgress;
+	int flagBottomY;
+	bool isMovingRightAfterFlag;
+	int flagBlockStage;
 
 	void GetHitbox(int& hitboxX, int& hitboxY, int& hitboxWidth, int& hitboxHeight) {
 		hitboxX = x_;
@@ -407,6 +409,8 @@ void Player_::PlayerInit() {
 	fireballCooldown = 0;
 	attackKeyPressed = false;
 	jumpKeyPressed = false;
+	invincibleTime = 0;  // 초기 무적 시간 0
+	isInvincible = false;  // 초기 무적 상태 해제
 }
 
 void Player_::ResetPosition() {
@@ -501,6 +505,11 @@ void Player_::DrawPlayer(HDC targetDC) {
 					}
 				}
 			}
+		}
+
+		// 무적 상태에서 깜빡임 효과
+		if (isInvincible && (invincibleTime / 10) % 2 == 0) {
+			return; // 짝수 프레임마다 렌더링 생략 (깜빡임)
 		}
 
 		if (move_) {
@@ -652,11 +661,10 @@ void Player_::Move() {
 	// 깃발 블럭을 타고 내려가는 중이거나 오른쪽으로 이동 중이면 다른 입력 무시
 	if (isTouchingFlag || isMovingRightAfterFlag) {
 		if (isTouchingFlag) {
-			const float slideSpeed = 4.0f; // 내려가는 속도
+			const float slideSpeed = 4.0f;
 			flagSlideProgress += slideSpeed;
 			y_ += static_cast<int>(slideSpeed);
 
-			// 플레이어의 히트박스 높이를 고려하여 바닥에 도달했는지 확인
 			if (y_ >= defaultGroundY_) {
 				y_ = defaultGroundY_;
 				isTouchingFlag = false;
@@ -667,8 +675,8 @@ void Player_::Move() {
 			}
 		}
 		else if (isMovingRightAfterFlag) {
-			const float moveRightSpeed = 2.0f; // 오른쪽 이동 속도
-			const float moveRightDistance = 100.0f; // 오른쪽으로 이동할 거리
+			const float moveRightSpeed = 2.0f;
+			const float moveRightDistance = 100.0f;
 			flagMoveRightProgress += moveRightSpeed;
 			x_ += static_cast<int>(moveRightSpeed);
 			move_ = true;
@@ -698,33 +706,36 @@ void Player_::Move() {
 	int playerHitboxX, playerHitboxY, playerHitboxWidth, playerHitboxHeight;
 	GetHitbox(playerHitboxX, playerHitboxY, playerHitboxWidth, playerHitboxHeight);
 
-	// 몬스터 이동 및 충돌 처리
-	if (!Images.monsters[Images.currentStage - 1].empty()) {
-		for (auto& monster : Images.monsters[Images.currentStage - 1]) {
-			if (!monster.isAlive) continue; // 죽은 몬스터는 처리하지 않음
+	// 무적 시간 감소
+	if (invincibleTime > 0) {
+		invincibleTime--;
+		if (invincibleTime <= 0) {
+			isInvincible = false;  // 무적 상태 해제
+		}
+	}
 
-			// 구멍에 빠진 경우
+	// 몬스터 이동 및 충돌 처리
+	if (!Images.monsters[Images.currentStage - 1].empty() && !isInvincible) {
+		for (auto& monster : Images.monsters[Images.currentStage - 1]) {
+			if (!monster.isAlive) continue;
+
 			if (monster.isFalling) {
 				const float fallSpeed = 2.0f;
 				monster.fallProgress += fallSpeed;
 				monster.y += static_cast<int>(fallSpeed);
 				if (monster.fallProgress >= 100.0f) {
-					monster.isAlive = false; // 사라짐
+					monster.isAlive = false;
 				}
 				continue;
 			}
 
-			// 방향 변경 타이머 업데이트
-			monster.directionTimer += 0.016f; // 16ms 프레임 기준
+			monster.directionTimer += 0.016f;
 			if (monster.directionTimer >= monster.directionChangeInterval) {
-				// 5~10초 사이에서 새로운 간격 설정
 				monster.directionChangeInterval = static_cast<float>(rand() % 6 + 5);
 				monster.directionTimer = 0.0f;
-				// 방향 반전
 				monster.direction = (monster.direction == LEFT) ? RIGHT : LEFT;
 			}
 
-			// 몬스터 이동
 			int newMonsterX = monster.x;
 			if (monster.direction == LEFT) {
 				newMonsterX -= static_cast<int>(monster.speed);
@@ -733,7 +744,6 @@ void Player_::Move() {
 				newMonsterX += static_cast<int>(monster.speed);
 			}
 
-			// 블럭 충돌 체크
 			bool canMove = true;
 			for (const auto& block : Images.blocks[Images.currentStage - 1]) {
 				int blockLeft = block.x;
@@ -751,7 +761,7 @@ void Player_::Move() {
 
 				if (overlapX && overlapY) {
 					canMove = false;
-					monster.direction = (monster.direction == LEFT) ? RIGHT : LEFT; // 방향 반전
+					monster.direction = (monster.direction == LEFT) ? RIGHT : LEFT;
 					break;
 				}
 			}
@@ -809,7 +819,6 @@ void Player_::Move() {
 				monster.x = newMonsterX;
 			}
 
-			// 구멍 충돌 체크
 			for (const auto& hole : Images.holes[Images.currentStage - 1]) {
 				int holeLeft = hole.x;
 				int holeRight = hole.x + hole.width;
@@ -829,7 +838,6 @@ void Player_::Move() {
 				}
 			}
 
-			// 플레이어와 충돌 체크
 			int monsterLeft = monster.x;
 			int monsterRight = monster.x + monster.width;
 			int monsterTop = monster.y;
@@ -843,36 +851,37 @@ void Player_::Move() {
 			bool overlapX = playerRight > monsterLeft && playerLeft < monsterRight;
 			bool overlapY = playerBottom > monsterTop && playerTop < monsterBottom;
 
-			if (overlapX && overlapY) {
+			if (overlapX && overlapY && !isInvincible) {
 				int prevPlayerBottom = prevY + playerHitboxHeight;
-				// 플레이어가 몬스터를 밟은 경우 (위에서 아래로)
 				if (prevPlayerBottom <= monsterTop + 5 && jumpVelocity_ > 0) {
-					monster.isAlive = false; // 몬스터 죽음
-					jumpVelocity_ = JUMP_VELOCITY / 2; // 플레이어 점프
+					monster.isAlive = false;
+					jumpVelocity_ = JUMP_VELOCITY / 2;
 				}
 				else {
-					// 플레이어가 몬스터에 닿았을 때
 					if (State() == TINO) {
-						ResetPosition(); // 플레이어 초기화
+						ResetPosition();
 					}
 					else if (State() == LARGETINO) {
 						eatMushroom_ = false;
+						isInvincible = true;
+						invincibleTime = 60; // 3초 (180프레임)
 					}
 					else if (State() == PAIRI) {
-						eatFlower_ = false; // 꽃 먹음
-						eatMushroom_ = false; // 버섯 상태 해제
-
+						eatFlower_ = false;
+						eatMushroom_ = false;
+						isInvincible = true;
+						invincibleTime = 60; // 3초 (180프레임)
 					}
 					else if (State() == LIZAMONG) {
-						eatFlower_ = true; // 꽃 상태 해제
-						eatMushroom_ = false; // 버섯 상태 해제
-
+						eatFlower_ = true;
+						eatMushroom_ = false;
+						isInvincible = true;
+						invincibleTime = 60; // 3초 (180프레임)
 					}
 				}
 			}
 		}
 
-		// 죽은 몬스터 제거
 		auto& monsterList = Images.monsters[Images.currentStage - 1];
 		monsterList.erase(std::remove_if(monsterList.begin(), monsterList.end(),
 			[](const Image_::Monster& m) { return !m.isAlive; }), monsterList.end());
@@ -907,7 +916,6 @@ void Player_::Move() {
 		}
 	}
 
-	// 키 입력 처리
 	intendToMoveLeft = (GetAsyncKeyState(VK_LEFT) & 0x8000) != 0;
 	intendToMoveRight = (GetAsyncKeyState(VK_RIGHT) & 0x8000) != 0;
 	bool intendToJump = (GetAsyncKeyState(VK_UP) & 0x8000) != 0 && !jumpKeyPressed;
@@ -933,7 +941,6 @@ void Player_::Move() {
 		attackKeyPressed = true;
 	}
 
-	// 키 해제 시 플래그 리셋
 	if (!(GetAsyncKeyState(VK_UP) & 0x8000)) jumpKeyPressed = false;
 	if (!(GetAsyncKeyState(VK_SPACE) & 0x8000)) attackKeyPressed = false;
 
@@ -1027,7 +1034,6 @@ void Player_::Move() {
 
 		if (canMoveHorizontally) {
 			for (size_t i = 0; i < Images.tBlocks[Images.currentStage - 1].size(); i++) {
-				// 히든 스테이지에서 tblock1_3 (인덱스 2)는 충돌 차단에서 제외
 				if (Images.currentStage == HIDDEN && i == 2) continue;
 
 				const auto& tblock = Images.tBlocks[Images.currentStage - 1][i];
@@ -1193,9 +1199,8 @@ void Player_::Move() {
 		}
 	}
 
-	// 스테이지1 -> 히든 입장
 	if (!isFallingIntoHole && !Images.tBlocks[Images.currentStage - 1].empty() && Images.tBlocks[Images.currentStage - 1].size() >= 4) {
-		const auto& tblock4 = Images.tBlocks[Images.currentStage - 1][3]; // tblock0_4 in Stage 1
+		const auto& tblock4 = Images.tBlocks[Images.currentStage - 1][3];
 		int tblockLeft = tblock4.x;
 		int tblockRight = tblock4.x + tblock4.width;
 		int tblockTop = tblock4.y;
@@ -1209,27 +1214,23 @@ void Player_::Move() {
 		}
 	}
 
-	// 히든 -> 스테이지1 복귀
 	if (!isFallingIntoHole && Images.currentStage == HIDDEN && !Images.tBlocks[Images.currentStage - 1].empty()) {
-		const auto& tblock3 = Images.tBlocks[Images.currentStage - 1][2]; // tblock1_3 in Hidden Stage
-		int tblockLeft = tblock3.x; // 614
-		int tblockTop = tblock3.y; // 388
-		int tblockBottom = tblock3.y + tblock3.height; // 474
+		const auto& tblock3 = Images.tBlocks[Images.currentStage - 1][2];
+		int tblockLeft = tblock3.x;
+		int tblockTop = tblock3.y;
+		int tblockBottom = tblock3.y + tblock3.height;
 
-		// 현재 히트박스
 		int playerRight = hitbox_.right;
 		int playerTop = hitbox_.top;
 		int playerBottom = hitbox_.bottom;
 
-		// 이전 프레임의 히트박스 오른쪽 위치 계산
 		int prevHitboxX, prevHitboxY, prevHitboxWidth, prevHitboxHeight;
 		int tempX = x_;
-		x_ = prevX; // 이전 위치로 임시 변경
-		GetHitbox(prevHitboxX, prevHitboxY, prevHitboxWidth, prevHitboxHeight); // 이전 히트박스 계산
-		int prevPlayerRight = prevHitboxX + prevHitboxWidth; // 이전 히트박스의 오른쪽 위치
-		x_ = tempX; // 원래 위치로 복원
+		x_ = prevX;
+		GetHitbox(prevHitboxX, prevHitboxY, prevHitboxWidth, prevHitboxHeight);
+		int prevPlayerRight = prevHitboxX + prevHitboxWidth;
+		x_ = tempX;
 
-		// 충돌 조건: 오른쪽으로 이동 중, 현재 오른쪽 면이 tblockLeft에 도달, 이전 오른쪽 면은 tblockLeft보다 왼쪽에 있었음
 		bool collideWithLeftFace = intendToMoveRight && playerRight + 4 >= tblockLeft && prevPlayerRight < tblockLeft;
 		bool yOverlap = playerBottom > tblockTop && playerTop < tblockBottom;
 
@@ -1338,7 +1339,7 @@ void Player_::Move() {
 		imageNum = 0;
 	}
 	if (x_ + playerWidth > stageWidth) {
-		x_ = stageWidth - playerWidth; // 맵 끝에 고정
+		x_ = stageWidth - playerWidth;
 		move_ = true;
 		imageNum = 0;
 	}
