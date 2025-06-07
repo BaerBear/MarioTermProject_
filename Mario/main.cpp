@@ -1453,7 +1453,35 @@ void Player_::FireballMove() {
 				continue;
 			}
 
+			// 파이어볼과 몬스터 충돌 체크
+			auto& monsters = Images.monsters[Images.currentStage - 1];
+			for (auto monsterIt = monsters.begin(); monsterIt != monsters.end(); /* 증가 연산은 내부에서 */) {
+				if (!monsterIt->isAlive) {
+					++monsterIt;
+					continue;
+				}
 
+				int fireballLeft = it->x;
+				int fireballRight = it->x + it->width;
+				int fireballTop = it->y;
+				int fireballBottom = it->y + it->height;
+
+				int monsterLeft = monsterIt->x;
+				int monsterRight = monsterIt->x + monsterIt->width;
+				int monsterTop = monsterIt->y;
+				int monsterBottom = monsterIt->y + monsterIt->height;
+
+				bool overlapX = fireballRight > monsterLeft && fireballLeft < monsterRight;
+				bool overlapY = fireballBottom > monsterTop && fireballTop < monsterBottom;
+
+				if (overlapX && overlapY) {
+					// 충돌 감지: 파이어볼과 몬스터 제거
+					monsterIt->isAlive = false; // 몬스터 비활성화
+					it->active = false; // 파이어볼 비활성화
+					break; // 현재 파이어볼에 대한 처리가 끝났으므로 루프 종료
+				}
+				++monsterIt;
+			}
 
 			bool hitWall = false;
 			for (const auto& block : Images.blocks[Images.currentStage - 1]) {
@@ -1563,10 +1591,11 @@ void Player_::FireballMove() {
 				}
 			}
 
-			if (hitWall || it->x < 0 || it->x + it->width > stageWidth) {
+			if (hitWall || it->x < 0 || it->x + it->width > stageWidth || !it->active) {
 				it = fireballs.erase(it);
 				continue;
 			}
+
 			it->time++;
 			if (it->time == 3) {
 				it->imageNum = (it->imageNum + 1) % 4;
@@ -1574,6 +1603,11 @@ void Player_::FireballMove() {
 			}
 			++it;
 		}
+
+		// 죽은 몬스터 제거
+		auto& monsterList = Images.monsters[Images.currentStage - 1];
+		monsterList.erase(std::remove_if(monsterList.begin(), monsterList.end(),
+			[](const Image_::Monster& m) { return !m.isAlive; }), monsterList.end());
 	}
 }
 
@@ -1871,7 +1905,7 @@ void Image_::BlockInit() {
 
 			Monster monster1_1;
 			monster1_1.x = 500; // 초기 위치Add commentMore actions
-			monster1_1.y = 447; // 바닥에 위치
+			monster1_1.y = 450; // 바닥에 위치
 			monster1_1.width = 32;
 			monster1_1.height = 32;
 			monster1_1.direction = RIGHT;
