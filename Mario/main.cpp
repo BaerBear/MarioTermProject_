@@ -647,7 +647,6 @@ void Player_::Move() {
 		const float fallSpeed = 2.0f;
 		fallProgress_ += fallSpeed;
 		y_ += static_cast<int>(fallSpeed);
-
 		if (fallProgress_ >= 100.0f) {
 			PostQuitMessage(0);
 		}
@@ -658,13 +657,11 @@ void Player_::Move() {
 	bool intendToMoveLeft = false;
 	bool intendToMoveRight = false;
 
-	// 깃발 블럭을 타고 내려가는 중이거나 오른쪽으로 이동 중이면 다른 입력 무시
 	if (isTouchingFlag || isMovingRightAfterFlag) {
 		if (isTouchingFlag) {
 			const float slideSpeed = 4.0f;
 			flagSlideProgress += slideSpeed;
 			y_ += static_cast<int>(slideSpeed);
-
 			if (y_ >= defaultGroundY_) {
 				y_ = defaultGroundY_;
 				isTouchingFlag = false;
@@ -706,15 +703,13 @@ void Player_::Move() {
 	int playerHitboxX, playerHitboxY, playerHitboxWidth, playerHitboxHeight;
 	GetHitbox(playerHitboxX, playerHitboxY, playerHitboxWidth, playerHitboxHeight);
 
-	// 무적 시간 감소
 	if (invincibleTime > 0) {
 		invincibleTime--;
 		if (invincibleTime <= 0) {
-			isInvincible = false;  // 무적 상태 해제
+			isInvincible = false;
 		}
 	}
 
-	// 몬스터 이동 및 충돌 처리
 	if (!Images.monsters[Images.currentStage - 1].empty() && !isInvincible) {
 		for (auto& monster : Images.monsters[Images.currentStage - 1]) {
 			if (!monster.isAlive) continue;
@@ -729,6 +724,93 @@ void Player_::Move() {
 				continue;
 			}
 
+			bool onGround = false;
+			int newMonsterY = monster.y;
+			const float gravity = 2.0f;
+
+			for (const auto& tblock : Images.tBlocks[Images.currentStage - 1]) {
+				int tblockLeft = tblock.x;
+				int tblockRight = tblock.x + tblock.width;
+				int tblockTop = tblock.y;
+
+				int monsterLeft = monster.x;
+				int monsterRight = monster.x + monster.width;
+				int monsterBottom = newMonsterY + monster.height;
+
+				bool overlapX = monsterRight > tblockLeft && monsterLeft < tblockRight;
+				bool overlapY = monsterBottom + static_cast<int>(gravity) >= tblockTop && monsterBottom <= tblockTop + 5;
+
+				if (overlapX && overlapY) {
+					newMonsterY = tblockTop - monster.height;
+					onGround = true;
+					break;
+				}
+			}
+
+			for (const auto& block : Images.blocks[Images.currentStage - 1]) {
+				int blockLeft = block.x;
+				int blockRight = block.x + block.width;
+				int blockTop = block.y;
+
+				int monsterLeft = monster.x;
+				int monsterRight = monster.x + monster.width;
+				int monsterBottom = newMonsterY + monster.height;
+
+				bool overlapX = monsterRight > blockLeft && monsterLeft < blockRight;
+				bool overlapY = monsterBottom + static_cast<int>(gravity) >= blockTop && monsterBottom <= blockTop + 5;
+
+				if (overlapX && overlapY) {
+					newMonsterY = blockTop - monster.height;
+					onGround = true;
+					break;
+				}
+			}
+
+			for (const auto& qblock : Images.questionBlocks[Images.currentStage - 1]) {
+				int qblockLeft = qblock.x;
+				int qblockRight = qblock.x + qblock.width;
+				int qblockTop = qblock.y;
+
+				int monsterLeft = monster.x;
+				int monsterRight = monster.x + monster.width;
+				int monsterBottom = newMonsterY + monster.height;
+
+				bool overlapX = monsterRight > qblockLeft && monsterLeft < qblockRight;
+				bool overlapY = monsterBottom + static_cast<int>(gravity) >= qblockTop && monsterBottom <= qblockTop + 5;
+
+				if (overlapX && overlapY) {
+					newMonsterY = qblockTop - monster.height;
+					onGround = true;
+					break;
+				}
+			}
+
+			for (const auto& hole : Images.holes[Images.currentStage - 1]) {
+				int holeLeft = hole.x;
+				int holeRight = hole.x + hole.width;
+				int holeTop = hole.y;
+
+				int monsterBottomCenterX = monster.x + monster.width / 2;
+				int monsterBottomY = newMonsterY + monster.height;
+
+				bool withinHoleX = monsterBottomCenterX >= holeLeft && monsterBottomCenterX <= holeRight;
+				bool atHoleTop = monsterBottomY >= holeTop - 5;
+
+				if (withinHoleX && atHoleTop) {
+					monster.isFalling = true;
+					monster.fallProgress = 0.0f;
+					onGround = false;
+					break;
+				}
+			}
+
+			if (!onGround) {
+				monster.y += static_cast<int>(gravity);
+			}
+			else {
+				monster.y = newMonsterY;
+			}
+
 			monster.directionTimer += 0.016f;
 			if (monster.directionTimer >= monster.directionChangeInterval) {
 				monster.directionChangeInterval = static_cast<float>(rand() % 6 + 5);
@@ -736,13 +818,7 @@ void Player_::Move() {
 				monster.direction = (monster.direction == LEFT) ? RIGHT : LEFT;
 			}
 
-			int newMonsterX = monster.x;
-			if (monster.direction == LEFT) {
-				newMonsterX -= static_cast<int>(monster.speed);
-			}
-			else if (monster.direction == RIGHT) {
-				newMonsterX += static_cast<int>(monster.speed);
-			}
+			float newMonsterX = monster.x + (monster.direction == LEFT ? -monster.speed : monster.speed);
 
 			bool canMove = true;
 			for (const auto& block : Images.blocks[Images.currentStage - 1]) {
@@ -751,8 +827,8 @@ void Player_::Move() {
 				int blockTop = block.y;
 				int blockBottom = block.y + block.height;
 
-				int monsterLeft = newMonsterX;
-				int monsterRight = newMonsterX + monster.width;
+				int monsterLeft = static_cast<int>(newMonsterX);
+				int monsterRight = static_cast<int>(newMonsterX) + monster.width;
 				int monsterTop = monster.y;
 				int monsterBottom = monster.y + monster.height;
 
@@ -760,8 +836,18 @@ void Player_::Move() {
 				bool overlapY = monsterBottom > blockTop && monsterTop < blockBottom;
 
 				if (overlapX && overlapY) {
-					canMove = false;
-					monster.direction = (monster.direction == LEFT) ? RIGHT : LEFT;
+					int prevMonsterRight = monster.x + monster.width;
+					int prevMonsterLeft = monster.x;
+					if (monster.direction == RIGHT && prevMonsterRight <= blockLeft && monsterRight > blockLeft) {
+						monster.direction = LEFT;
+						newMonsterX = blockLeft - monster.width;
+						canMove = false;
+					}
+					else if (monster.direction == LEFT && prevMonsterLeft >= blockRight && monsterLeft < blockRight) {
+						monster.direction = RIGHT;
+						newMonsterX = blockRight;
+						canMove = false;
+					}
 					break;
 				}
 			}
@@ -773,8 +859,8 @@ void Player_::Move() {
 					int qblockTop = qblock.y;
 					int qblockBottom = qblock.y + qblock.height;
 
-					int monsterLeft = newMonsterX;
-					int monsterRight = newMonsterX + monster.width;
+					int monsterLeft = static_cast<int>(newMonsterX);
+					int monsterRight = static_cast<int>(newMonsterX) + monster.width;
 					int monsterTop = monster.y;
 					int monsterBottom = monster.y + monster.height;
 
@@ -782,8 +868,18 @@ void Player_::Move() {
 					bool overlapY = monsterBottom > qblockTop && monsterTop < qblockBottom;
 
 					if (overlapX && overlapY) {
-						canMove = false;
-						monster.direction = (monster.direction == LEFT) ? RIGHT : LEFT;
+						int prevMonsterRight = monster.x + monster.width;
+						int prevMonsterLeft = monster.x;
+						if (monster.direction == RIGHT && prevMonsterRight <= qblockLeft && monsterRight > qblockLeft) {
+							monster.direction = LEFT;
+							newMonsterX = qblockLeft - monster.width;
+							canMove = false;
+						}
+						else if (monster.direction == LEFT && prevMonsterLeft >= qblockRight && monsterLeft < qblockRight) {
+							monster.direction = RIGHT;
+							newMonsterX = qblockRight;
+							canMove = false;
+						}
 						break;
 					}
 				}
@@ -799,8 +895,8 @@ void Player_::Move() {
 					int tblockTop = tblock.y;
 					int tblockBottom = tblock.y + tblock.height;
 
-					int monsterLeft = newMonsterX;
-					int monsterRight = newMonsterX + monster.width;
+					int monsterLeft = static_cast<int>(newMonsterX);
+					int monsterRight = static_cast<int>(newMonsterX) + monster.width;
 					int monsterTop = monster.y;
 					int monsterBottom = monster.y + monster.height;
 
@@ -808,8 +904,18 @@ void Player_::Move() {
 					bool overlapY = monsterBottom > tblockTop && monsterTop < tblockBottom;
 
 					if (overlapX && overlapY) {
-						canMove = false;
-						monster.direction = (monster.direction == LEFT) ? RIGHT : LEFT;
+						int prevMonsterRight = monster.x + monster.width;
+						int prevMonsterLeft = monster.x;
+						if (monster.direction == RIGHT && prevMonsterRight <= tblockLeft && monsterRight > tblockLeft) {
+							monster.direction = LEFT;
+							newMonsterX = tblockLeft - monster.width;
+							canMove = false;
+						}
+						else if (monster.direction == LEFT && prevMonsterLeft >= tblockRight && monsterLeft < tblockRight) {
+							monster.direction = RIGHT;
+							newMonsterX = tblockRight;
+							canMove = false;
+						}
 						break;
 					}
 				}
@@ -818,24 +924,8 @@ void Player_::Move() {
 			if (canMove) {
 				monster.x = newMonsterX;
 			}
-
-			for (const auto& hole : Images.holes[Images.currentStage - 1]) {
-				int holeLeft = hole.x;
-				int holeRight = hole.x + hole.width;
-				int holeTop = hole.y;
-
-				int monsterBottomCenterX = monster.x + monster.width / 2;
-				int monsterBottomY = monster.y + monster.height;
-
-				bool withinHoleX = monsterBottomCenterX >= holeLeft && monsterBottomCenterX <= holeRight;
-				int prevMonsterBottom = monster.y + monster.height;
-				bool atHoleTop = prevMonsterBottom >= holeTop - 5;
-
-				if (withinHoleX && atHoleTop) {
-					monster.isFalling = true;
-					monster.fallProgress = 0.0f;
-					break;
-				}
+			else {
+				monster.x = newMonsterX;
 			}
 
 			int monsterLeft = monster.x;
@@ -864,19 +954,19 @@ void Player_::Move() {
 					else if (State() == LARGETINO) {
 						eatMushroom_ = false;
 						isInvincible = true;
-						invincibleTime = 60; // 3초 (180프레임)
+						invincibleTime = 180;
 					}
 					else if (State() == PAIRI) {
 						eatFlower_ = false;
 						eatMushroom_ = false;
 						isInvincible = true;
-						invincibleTime = 60; // 3초 (180프레임)
+						invincibleTime = 180;
 					}
 					else if (State() == LIZAMONG) {
 						eatFlower_ = true;
 						eatMushroom_ = false;
 						isInvincible = true;
-						invincibleTime = 60; // 3초 (180프레임)
+						invincibleTime = 180;
 					}
 				}
 			}
@@ -885,35 +975,6 @@ void Player_::Move() {
 		auto& monsterList = Images.monsters[Images.currentStage - 1];
 		monsterList.erase(std::remove_if(monsterList.begin(), monsterList.end(),
 			[](const Image_::Monster& m) { return !m.isAlive; }), monsterList.end());
-	}
-
-	// 깃발 블럭 충돌 감지
-	if (!isFallingIntoHole && !Images.flagBlocks[Images.currentStage - 1].empty()) {
-		for (const auto& flagBlock : Images.flagBlocks[Images.currentStage - 1]) {
-			int flagLeft = flagBlock.x;
-			int flagRight = flagBlock.x + flagBlock.width;
-			int flagTop = flagBlock.y;
-			int flagBottom = flagBlock.y + flagBlock.height;
-
-			int playerLeft = hitbox_.left;
-			int playerRight = hitbox_.right;
-			int playerTop = hitbox_.top;
-			int playerBottom = hitbox_.bottom;
-
-			bool overlapX = playerRight > flagLeft && playerLeft < flagRight;
-			bool overlapY = playerBottom > flagTop && playerTop < flagBottom;
-
-			if (overlapX && overlapY) {
-				isTouchingFlag = true;
-				flagBlockStage = Images.currentStage;
-				flagSlideProgress = 0.0f;
-				flagMoveRightProgress = 0.0f;
-				isMovingRightAfterFlag = false;
-				isJumping_ = false;
-				jumpVelocity_ = 0.0f;
-				break;
-			}
-		}
 	}
 
 	intendToMoveLeft = (GetAsyncKeyState(VK_LEFT) & 0x8000) != 0;
@@ -1189,11 +1250,42 @@ void Player_::Move() {
 			bool withinHoleX = playerBottomCenterX >= holeLeft && playerBottomCenterX <= holeRight;
 
 			int prevPlayerBottom = prevY + playerHitboxHeight;
-			bool atHoleTop = prevPlayerBottom >= holeTop - 5 && isJumping_ == FALSE;
+			bool atHoleTop = prevPlayerBottom >= holeTop - 5 && !isJumping_;
 
 			if (withinHoleX && atHoleTop) {
 				isFallingIntoHole = true;
 				fallProgress_ = 0.0f;
+				break;
+			}
+		}
+	}
+
+	// 깃발 블록 충돌 체크
+	if (!isFallingIntoHole && !isTouchingFlag) {
+		for (const auto& flag : Images.flagBlocks[Images.currentStage - 1]) {
+			int flagLeft = flag.x;
+			int flagRight = flag.x + flag.width;
+			int flagTop = flag.y;
+			int flagBottom = flag.y + flag.height;
+
+			int playerLeft = hitbox_.left;
+			int playerRight = hitbox_.right;
+			int playerTop = hitbox_.top;
+			int playerBottom = hitbox_.bottom;
+
+			bool overlapX = playerRight > flagLeft && playerLeft < flagRight;
+			bool overlapY = playerBottom > flagTop && playerTop < flagBottom;
+
+			if (overlapX && overlapY) {
+				isTouchingFlag = true;
+				flagBlockStage = Images.currentStage;
+				flagBottomY = flagBottom;
+				x_ = flagLeft - playerHitboxWidth; // 플레이어를 깃발 왼쪽에 고정
+				y_ = flagTop; // 깃발 상단에서 슬라이드 시작
+				jumpVelocity_ = 0.0f;
+				isJumping_ = false;
+				move_ = false;
+				direct_ = RIGHT;
 				break;
 			}
 		}
@@ -1732,6 +1824,23 @@ void Image_::BlockInit() {
 
 			Hole hole0_1 = { 257, 500, 1803, 69 };
 			holes[0].push_back(hole0_1);
+
+			FlagBlock flagBlock0_1 = { 2432, 94, 16, 392 }; // x=3100, 높이 286 (맨 아래 y=486
+			flagBlocks[0].push_back(flagBlock0_1);
+			
+			Monster monster0_1;
+			monster0_1.x = 424; // 초기 위치Add commentMore actions
+			monster0_1.y = 290; 
+			monster0_1.width = 32;
+			monster0_1.height = 32;
+			monster0_1.direction = LEFT;
+			monster0_1.speed = 1.0f;
+			monster0_1.isAlive = true;
+			monster0_1.isFalling = false;
+			monster0_1.fallProgress = 0.0f;
+			monster0_1.directionTimer = 0.0f;
+			monster0_1.directionChangeInterval = static_cast<float>(rand() % 6 + 5); // 5~10초
+			monsters[0].push_back(monster0_1);
 		}
 	}
 	else if (currentStage == STAGE1) {
@@ -1862,6 +1971,7 @@ void Image_::BlockInit() {
 			TBlock tblock1_28 = { 2976, 258, 64, 38 };
 			TBlock tblock1_29 = { 2992, 220, 48, 38 };
 			TBlock tblock1_30 = { 3008, 182, 32, 38 };
+			TBlock tblock1_floor1 = { 0, 487, 1104, 38 };
 			tBlocks[1].push_back(tblock1_1);
 			tBlocks[1].push_back(tblock1_2);
 			tBlocks[1].push_back(tblock1_3);
@@ -1874,7 +1984,7 @@ void Image_::BlockInit() {
 			tBlocks[1].push_back(tblock1_10);
 			tBlocks[1].push_back(tblock1_11);
 			tBlocks[1].push_back(tblock1_12);
-			tBlocks[1].push_back(tblock1_13);
+	        tBlocks[1].push_back(tblock1_13);
 			tBlocks[1].push_back(tblock1_14);
 			tBlocks[1].push_back(tblock1_15);
 			tBlocks[1].push_back(tblock1_16);
@@ -1892,6 +2002,7 @@ void Image_::BlockInit() {
 			tBlocks[1].push_back(tblock1_28);
 			tBlocks[1].push_back(tblock1_29);
 			tBlocks[1].push_back(tblock1_30);
+			tBlocks[1].push_back(tblock1_floor1);
 
 			Hole hole1_1 = { 1104, 487, 32, 74 };
 			Hole hole1_2 = { 1376, 487, 48, 74 };
@@ -1910,13 +2021,41 @@ void Image_::BlockInit() {
 			monster1_1.width = 32;
 			monster1_1.height = 32;
 			monster1_1.direction = RIGHT;
-			monster1_1.speed = 2.0f;
+			monster1_1.speed = 1.0f;
 			monster1_1.isAlive = true;
 			monster1_1.isFalling = false;
 			monster1_1.fallProgress = 0.0f;
 			monster1_1.directionTimer = 0.0f;
 			monster1_1.directionChangeInterval = static_cast<float>(rand() % 6 + 5); // 5~10초
 			monsters[1].push_back(monster1_1);
+
+			Monster monster1_2;
+			monster1_2.x = 830; // 초기 위치Add commentMore actions
+			monster1_2.y = 450; // 바닥에 위치
+			monster1_2.width = 32;
+			monster1_2.height = 32;
+			monster1_2.direction = RIGHT;
+			monster1_2.speed = 1.0f;
+			monster1_2.isAlive = true;
+			monster1_2.isFalling = false;
+			monster1_2.fallProgress = 0.0f;
+			monster1_2.directionTimer = 0.0f;
+			monster1_2.directionChangeInterval = static_cast<float>(rand() % 6 + 5); // 5~10초
+			monsters[1].push_back(monster1_2);
+
+			Monster monster1_3;
+			monster1_3.x = 1900; // 초기 위치Add commentMore actions
+			monster1_3.y = 450; // 바닥에 위치
+			monster1_3.width = 32;
+			monster1_3.height = 32;
+			monster1_3.direction = RIGHT;
+			monster1_3.speed = 1.0f;
+			monster1_3.isAlive = true;
+			monster1_3.isFalling = false;
+			monster1_3.fallProgress = 0.0f;
+			monster1_3.directionTimer = 0.0f;
+			monster1_3.directionChangeInterval = static_cast<float>(rand() % 6 + 5); // 5~10초
+			monsters[1].push_back(monster1_3);
 		}
 	}
 	else if (currentStage == STAGE2) {
