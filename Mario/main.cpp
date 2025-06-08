@@ -1972,6 +1972,9 @@ void Image_::BlockInit() {
 			TBlock tblock1_29 = { 2992, 220, 48, 38 };
 			TBlock tblock1_30 = { 3008, 182, 32, 38 };
 			TBlock tblock1_floor1 = { 0, 487, 1104, 38 };
+			TBlock tblock1_floor2 = { 1136, 487, 240, 38 };
+			TBlock tblock1_floor3 = { 1424, 487, 722, 38 };
+			TBlock tblock1_floor4 = { 2544, 487, 331, 38 };
 			tBlocks[1].push_back(tblock1_1);
 			tBlocks[1].push_back(tblock1_2);
 			tBlocks[1].push_back(tblock1_3);
@@ -2003,6 +2006,9 @@ void Image_::BlockInit() {
 			tBlocks[1].push_back(tblock1_29);
 			tBlocks[1].push_back(tblock1_30);
 			tBlocks[1].push_back(tblock1_floor1);
+			tBlocks[1].push_back(tblock1_floor2);
+			tBlocks[1].push_back(tblock1_floor3);
+			tBlocks[1].push_back(tblock1_floor4);
 
 			Hole hole1_1 = { 1104, 487, 32, 74 };
 			Hole hole1_2 = { 1376, 487, 48, 74 };
@@ -2045,7 +2051,7 @@ void Image_::BlockInit() {
 
 			Monster monster1_3;
 			monster1_3.x = 1900; // 초기 위치Add commentMore actions
-			monster1_3.y = 450; // 바닥에 위치
+			monster1_3.y = 440; // 바닥에 위치
 			monster1_3.width = 32;
 			monster1_3.height = 32;
 			monster1_3.direction = RIGHT;
@@ -2056,6 +2062,78 @@ void Image_::BlockInit() {
 			monster1_3.directionTimer = 0.0f;
 			monster1_3.directionChangeInterval = static_cast<float>(rand() % 6 + 5); // 5~10초
 			monsters[1].push_back(monster1_3);
+
+			Monster monster1_4;
+			monster1_4.x = 2730; // 초기 위치Add commentMore actions
+			monster1_4.y = 440; // 바닥에 위치
+			monster1_4.width = 32;
+			monster1_4.height = 32;
+			monster1_4.direction = RIGHT;
+			monster1_4.speed = 1.0f;
+			monster1_4.isAlive = true;
+			monster1_4.isFalling = false;
+			monster1_4.fallProgress = 0.0f;
+			monster1_4.directionTimer = 0.0f;
+			monster1_4.directionChangeInterval = static_cast<float>(rand() % 6 + 5); // 5~10초
+			monsters[1].push_back(monster1_4);
+
+			Monster monster1_5;
+			monster1_5.x = 2680; // 초기 위치Add commentMore actions
+			monster1_5.y = 440; // 바닥에 위치
+			monster1_5.width = 32;
+			monster1_5.height = 32;
+			monster1_5.direction = LEFT;
+			monster1_5.speed = 1.0f;
+			monster1_5.isAlive = true;
+			monster1_5.isFalling = false;
+			monster1_5.fallProgress = 0.0f;
+			monster1_5.directionTimer = 0.0f;
+			monster1_5.directionChangeInterval = static_cast<float>(rand() % 6 + 5); // 5~10초
+			monsters[1].push_back(monster1_5);
+
+			Monster monster1_6;
+			monster1_6.x = 350; // 초기 위치Add commentMore actions
+			monster1_6.y = 280; // 바닥에 위치
+			monster1_6.width = 32;
+			monster1_6.height = 32;
+			monster1_6.direction = LEFT;
+			monster1_6.speed = 1.0f;
+			monster1_6.isAlive = true;
+			monster1_6.isFalling = false;
+			monster1_6.fallProgress = 0.0f;
+			monster1_6.directionTimer = 0.0f;
+			monster1_6.directionChangeInterval = static_cast<float>(rand() % 6 + 5); // 5~10초
+			monsters[1].push_back(monster1_6);
+
+			Monster monster1_7;
+			monster1_7.x = 1940; // 초기 위치Add commentMore actions
+			monster1_7.y = 440; // 바닥에 위치
+			monster1_7.width = 32;
+			monster1_7.height = 32;
+			monster1_7.direction = RIGHT;
+			monster1_7.speed = 1.0f;
+			monster1_7.isAlive = true;
+			monster1_7.isFalling = false;
+			monster1_7.fallProgress = 0.0f;
+			monster1_7.directionTimer = 0.0f;
+			monster1_7.directionChangeInterval = static_cast<float>(rand() % 6 + 5); // 5~10초
+			monsters[1].push_back(monster1_7);
+
+			Monster monster1_8;
+			monster1_8.x = 1920; // 초기 위치Add commentMore actions
+			monster1_8.y = 440; // 바닥에 위치
+			monster1_8.width = 32;
+			monster1_8.height = 32;
+			monster1_8.direction = LEFT;
+			monster1_8.speed = 1.0f;
+			monster1_8.isAlive = true;
+			monster1_8.isFalling = false;
+			monster1_8.fallProgress = 0.0f;
+			monster1_8.directionTimer = 0.0f;
+			monster1_8.directionChangeInterval = static_cast<float>(rand() % 6 + 5); // 5~10초
+			monsters[1].push_back(monster1_8);
+
+
 		}
 	}
 	else if (currentStage == STAGE2) {
@@ -2148,6 +2226,34 @@ void Image_::BlockInit() {
 			holes[2].push_back(hole2_1);
 			holes[2].push_back(hole2_2);
 			holes[2].push_back(hole2_3);
+
+			Monster monster2_1;
+			monster2_1.x = 668; // 초기 위치Add commentMore actions
+			monster2_1.y = 295; // 바닥에 위치
+			monster2_1.width = 32;
+			monster2_1.height = 32;
+			monster2_1.direction = RIGHT;
+			monster2_1.speed = 1.0f;
+			monster2_1.isAlive = true;
+			monster2_1.isFalling = false;
+			monster2_1.fallProgress = 0.0f;
+			monster2_1.directionTimer = 0.0f;
+			monster2_1.directionChangeInterval = static_cast<float>(rand() % 6 + 5); // 5~10초
+			monsters[2].push_back(monster2_1);
+
+			Monster monster2_2;
+			monster2_2.x = 690; // 초기 위치Add commentMore actions
+			monster2_2.y = 295; // 바닥에 위치
+			monster2_2.width = 32;
+			monster2_2.height = 32;
+			monster2_2.direction = RIGHT;
+			monster2_2.speed = 1.0f;
+			monster2_2.isAlive = true;
+			monster2_2.isFalling = false;
+			monster2_2.fallProgress = 0.0f;
+			monster2_2.directionTimer = 0.0f;
+			monster2_2.directionChangeInterval = static_cast<float>(rand() % 6 + 5); // 5~10초
+			monsters[2].push_back(monster2_2);
 
 		}
 	}
