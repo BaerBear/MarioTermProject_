@@ -61,9 +61,11 @@ class Image_ {
 public:
 	bool stage1, hidden, tutorial, stage2;
 	int currentStage;
+	bool isStartScreen;
 	bool isTransitioning; // 전환 중 여부
 	float transitionTimer; // 전환 타이머 (초 단위)
 
+	CImage mStartScreen;
 	CImage Player_Move_Tino, Player_Move_Pairi, Player_Move_Lizamong;
 	CImage Player_Attack_Tino, Player_Attack_Pairi, Player_Attack_Lizamong;
 	CImage Item_Mushroom, Item_Flower;
@@ -374,7 +376,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 		ssystem->createSound("Sound/Power down.wav", FMOD_DEFAULT, 0, &sound_PowerDown);
 
 		bgmChannel->setVolume(BGM_V);
-		ssystem->playSound(sound_PowerDown, 0, false, &bgmChannel);
+		ssystem->playSound(sound_MainBgm, 0, false, &bgmChannel);
 
 		Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL); // GDI+ 초기화
 		hDC = GetDC(hWnd);
