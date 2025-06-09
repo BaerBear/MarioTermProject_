@@ -17,7 +17,7 @@
 #define LIZAMONG 4
 #define LARGETINO 5
 
-#define MOVE 13
+#define MOVE 7
 #define JUMP_VELOCITY -13
 #define GRAVITY 0.5
 
@@ -25,6 +25,15 @@
 #define STAGE1 2
 #define STAGE2 3
 #define HIDDEN 4
+
+#define MUSHROOM 0
+#define FLOWER 1
+
+#define LEFT 0
+#define RIGHT 1
+
+std::mt19937 Item_type(std::random_device{}());
+std::uniform_int_distribution<int> Type(0, 1); // 0: 버섯, 1: 꽃
 
 HINSTANCE g_hInst;
 LPCTSTR lpszClass = L"Window Class Name";
@@ -39,8 +48,9 @@ public:
 	bool stage1, hidden, tutorial, stage2;
 	int currentStage;
 
-	CImage Player_Move_Tino, Player_Move_Pairi, Player_Move_Lizard, Player_Move_Lizamong;
+	CImage Player_Move_Tino, Player_Move_Pairi, Player_Move_Lizamong;
 	CImage Player_Attack_Tino, Player_Attack_Pairi, Player_Attack_Lizamong;
+	CImage Item_Mushroom, Item_Flower;
 	CImage FireballImage;
 	CImage mStage1, mStageHidden, mStageTutorial, mStage2;
 	CImage blockImage;
@@ -87,6 +97,16 @@ public:
 		float directionTimer; // 방향 변경 타이머
 		float directionChangeInterval; // 방향 변경 간격 (5~10초)
 	};
+	struct Item {
+		int x, y;
+		int width, height;
+		int type; // 0: 버섯, 1: 꽃
+		bool isActive;
+		int direction;
+		float speed;
+		float directionTimer;
+		float directionChangeInterval;
+	};
 
 	std::vector<Monster> monsters[4]{};
 	std::vector<Block> blocks[4]{};
@@ -94,7 +114,8 @@ public:
 	std::vector<TBlock> tBlocks[4]{};
 	std::vector<Hole> holes[4]{};
 	std::vector<FlagBlock> flagBlocks[4]{};
-	std::vector<Fireball> fireballs; // 단일 벡터로 관리
+	std::vector<Fireball> fireballs;
+	std::vector<Item> items[4]{};
 
 	Image_() {
 		for (int i = 0; i < 4; ++i) {
@@ -924,9 +945,6 @@ void Player_::Move() {
 			if (canMove) {
 				monster.x = newMonsterX;
 			}
-			else {
-				monster.x = newMonsterX;
-			}
 
 			int monsterLeft = monster.x;
 			int monsterRight = monster.x + monster.width;
@@ -1191,11 +1209,25 @@ void Player_::Move() {
 					jumpVelocity_ = 0.0f;
 					onBlock = true;
 					newGroundY = qblockTop - playerHitboxHeight;
+
+
 				}
 				else if (prevPlayerTop >= qblockBottom && jumpVelocity_ < 0) {
 					if (!qblock.hit) {
+						// 아이템 생성
 						qblock.hit = true;
-						eatFlower_ = true;
+						Image_::Item item;
+						item.x = qblock.x;
+						item.y = qblockTop - 32; // 아이템을 QuestionBlock 위에 배치
+						item.width = 32;
+						item.height = 32;
+						item.type = Type(Item_type); // 랜덤 타입 (0: 버섯, 1: 꽃)
+						item.isActive = true;
+						item.direction = (rand() % 2 == 0) ? LEFT : RIGHT;
+						item.speed = 1.0f;
+						item.directionTimer = 0.0f;
+						item.directionChangeInterval = static_cast<float>(rand() % 6 + 5);
+						Images.items[Images.currentStage - 1].push_back(item);
 					}
 					y_ = qblockBottom;
 					jumpVelocity_ = 0.0f;
@@ -1280,8 +1312,8 @@ void Player_::Move() {
 				isTouchingFlag = true;
 				flagBlockStage = Images.currentStage;
 				flagBottomY = flagBottom;
-				x_ = flagLeft - playerHitboxWidth; // 플레이어를 깃발 왼쪽에 고정
-				y_ = flagTop; // 깃발 상단에서 슬라이드 시작
+				x_ = flagLeft - playerHitboxWidth;
+				y_ = flagTop;
 				jumpVelocity_ = 0.0f;
 				isJumping_ = false;
 				move_ = false;
@@ -1289,6 +1321,192 @@ void Player_::Move() {
 				break;
 			}
 		}
+	}
+
+	// 아이템 움직임 및 충돌 처리
+	if (!Images.items[Images.currentStage - 1].empty()) {
+		for (auto& item : Images.items[Images.currentStage - 1]) {
+			if (!item.isActive) continue;
+
+			// 중력 적용
+			int newItemY = item.y;
+			bool onGround = false;
+			const float gravity = 2.0f;
+
+			for (const auto& tblock : Images.tBlocks[Images.currentStage - 1]) {
+				int tblockLeft = tblock.x;
+				int tblockRight = tblock.x + tblock.width;
+				int tblockTop = tblock.y;
+
+				int itemLeft = item.x;
+				int itemRight = item.x + item.width;
+				int itemBottom = newItemY + item.height;
+
+				bool overlapX = itemRight > tblockLeft && itemLeft < tblockRight;
+				bool overlapY = itemBottom + static_cast<int>(gravity) >= tblockTop && itemBottom <= tblockTop + 5;
+
+				if (overlapX && overlapY) {
+					newItemY = tblockTop - item.height;
+					onGround = true;
+					break;
+				}
+			}
+
+			for (const auto& block : Images.blocks[Images.currentStage - 1]) {
+				int blockLeft = block.x;
+				int blockRight = block.x + block.width;
+				int blockTop = block.y;
+
+				int itemLeft = item.x;
+				int itemRight = item.x + item.width;
+				int itemBottom = newItemY + item.height;
+
+				bool overlapX = itemRight > blockLeft && itemLeft < blockRight;
+				bool overlapY = itemBottom + static_cast<int>(gravity) >= blockTop && itemBottom <= blockTop + 5;
+
+				if (overlapX && overlapY) {
+					newItemY = blockTop - item.height;
+					onGround = true;
+					break;
+				}
+			}
+
+			for (const auto& qblock : Images.questionBlocks[Images.currentStage - 1]) {
+				int qblockLeft = qblock.x;
+				int qblockRight = qblock.x + qblock.width;
+				int qblockTop = qblock.y;
+
+				int itemLeft = item.x;
+				int itemRight = item.x + item.width;
+				int itemBottom = newItemY + item.height;
+
+				bool overlapX = itemRight > qblockLeft && itemLeft < qblockRight;
+				bool overlapY = itemBottom + static_cast<int>(gravity) >= qblockTop && itemBottom <= qblockTop + 5;
+
+				if (overlapX && overlapY) {
+					newItemY = qblockTop - item.height;
+					onGround = true;
+					break;
+				}
+			}
+
+			if (!onGround) {
+				item.y += static_cast<int>(gravity);
+			}
+			else {
+				item.y = newItemY;
+			}
+
+			// 방향 변경 로직
+			item.directionTimer += 0.016f;
+			if (item.directionTimer >= item.directionChangeInterval) {
+				item.directionChangeInterval = static_cast<float>(rand() % 6 + 5);
+				item.directionTimer = 0.0f;
+				item.direction = (item.direction == LEFT) ? RIGHT : LEFT;
+			}
+
+			float newItemX = item.x + (item.direction == LEFT ? -item.speed : item.speed);
+
+			bool canMove = true;
+			for (const auto& block : Images.blocks[Images.currentStage - 1]) {
+				int blockLeft = block.x;
+				int blockRight = block.x + block.width;
+				int blockTop = block.y;
+				int blockBottom = block.y + block.height;
+
+				int itemLeft = static_cast<int>(newItemX);
+				int itemRight = static_cast<int>(newItemX) + item.width;
+				int itemTop = item.y;
+				int itemBottom = item.y + item.height;
+
+				bool overlapX = itemRight > blockLeft && itemLeft < blockRight;
+				bool overlapY = itemBottom > blockTop && itemTop < blockBottom;
+
+				if (overlapX && overlapY) {
+					int prevItemRight = item.x + item.width;
+					int prevItemLeft = item.x;
+					if (item.direction == RIGHT && prevItemRight <= blockLeft && itemRight > blockLeft) {
+						item.direction = LEFT;
+						newItemX = blockLeft - item.width;
+						canMove = false;
+					}
+					else if (item.direction == LEFT && prevItemLeft >= blockRight && itemLeft < blockRight) {
+						item.direction = RIGHT;
+						newItemX = blockRight;
+						canMove = false;
+					}
+					break;
+				}
+			}
+
+			if (canMove) {
+				for (const auto& qblock : Images.questionBlocks[Images.currentStage - 1]) {
+					int qblockLeft = qblock.x;
+					int qblockRight = qblock.x + qblock.width;
+					int qblockTop = qblock.y;
+					int qblockBottom = qblock.y + qblock.height;
+
+					int itemLeft = static_cast<int>(newItemX);
+					int itemRight = static_cast<int>(newItemX) + item.width;
+					int itemTop = item.y;
+					int itemBottom = item.y + item.height;
+
+					bool overlapX = itemRight > qblockLeft && itemLeft < qblockRight;
+					bool overlapY = itemBottom > qblockTop && itemTop < qblockBottom;
+
+					if (overlapX && overlapY) {
+						int prevItemRight = item.x + item.width;
+						int prevItemLeft = item.x;
+						if (item.direction == RIGHT && prevItemRight <= qblockLeft && itemRight > qblockLeft) {
+							item.direction = LEFT;
+							newItemX = qblockLeft - item.width;
+							canMove = false;
+						}
+						else if (item.direction == LEFT && prevItemLeft >= qblockRight && itemLeft < qblockRight) {
+							item.direction = RIGHT;
+							newItemX = qblockRight;
+							canMove = false;
+						}
+						break;
+					}
+				}
+			}
+
+			if (canMove) {
+				item.x = newItemX;
+			}
+
+			// 플레이어와 아이템 충돌 체크
+			int itemLeft = item.x;
+			int itemRight = item.x + item.width;
+			int itemTop = item.y;
+			int itemBottom = item.y + item.height;
+
+			int playerLeft = hitbox_.left;
+			int playerRight = hitbox_.right;
+			int playerTop = hitbox_.top;
+			int playerBottom = hitbox_.bottom;
+
+			bool overlapX = playerRight > itemLeft && playerLeft < itemRight;
+			bool overlapY = playerBottom > itemTop && playerTop < itemBottom;
+
+			if (overlapX && overlapY && item.isActive) {
+				if (item.type == 0) { // 버섯
+					eatMushroom_ = true;
+					groundY_ -= 15; // 크기 증가 반영
+					y_ -= 15;
+				}
+				else if (item.type == 1) { // 꽃
+					eatFlower_ = true;
+				}
+				item.isActive = false;
+			}
+		}
+
+		// 비활성화된 아이템 제거
+		auto& itemList = Images.items[Images.currentStage - 1];
+		itemList.erase(std::remove_if(itemList.begin(), itemList.end(),
+			[](const Image_::Item& i) { return !i.isActive; }), itemList.end());
 	}
 
 	if (!isFallingIntoHole && !Images.tBlocks[Images.currentStage - 1].empty() && Images.tBlocks[Images.currentStage - 1].size() >= 4) {
@@ -1323,7 +1541,7 @@ void Player_::Move() {
 		int prevPlayerRight = prevHitboxX + prevHitboxWidth;
 		x_ = tempX;
 
-		bool collideWithLeftFace = intendToMoveRight && playerRight + 4 >= tblockLeft && prevPlayerRight < tblockLeft;
+		bool collideWithLeftFace = intendToMoveRight && playerRight + 5 >= tblockLeft && prevPlayerRight < tblockLeft;
 		bool yOverlap = playerBottom > tblockTop && playerTop < tblockBottom;
 
 		if (collideWithLeftFace && yOverlap) {
@@ -1474,11 +1692,11 @@ void Player_::Attack() {
 	fireball.active = true;
 
 	if (direct_ == RIGHT) {
-		fireball.x = hitbox_.right;
+		fireball.x = hitbox_.right - fireball.width;
 		fireball.velocityX = 6.0f;
 	}
 	else {
-		fireball.x = hitbox_.left - fireball.width;
+		fireball.x = hitbox_.left;
 		fireball.velocityX = -6.0f;
 	}
 	fireball.y = playerHitboxY + playerHitboxHeight / 4;
@@ -1720,7 +1938,6 @@ int Player_::State() {
 void Image_::ImageInit() {
 	Player_Move_Tino.Load(TEXT("Image/티노 스프라이트.png"));
 	Player_Move_Pairi.Load(TEXT("Image/파이리 스프라이트.png"));
-	Player_Move_Lizard.Load(TEXT("Image/리자드 스프라이트.png"));
 	Player_Move_Lizamong.Load(TEXT("Image/리자몽 스프라이트.png"));
 
 	Player_Attack_Tino.Load(TEXT("Image/티노 스프라이트.png"));
@@ -1736,9 +1953,12 @@ void Image_::ImageInit() {
 	questionBlockImage[0].Load(TEXT("Image/QuestionBlock.gif"));
 	questionBlockImage[1].Load(TEXT("Image/HitQuestionBlock.png"));
 
-	monster.Load(TEXT("Image/굼바.png")); // Stage 1 Monster
+	monster.Load(TEXT("Image/굼바.png"));
 
 	FireballImage.Load(TEXT("Image/Fireball.png"));
+
+	Item_Flower.Load(TEXT("Image/꽃.png"));
+	Item_Mushroom.Load(TEXT("Image/버섯.png"));
 
 	tutorial = stage1 = stage2 = hidden = false;
 	currentStage = TUTORIAL;
@@ -1827,10 +2047,10 @@ void Image_::BlockInit() {
 
 			FlagBlock flagBlock0_1 = { 2432, 94, 16, 392 }; // x=3100, 높이 286 (맨 아래 y=486
 			flagBlocks[0].push_back(flagBlock0_1);
-			
+
 			Monster monster0_1;
 			monster0_1.x = 424; // 초기 위치Add commentMore actions
-			monster0_1.y = 290; 
+			monster0_1.y = 290;
 			monster0_1.width = 32;
 			monster0_1.height = 32;
 			monster0_1.direction = LEFT;
@@ -1860,7 +2080,7 @@ void Image_::BlockInit() {
 		}
 		if (!blocks[3].empty()) {
 			blocks[3].clear();
-			questionBlocks[0].clear();
+			questionBlocks[3].clear();
 			tBlocks[3].clear();
 			holes[3].clear();
 			monsters[3].clear();
@@ -1987,7 +2207,7 @@ void Image_::BlockInit() {
 			tBlocks[1].push_back(tblock1_10);
 			tBlocks[1].push_back(tblock1_11);
 			tBlocks[1].push_back(tblock1_12);
-	        tBlocks[1].push_back(tblock1_13);
+			tBlocks[1].push_back(tblock1_13);
 			tBlocks[1].push_back(tblock1_14);
 			tBlocks[1].push_back(tblock1_15);
 			tBlocks[1].push_back(tblock1_16);
@@ -2261,16 +2481,9 @@ void Image_::BlockInit() {
 		if (!blocks[0].empty()) {
 			blocks[0].clear();
 			questionBlocks[0].clear();
-				tBlocks[0].clear();
+			tBlocks[0].clear();
 			holes[0].clear();
 			monsters[0].clear();
-		}
-		if (!blocks[1].empty()) {
-			blocks[1].clear();
-			questionBlocks[1].clear();
-			tBlocks[1].clear();
-			holes[1].clear();
-			monsters[1].clear();
 		}
 		if (!blocks[2].empty()) {
 			blocks[2].clear();
@@ -2291,6 +2504,32 @@ void Image_::BlockInit() {
 			tBlocks[3].push_back(tblock3_3);
 			tBlocks[3].push_back(tblock3_4);
 			tBlocks[3].push_back(tblock3_5);
+			// 아이템 생성
+			Image_::Item item3_1;
+			item3_1.width = 32;
+			item3_1.height = 32;
+			item3_1.x = 282;
+			item3_1.y = 346 - item3_1.height; // 아이템을 QuestionBlock 위에 배치
+			item3_1.type = MUSHROOM;
+			item3_1.isActive = true;
+			item3_1.direction = (rand() % 2 == 0) ? LEFT : RIGHT;
+			item3_1.speed = 0.f;
+			item3_1.directionTimer = 0.0f;
+			item3_1.directionChangeInterval = static_cast<float>(rand() % 6 + 5);
+			Images.items[3].push_back(item3_1);
+
+			Image_::Item item3_2;
+			item3_2.width = 32;
+			item3_2.height = 32;
+			item3_2.x = 392;
+			item3_2.y = 346 - item3_2.height; // 아이템을 QuestionBlock 위에 배치
+			item3_2.type = FLOWER;
+			item3_2.isActive = true;
+			item3_2.direction = (rand() % 2 == 0) ? LEFT : RIGHT;
+			item3_2.speed = 0.f;
+			item3_2.directionTimer = 0.0f;
+			item3_2.directionChangeInterval = static_cast<float>(rand() % 6 + 5);
+			Images.items[3].push_back(item3_2);
 		}
 	}
 }
@@ -2371,6 +2610,21 @@ void Image_::DrawBackGround(int x, int y, HDC targetDC) {
 			}
 		}
 	}
+
+	// 아이템
+	for (const auto& item : items[currentStage - 1]) {
+		if (item.isActive) {
+			int offsetX = item.x - cameraX;
+			bool mushroom = (item.type == 0); // 0: 버섯, 1: 꽃
+			bool flower = (item.type == 1); // 0: 버섯, 1: 꽃
+			if (mushroom)
+				Item_Mushroom.TransparentBlt(targetDC, offsetX, item.y, item.width, item.height,
+					0, 0, Item_Mushroom.GetWidth(), Item_Mushroom.GetHeight(), RGB(146, 144, 255));
+			else if (flower)
+				Item_Flower.TransparentBlt(targetDC, offsetX, item.y, item.width, item.height,
+					0, 0, Item_Flower.GetWidth(), Item_Flower.GetHeight(), RGB(146, 144, 255));
+		}
+	}
 }
 
 void Image_::NextStage() {
@@ -2380,6 +2634,11 @@ void Image_::NextStage() {
 	stage1 = (currentStage == STAGE1);
 	stage2 = (currentStage == STAGE2);
 	hidden = (currentStage == HIDDEN);
+	for (int i = 0; i < 4; ++i) {
+		questionBlocks[i].clear();
+		monsters[i].clear();
+		items[i].clear();
+	}
 	Player.ResetPosition();
 	BlockInit();
 }
@@ -2400,12 +2659,10 @@ void Image_::QuitHiddenStage() {
 	stage1 = (currentStage == STAGE1);
 	stage2 = (currentStage == STAGE2);
 	hidden = (currentStage == HIDDEN);
-	BlockInit();
 }
 
 void Image_::Destroy() {
 	Player_Move_Pairi.Destroy();
-	Player_Move_Lizard.Destroy();
 	Player_Move_Lizamong.Destroy();
 	Player_Attack_Pairi.Destroy();
 	Player_Attack_Lizamong.Destroy();
@@ -2426,6 +2683,8 @@ void Image_::Destroy() {
 			flagBlocks[i].clear();
 		}
 	}
+	Item_Mushroom.Destroy();
+	Item_Flower.Destroy();
 }
 
 void Player_::DrawHitbox(HDC targetDC) {
@@ -2551,6 +2810,21 @@ void Image_::DrawHitBox(HDC targetDC) {
 	}
 	DeleteObject(monsterPen);
 	DeleteObject(monsterBrush);
+
+	// 아이템 히트박스 그리기
+	HPEN itemPen = CreatePen(PS_DASH, 4, RGB(255, 100, 100)); // 빨간색으로 표시
+	HBRUSH itemBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
+	SelectObject(targetDC, itemPen);
+	SelectObject(targetDC, itemBrush);
+
+	for (const auto& item : items[currentStage - 1]) {
+		if (item.isActive) {
+			RECT screenHitbox = { item.x - cameraX, item.y, item.x + item.width - cameraX, item.y + item.height };
+			Rectangle(targetDC, screenHitbox.left, screenHitbox.top, screenHitbox.right, screenHitbox.bottom);
+		}
+	}
+	DeleteObject(itemPen);
+	DeleteObject(itemBrush);
 }
 
 int GetCameraX(int playerX, int stageWidth) {
