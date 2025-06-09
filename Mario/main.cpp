@@ -38,6 +38,8 @@ class Image_ {
 public:
 	bool stage1, hidden, tutorial, stage2;
 	int currentStage;
+	bool isTransitioning; // 전환 중 여부
+	float transitionTimer; // 전환 타이머 (초 단위)
 
 	CImage Player_Move_Tino, Player_Move_Pairi, Player_Move_Lizard, Player_Move_Lizamong;
 	CImage Player_Attack_Tino, Player_Attack_Pairi, Player_Attack_Lizamong;
@@ -129,6 +131,8 @@ public:
 		}
 		fireballs.clear();
 		currentStage = TUTORIAL;
+		isTransitioning = false;
+		transitionTimer = 0.0f;
 	};
 	~Image_() {};
 
@@ -364,6 +368,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 		switch (wParam) {
 		case 1: {
 			Player.Move();
+			if (Images.isTransitioning) {
+				Images.transitionTimer += 0.016f; // 16ms당 타이머 증가 (약 60fps 기준)
+				if (Images.transitionTimer >= 3.0f) {
+					Images.isTransitioning = false;
+					Images.transitionTimer = 0.0f;
+				}
+			}
 			Player.FireballMove();
 			break;
 		}
@@ -373,24 +384,32 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 	}
 	case WM_PAINT: {
 		hDC = BeginPaint(hWnd, &ps);
-		HBRUSH whiteBrush = CreateSolidBrush(RGB(255, 255, 255));
-		FillRect(mDC, &wRect, whiteBrush);
-		DeleteObject(whiteBrush);
-
-		Images.DrawBackGround(Player.x(), Player.y(), mDC);
-		Player.DrawPlayer(mDC);
-
-		WCHAR buffer[100];
-		wsprintf(buffer, L"Mouse: (%d, %d)", mouseBackgroundX, mouseBackgroundY);
-		SetTextColor(mDC, RGB(255, 255, 255));
-		SetBkMode(mDC, TRANSPARENT);
-		TextOut(mDC, 10, 10, buffer, lstrlen(buffer));
-
-		if (DrawAllHitBox) {
-			Player.DrawHitbox(mDC);
-			Images.DrawHitBox(mDC);
+		if (Images.isTransitioning) {
+			// 전환 중일 때 검정색 화면
+			HBRUSH blackBrush = CreateSolidBrush(RGB(0, 0, 0));
+			FillRect(mDC, &wRect, blackBrush);
+			DeleteObject(blackBrush);
 		}
+		else {
+			// 정상 화면
+			HBRUSH whiteBrush = CreateSolidBrush(RGB(255, 255, 255));
+			FillRect(mDC, &wRect, whiteBrush);
+			DeleteObject(whiteBrush);
 
+			Images.DrawBackGround(Player.x(), Player.y(), mDC);
+			Player.DrawPlayer(mDC);
+
+			WCHAR buffer[100];
+			wsprintf(buffer, L"Mouse: (%d, %d)", mouseBackgroundX, mouseBackgroundY);
+			SetTextColor(mDC, RGB(255, 255, 255));
+			SetBkMode(mDC, TRANSPARENT);
+			TextOut(mDC, 10, 10, buffer, lstrlen(buffer));
+
+			if (DrawAllHitBox) {
+				Player.DrawHitbox(mDC);
+				Images.DrawHitBox(mDC);
+			}
+		}
 		BitBlt(hDC, 0, 0, wRect.right, wRect.bottom, mDC, 0, 0, SRCCOPY);
 		EndPaint(hWnd, &ps);
 		break;
@@ -402,7 +421,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 		ReleaseDC(hWnd, hDC);
 		PostQuitMessage(0);
 		return 0;
-
 	}
 	}
 	return (DefWindowProc(hWnd, iMessage, wParam, lParam));
@@ -695,6 +713,8 @@ void Player_::Move() {
 				move_ = false;
 				isMovingRightAfterFlag = true;
 				flagSlideProgress = 0.0f;
+				Images.isTransitioning = true; // 깃발 충돌 시 전환 시작
+				Images.transitionTimer = 0.0f;
 			}
 		}
 		else if (isMovingRightAfterFlag) {
@@ -718,6 +738,8 @@ void Player_::Move() {
 				Images.NextStage();
 				isMovingRightAfterFlag = false;
 				flagMoveRightProgress = 0.0f;
+				Images.isTransitioning = true; // 다음 스테이지로 전환 시 전환 시작
+				Images.transitionTimer = 0.0f;
 			}
 		}
 		return;
@@ -741,10 +763,8 @@ void Player_::Move() {
 		for (auto& coupa : Images.coupas[Images.currentStage - 1]) {
 			if (!coupa.isAlive) continue;
 
-			// 플레이어 방향으로 방향 설정
 			coupa.direction = (x_ < coupa.x) ? LEFT : RIGHT;
 
-			// 낙하 처리
 			if (coupa.isFalling) {
 				const float fallSpeed = 2.0f;
 				coupa.fallProgress += fallSpeed;
@@ -755,7 +775,6 @@ void Player_::Move() {
 				continue;
 			}
 
-			// 블록 충돌 체크
 			bool onGround = false;
 			int newCoupaY = coupa.y;
 			const float gravity = 2.0f;
@@ -823,7 +842,6 @@ void Player_::Move() {
 				}
 			}
 
-			// 구멍 체크
 			for (const auto& hole : Images.holes[Images.currentStage - 1]) {
 				int holeLeft = hole.x;
 				int holeRight = hole.x + hole.width;
@@ -843,11 +861,10 @@ void Player_::Move() {
 				}
 			}
 
-			// 점프 처리 (3초마다, 지상에 있을 때만)
 			coupa.jumpTimer += 0.016f;
 			if (coupa.jumpTimer >= 3.0f && !coupa.isJumping && onGround) {
 				coupa.isJumping = true;
-				coupa.jumpVelocity = coupa.coupaJumpVelocity;;
+				coupa.jumpVelocity = coupa.coupaJumpVelocity;
 				coupa.jumpTimer = 0.0f;
 			}
 			if (coupa.isJumping) {
@@ -860,7 +877,6 @@ void Player_::Move() {
 			}
 			coupa.y = newCoupaY;
 
-			// 좌우 이동
 			coupa.directionTimer += 0.016f;
 			if (coupa.directionTimer >= coupa.directionChangeInterval) {
 				coupa.directionChangeInterval = static_cast<float>(rand() % 6 + 5);
@@ -975,7 +991,6 @@ void Player_::Move() {
 				coupa.x = newCoupaX;
 			}
 
-			// 파이어볼 발사 (2초마다)
 			coupa.fireballTimer += 0.016f;
 			if (coupa.fireballTimer >= 2.0f) {
 				Image_::Fireball fireball;
@@ -990,7 +1005,6 @@ void Player_::Move() {
 				coupa.fireballTimer = 0.0f;
 			}
 
-			// 무적 시간 처리
 			if (coupa.invincibleTime > 0) {
 				coupa.invincibleTime--;
 				if (coupa.invincibleTime <= 0) {
@@ -998,7 +1012,6 @@ void Player_::Move() {
 				}
 			}
 
-			// 플레이어와 쿠파 충돌 체크
 			if (!isInvincible && !coupa.isInvincible) {
 				int coupaLeft = coupa.x;
 				int coupaRight = coupa.x + coupa.width;
@@ -1018,7 +1031,7 @@ void Player_::Move() {
 					if (prevPlayerBottom <= coupaTop + 5 && jumpVelocity_ > 0) {
 						coupa.health--;
 						coupa.isInvincible = true;
-						coupa.invincibleTime = 120; // 2초 (60fps 기준)
+						coupa.invincibleTime = 120;
 						jumpVelocity_ = JUMP_VELOCITY / 2;
 						if (coupa.health <= 0) {
 							coupa.isAlive = false;
@@ -1050,13 +1063,11 @@ void Player_::Move() {
 			}
 		}
 
-		// 죽은 쿠파 제거
 		auto& coupaList = Images.coupas[Images.currentStage - 1];
 		coupaList.erase(std::remove_if(coupaList.begin(), coupaList.end(),
 			[](const Image_::Coupa& c) { return !c.isAlive; }), coupaList.end());
 	}
 
-	// 몬스터 동작 처리
 	if (!Images.monsters[Images.currentStage - 1].empty() && !isInvincible) {
 		for (auto& monster : Images.monsters[Images.currentStage - 1]) {
 			if (!monster.isAlive) continue;
@@ -1644,6 +1655,8 @@ void Player_::Move() {
 
 		if (overlapX && y_ == tblockTop - playerHitboxHeight && GetAsyncKeyState(VK_DOWN) & 0x8000) {
 			Images.EnterHiddenStage();
+			Images.isTransitioning = true; // 파이프 입장 시 전환 시작
+			Images.transitionTimer = 0.0f;
 		}
 	}
 
@@ -1669,16 +1682,8 @@ void Player_::Move() {
 
 		if (collideWithLeftFace && yOverlap) {
 			Images.QuitHiddenStage();
-			x_ = 2616;
-			y_ = 372;
-			groundY_ = 447;
-			defaultGroundY_ = 447;
-			move_ = false;
-			isJumping_ = true;
-			jumpVelocity_ = 0.0f;
-			isFallingIntoHole = false;
-			direct_ = RIGHT;
-			fallProgress_ = 0.0f;
+			Images.isTransitioning = true; // 히든 퇴장 시 전환 시작
+			Images.transitionTimer = 0.0f;
 		}
 	}
 
