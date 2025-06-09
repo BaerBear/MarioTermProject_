@@ -46,6 +46,7 @@ public:
 	CImage blockImage;
 	CImage questionBlockImage[2];
 	CImage monster;
+	CImage coupaImage;
 	struct Block {
 		int x, y;
 		int width, height;
@@ -87,6 +88,26 @@ public:
 		float directionTimer; // 방향 변경 타이머
 		float directionChangeInterval; // 방향 변경 간격 (5~10초)
 	};
+	struct Coupa {
+		int x, y;
+		int width, height;
+		int direction; // LEFT(1) 또는 RIGHT(2)
+		bool isAlive;
+		float coupaJumpVelocity;
+		bool isJumping;
+		float jumpVelocity;
+		float jumpTimer; // 점프 주기
+		float fireballTimer; // 파이어볼 발사 주기
+		int health; // 체력 (5)
+		int invincibleTime; // 무적 시간 (프레임)
+		bool isInvincible; // 무적 상태
+		bool isFalling; // 구멍 낙하 여부
+		float fallProgress; // 낙하 진행률
+		float directionTimer; // 방향 변경 타이머
+		float directionChangeInterval; // 방향 변경 간격
+		float speed; // 이동 속도
+	};
+	std::vector<Coupa> coupas[4]{}; // 스테이지별 쿠파
 
 	std::vector<Monster> monsters[4]{};
 	std::vector<Block> blocks[4]{};
@@ -103,6 +124,8 @@ public:
 			tBlocks[i].clear();
 			holes[i].clear();
 			flagBlocks[i].clear();
+			monsters[i].clear();
+			coupas[i].clear();
 		}
 		fireballs.clear();
 		currentStage = TUTORIAL;
@@ -379,6 +402,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 		ReleaseDC(hWnd, hDC);
 		PostQuitMessage(0);
 		return 0;
+
 	}
 	}
 	return (DefWindowProc(hWnd, iMessage, wParam, lParam));
@@ -654,8 +678,10 @@ void Player_::Move() {
 	}
 
 	int newX = x_;
-	bool intendToMoveLeft = false;
-	bool intendToMoveRight = false;
+	bool intendToMoveLeft = (GetAsyncKeyState(VK_LEFT) & 0x8000) != 0;
+	bool intendToMoveRight = (GetAsyncKeyState(VK_RIGHT) & 0x8000) != 0;
+	bool intendToJump = (GetAsyncKeyState(VK_UP) & 0x8000) != 0 && !jumpKeyPressed;
+	bool intendToAttack = (GetAsyncKeyState(VK_SPACE) & 0x8000) != 0 && !attackKeyPressed;
 
 	if (isTouchingFlag || isMovingRightAfterFlag) {
 		if (isTouchingFlag) {
@@ -710,6 +736,327 @@ void Player_::Move() {
 		}
 	}
 
+	// 쿠파 동작 처리
+	if (!Images.coupas[Images.currentStage - 1].empty()) {
+		for (auto& coupa : Images.coupas[Images.currentStage - 1]) {
+			if (!coupa.isAlive) continue;
+
+			// 플레이어 방향으로 방향 설정
+			coupa.direction = (x_ < coupa.x) ? LEFT : RIGHT;
+
+			// 낙하 처리
+			if (coupa.isFalling) {
+				const float fallSpeed = 2.0f;
+				coupa.fallProgress += fallSpeed;
+				coupa.y += static_cast<int>(fallSpeed);
+				if (coupa.fallProgress >= 100.0f) {
+					coupa.isAlive = false;
+				}
+				continue;
+			}
+
+			// 블록 충돌 체크
+			bool onGround = false;
+			int newCoupaY = coupa.y;
+			const float gravity = 2.0f;
+
+			for (const auto& tblock : Images.tBlocks[Images.currentStage - 1]) {
+				int tblockLeft = tblock.x;
+				int tblockRight = tblock.x + tblock.width;
+				int tblockTop = tblock.y;
+
+				int coupaLeft = coupa.x;
+				int coupaRight = coupa.x + coupa.width;
+				int coupaBottom = newCoupaY + coupa.height;
+
+				bool overlapX = coupaRight > tblockLeft && coupaLeft < tblockRight;
+				bool overlapY = coupaBottom + static_cast<int>(gravity) >= tblockTop && coupaBottom <= tblockTop + 5;
+
+				if (overlapX && overlapY) {
+					newCoupaY = tblockTop - coupa.height;
+					onGround = true;
+					coupa.isJumping = false;
+					coupa.jumpVelocity = 0.0f;
+					break;
+				}
+			}
+
+			for (const auto& block : Images.blocks[Images.currentStage - 1]) {
+				int blockLeft = block.x;
+				int blockRight = block.x + block.width;
+				int blockTop = block.y;
+
+				int coupaLeft = coupa.x;
+				int coupaRight = coupa.x + coupa.width;
+				int coupaBottom = newCoupaY + coupa.height;
+
+				bool overlapX = coupaRight > blockLeft && coupaLeft < blockRight;
+				bool overlapY = coupaBottom + static_cast<int>(gravity) >= blockTop && coupaBottom <= blockTop + 5;
+
+				if (overlapX && overlapY) {
+					newCoupaY = blockTop - coupa.height;
+					onGround = true;
+					coupa.isJumping = false;
+					coupa.jumpVelocity = 0.0f;
+					break;
+				}
+			}
+
+			for (const auto& qblock : Images.questionBlocks[Images.currentStage - 1]) {
+				int qblockLeft = qblock.x;
+				int qblockRight = qblock.x + qblock.width;
+				int qblockTop = qblock.y;
+
+				int coupaLeft = coupa.x;
+				int coupaRight = coupa.x + coupa.width;
+				int coupaBottom = newCoupaY + coupa.height;
+
+				bool overlapX = coupaRight > qblockLeft && coupaLeft < qblockRight;
+				bool overlapY = coupaBottom + static_cast<int>(gravity) >= qblockTop && coupaBottom <= qblockTop + 5;
+
+				if (overlapX && overlapY) {
+					newCoupaY = qblockTop - coupa.height;
+					onGround = true;
+					coupa.isJumping = false;
+					coupa.jumpVelocity = 0.0f;
+					break;
+				}
+			}
+
+			// 구멍 체크
+			for (const auto& hole : Images.holes[Images.currentStage - 1]) {
+				int holeLeft = hole.x;
+				int holeRight = hole.x + hole.width;
+				int holeTop = hole.y;
+
+				int coupaBottomCenterX = coupa.x + coupa.width / 2;
+				int coupaBottomY = newCoupaY + coupa.height;
+
+				bool withinHoleX = coupaBottomCenterX >= holeLeft && coupaBottomCenterX <= holeRight;
+				bool atHoleTop = coupaBottomY >= holeTop - 5;
+
+				if (withinHoleX && atHoleTop) {
+					coupa.isFalling = true;
+					coupa.fallProgress = 0.0f;
+					onGround = false;
+					break;
+				}
+			}
+
+			// 점프 처리 (3초마다, 지상에 있을 때만)
+			coupa.jumpTimer += 0.016f;
+			if (coupa.jumpTimer >= 3.0f && !coupa.isJumping && onGround) {
+				coupa.isJumping = true;
+				coupa.jumpVelocity = coupa.coupaJumpVelocity;;
+				coupa.jumpTimer = 0.0f;
+			}
+			if (coupa.isJumping) {
+				newCoupaY += static_cast<int>(coupa.jumpVelocity);
+				coupa.jumpVelocity += GRAVITY;
+			}
+
+			if (!onGround && !coupa.isJumping) {
+				newCoupaY += static_cast<int>(gravity);
+			}
+			coupa.y = newCoupaY;
+
+			// 좌우 이동
+			coupa.directionTimer += 0.016f;
+			if (coupa.directionTimer >= coupa.directionChangeInterval) {
+				coupa.directionChangeInterval = static_cast<float>(rand() % 6 + 5);
+				coupa.directionTimer = 0.0f;
+				coupa.direction = (coupa.direction == LEFT) ? RIGHT : LEFT;
+			}
+
+			float newCoupaX = coupa.x + (coupa.direction == LEFT ? -coupa.speed : coupa.speed);
+
+			bool canMove = true;
+			for (const auto& block : Images.blocks[Images.currentStage - 1]) {
+				int blockLeft = block.x;
+				int blockRight = block.x + block.width;
+				int blockTop = block.y;
+				int blockBottom = block.y + block.height;
+
+				int coupaLeft = static_cast<int>(newCoupaX);
+				int coupaRight = static_cast<int>(newCoupaX) + coupa.width;
+				int coupaTop = coupa.y;
+				int coupaBottom = coupa.y + coupa.height;
+
+				bool overlapX = coupaRight > blockLeft && coupaLeft < blockRight;
+				bool overlapY = coupaBottom > blockTop && coupaTop < blockBottom;
+
+				if (overlapX && overlapY) {
+					int prevCoupaRight = coupa.x + coupa.width;
+					int prevCoupaLeft = coupa.x;
+					if (coupa.direction == RIGHT && prevCoupaRight <= blockLeft && coupaRight > blockLeft) {
+						coupa.direction = LEFT;
+						newCoupaX = blockLeft - coupa.width;
+						canMove = false;
+					}
+					else if (coupa.direction == LEFT && prevCoupaLeft >= blockRight && coupaLeft < blockRight) {
+						coupa.direction = RIGHT;
+						newCoupaX = blockRight;
+						canMove = false;
+					}
+					break;
+				}
+			}
+
+			if (canMove) {
+				for (const auto& qblock : Images.questionBlocks[Images.currentStage - 1]) {
+					int qblockLeft = qblock.x;
+					int qblockRight = qblock.x + qblock.width;
+					int qblockTop = qblock.y;
+					int qblockBottom = qblock.y + qblock.height;
+
+					int coupaLeft = static_cast<int>(newCoupaX);
+					int coupaRight = static_cast<int>(newCoupaX) + coupa.width;
+					int coupaTop = coupa.y;
+					int coupaBottom = coupa.y + coupa.height;
+
+					bool overlapX = coupaRight > qblockLeft && coupaLeft < qblockRight;
+					bool overlapY = coupaBottom > qblockTop && coupaTop < qblockBottom;
+
+					if (overlapX && overlapY) {
+						int prevCoupaRight = coupa.x + coupa.width;
+						int prevCoupaLeft = coupa.x;
+						if (coupa.direction == RIGHT && prevCoupaRight <= qblockLeft && coupaRight > qblockLeft) {
+							coupa.direction = LEFT;
+							newCoupaX = qblockLeft - coupa.width;
+							canMove = false;
+						}
+						else if (coupa.direction == LEFT && prevCoupaLeft >= qblockRight && coupaLeft < qblockRight) {
+							coupa.direction = RIGHT;
+							newCoupaX = qblockRight;
+							canMove = false;
+						}
+						break;
+					}
+				}
+			}
+
+			if (canMove) {
+				for (size_t i = 0; i < Images.tBlocks[Images.currentStage - 1].size(); i++) {
+					if (Images.currentStage == HIDDEN && i == 2) continue;
+
+					const auto& tblock = Images.tBlocks[Images.currentStage - 1][i];
+					int tblockLeft = tblock.x;
+					int tblockRight = tblock.x + tblock.width;
+					int tblockTop = tblock.y;
+					int tblockBottom = tblock.y + tblock.height;
+
+					int coupaLeft = static_cast<int>(newCoupaX);
+					int coupaRight = static_cast<int>(newCoupaX) + coupa.width;
+					int coupaTop = coupa.y;
+					int coupaBottom = coupa.y + coupa.height;
+
+					bool overlapX = coupaRight > tblockLeft && coupaLeft < tblockRight;
+					bool overlapY = coupaBottom > tblockTop && coupaTop < tblockBottom;
+
+					if (overlapX && overlapY) {
+						int prevCoupaRight = coupa.x + coupa.width;
+						int prevCoupaLeft = coupa.x;
+						if (coupa.direction == RIGHT && prevCoupaRight <= tblockLeft && coupaRight > tblockLeft) {
+							coupa.direction = LEFT;
+							newCoupaX = tblockLeft - coupa.width;
+							canMove = false;
+						}
+						else if (coupa.direction == LEFT && prevCoupaLeft >= tblockRight && coupaLeft < tblockRight) {
+							coupa.direction = RIGHT;
+							newCoupaX = tblockRight;
+							canMove = false;
+						}
+						break;
+					}
+				}
+			}
+
+			if (canMove) {
+				coupa.x = newCoupaX;
+			}
+
+			// 파이어볼 발사 (2초마다)
+			coupa.fireballTimer += 0.016f;
+			if (coupa.fireballTimer >= 2.0f) {
+				Image_::Fireball fireball;
+				fireball.width = 20;
+				fireball.height = 20;
+				fireball.active = true;
+				fireball.x = (coupa.direction == RIGHT) ? coupa.x + coupa.width : coupa.x - fireball.width;
+				fireball.y = coupa.y + coupa.height / 4;
+				fireball.velocityX = (coupa.direction == RIGHT) ? 6.0f : -6.0f;
+				fireball.velocityY = 0.0f;
+				Images.fireballs.push_back(fireball);
+				coupa.fireballTimer = 0.0f;
+			}
+
+			// 무적 시간 처리
+			if (coupa.invincibleTime > 0) {
+				coupa.invincibleTime--;
+				if (coupa.invincibleTime <= 0) {
+					coupa.isInvincible = false;
+				}
+			}
+
+			// 플레이어와 쿠파 충돌 체크
+			if (!isInvincible && !coupa.isInvincible) {
+				int coupaLeft = coupa.x;
+				int coupaRight = coupa.x + coupa.width;
+				int coupaTop = coupa.y;
+				int coupaBottom = coupa.y + coupa.height;
+
+				int playerLeft = hitbox_.left;
+				int playerRight = hitbox_.right;
+				int playerTop = hitbox_.top;
+				int playerBottom = hitbox_.bottom;
+
+				bool overlapX = playerRight > coupaLeft && playerLeft < coupaRight;
+				bool overlapY = playerBottom > coupaTop && playerTop < coupaBottom;
+
+				if (overlapX && overlapY) {
+					int prevPlayerBottom = prevY + playerHitboxHeight;
+					if (prevPlayerBottom <= coupaTop + 5 && jumpVelocity_ > 0) {
+						coupa.health--;
+						coupa.isInvincible = true;
+						coupa.invincibleTime = 120; // 2초 (60fps 기준)
+						jumpVelocity_ = JUMP_VELOCITY / 2;
+						if (coupa.health <= 0) {
+							coupa.isAlive = false;
+						}
+					}
+					else {
+						if (State() == TINO) {
+							ResetPosition();
+						}
+						else if (State() == LARGETINO) {
+							eatMushroom_ = false;
+							isInvincible = true;
+							invincibleTime = 180;
+						}
+						else if (State() == PAIRI) {
+							eatFlower_ = false;
+							eatMushroom_ = false;
+							isInvincible = true;
+							invincibleTime = 180;
+						}
+						else if (State() == LIZAMONG) {
+							eatFlower_ = true;
+							eatMushroom_ = false;
+							isInvincible = true;
+							invincibleTime = 180;
+						}
+					}
+				}
+			}
+		}
+
+		// 죽은 쿠파 제거
+		auto& coupaList = Images.coupas[Images.currentStage - 1];
+		coupaList.erase(std::remove_if(coupaList.begin(), coupaList.end(),
+			[](const Image_::Coupa& c) { return !c.isAlive; }), coupaList.end());
+	}
+
+	// 몬스터 동작 처리
 	if (!Images.monsters[Images.currentStage - 1].empty() && !isInvincible) {
 		for (auto& monster : Images.monsters[Images.currentStage - 1]) {
 			if (!monster.isAlive) continue;
@@ -976,11 +1323,6 @@ void Player_::Move() {
 		monsterList.erase(std::remove_if(monsterList.begin(), monsterList.end(),
 			[](const Image_::Monster& m) { return !m.isAlive; }), monsterList.end());
 	}
-
-	intendToMoveLeft = (GetAsyncKeyState(VK_LEFT) & 0x8000) != 0;
-	intendToMoveRight = (GetAsyncKeyState(VK_RIGHT) & 0x8000) != 0;
-	bool intendToJump = (GetAsyncKeyState(VK_UP) & 0x8000) != 0 && !jumpKeyPressed;
-	bool intendToAttack = (GetAsyncKeyState(VK_SPACE) & 0x8000) != 0 && !attackKeyPressed;
 
 	if (intendToMoveLeft) {
 		direct_ = LEFT;
@@ -1260,7 +1602,6 @@ void Player_::Move() {
 		}
 	}
 
-	// 깃발 블록 충돌 체크
 	if (!isFallingIntoHole && !isTouchingFlag) {
 		for (const auto& flag : Images.flagBlocks[Images.currentStage - 1]) {
 			int flagLeft = flag.x;
@@ -1280,8 +1621,8 @@ void Player_::Move() {
 				isTouchingFlag = true;
 				flagBlockStage = Images.currentStage;
 				flagBottomY = flagBottom;
-				x_ = flagLeft - playerHitboxWidth; // 플레이어를 깃발 왼쪽에 고정
-				y_ = flagTop; // 깃발 상단에서 슬라이드 시작
+				x_ = flagLeft - playerHitboxWidth;
+				y_ = flagTop;
 				jumpVelocity_ = 0.0f;
 				isJumping_ = false;
 				move_ = false;
@@ -1518,32 +1859,97 @@ void Player_::FireballMove() {
 			int playerHitboxX, playerHitboxY, playerHitboxWidth, playerHitboxHeight;
 			GetHitbox(playerHitboxX, playerHitboxY, playerHitboxWidth, playerHitboxHeight);
 
-			// 구멍과 겹치는지 확인
+			// 구멍 체크
 			bool isOverHole = false;
 			for (const auto& hole : Images.holes[Images.currentStage - 1]) {
 				int holeLeft = hole.x;
 				int holeRight = hole.x + hole.width;
-
-				// 파이어볼의 중심 X 좌표 계산
 				int fireballCenterX = it->x + it->width / 2;
-
-				// 파이어볼이 구멍 범위 내에 있는지 확인
 				if (fireballCenterX >= holeLeft && fireballCenterX <= holeRight) {
 					isOverHole = true;
 					break;
 				}
 			}
 
-			// 지면에서의 튕김 (구멍 위가 아니면 튕김)
+			// 지면 튕김
 			if (!isOverHole && it->y + it->height <= defaultGroundY_ + playerHitboxHeight + 10 && it->y + it->height >= defaultGroundY_ + playerHitboxHeight - 5) {
 				it->y = defaultGroundY_ + playerHitboxHeight - it->height;
-				it->velocityY = -6.0f; // 위로 튕김
+				it->velocityY = -6.0f;
 			}
 
 			int fireballScreenX = it->x - cameraX;
 			if (fireballScreenX + it->width < 0 || fireballScreenX > wRect.right) {
 				it = fireballs.erase(it);
 				continue;
+			}
+
+			// 파이어볼과 쿠파 충돌 체크
+			for (auto& coupa : Images.coupas[Images.currentStage - 1]) {
+				if (!coupa.isAlive || coupa.isInvincible) continue;
+
+				int fireballLeft = it->x;
+				int fireballRight = it->x + it->width;
+				int fireballTop = it->y;
+				int fireballBottom = it->y + it->height;
+
+				int coupaLeft = coupa.x;
+				int coupaRight = coupa.x + coupa.width;
+				int coupaTop = coupa.y;
+				int coupaBottom = coupa.y + coupa.height;
+
+				bool overlapX = fireballRight > coupaLeft && fireballLeft < coupaRight;
+				bool overlapY = fireballBottom > coupaTop && fireballTop < coupaBottom;
+
+				if (overlapX && overlapY) {
+					coupa.health--;
+					coupa.isInvincible = true;
+					coupa.invincibleTime = 120; // 2초
+					it->active = false;
+					if (coupa.health <= 0) {
+						coupa.isAlive = false;
+					}
+					break;
+				}
+			}
+
+			// 파이어볼과 플레이어 충돌 체크 (쿠파의 파이어볼)
+			if (!isInvincible) {
+				int fireballLeft = it->x;
+				int fireballRight = it->x + it->width;
+				int fireballTop = it->y;
+				int fireballBottom = it->y + it->height;
+
+				int playerLeft = hitbox_.left;
+				int playerRight = hitbox_.right;
+				int playerTop = hitbox_.top;
+				int playerBottom = hitbox_.bottom;
+
+				bool overlapX = fireballRight > playerLeft && fireballLeft < playerRight;
+				bool overlapY = fireballBottom > playerTop && fireballTop < playerBottom;
+
+				if (overlapX && overlapY) {
+					it->active = false;
+					if (State() == TINO) {
+						ResetPosition();
+					}
+					else if (State() == LARGETINO) {
+						eatMushroom_ = false;
+						isInvincible = true;
+						invincibleTime = 180;
+					}
+					else if (State() == PAIRI) {
+						eatFlower_ = false;
+						eatMushroom_ = false;
+						isInvincible = true;
+						invincibleTime = 180;
+					}
+					else if (State() == LIZAMONG) {
+						eatFlower_ = true;
+						eatMushroom_ = false;
+						isInvincible = true;
+						invincibleTime = 180;
+					}
+				}
 			}
 
 			// 파이어볼과 몬스터 충돌 체크
@@ -1568,10 +1974,9 @@ void Player_::FireballMove() {
 				bool overlapY = fireballBottom > monsterTop && fireballTop < monsterBottom;
 
 				if (overlapX && overlapY) {
-					// 충돌 감지: 파이어볼과 몬스터 제거
-					monsterIt->isAlive = false; // 몬스터 비활성화
-					it->active = false; // 파이어볼 비활성화
-					break; // 현재 파이어볼에 대한 처리가 끝났으므로 루프 종료
+					monsterIt->isAlive = false;
+					it->active = false;
+					break;
 				}
 				++monsterIt;
 			}
@@ -1592,18 +1997,15 @@ void Player_::FireballMove() {
 				bool overlapY = fireballBottom > blockTop && fireballTop < blockBottom;
 
 				if (overlapX && overlapY) {
-					// 이전 위치 계산 (충돌 방향 판별용)
 					int prevFireballBottom = fireballBottom - static_cast<int>(it->velocityY);
 					int prevFireballTop = fireballTop - static_cast<int>(it->velocityY);
 					int prevFireballRight = fireballRight - static_cast<int>(it->velocityX);
 					int prevFireballLeft = fireballLeft - static_cast<int>(it->velocityX);
 
-					// 위쪽 면 충돌: 이전 위치가 블록 위에 있었고, 현재 아래로 내려옴
 					if (prevFireballBottom <= blockTop && fireballBottom > blockTop && it->velocityY > 0) {
-						it->y = blockTop - it->height; // 블록 위에 위치 조정
-						it->velocityY = -4.0f; // 위로 튕김
+						it->y = blockTop - it->height;
+						it->velocityY = -4.0f;
 					}
-					// 옆면 또는 아래면 충돌: 삭제
 					else if ((prevFireballRight <= blockLeft && fireballRight > blockLeft) ||
 						(prevFireballLeft >= blockRight && fireballLeft < blockRight) ||
 						(prevFireballTop >= blockBottom && fireballTop < blockBottom)) {
@@ -1701,6 +2103,11 @@ void Player_::FireballMove() {
 		auto& monsterList = Images.monsters[Images.currentStage - 1];
 		monsterList.erase(std::remove_if(monsterList.begin(), monsterList.end(),
 			[](const Image_::Monster& m) { return !m.isAlive; }), monsterList.end());
+
+		// 죽은 쿠파 제거
+		auto& coupaList = Images.coupas[Images.currentStage - 1];
+		coupaList.erase(std::remove_if(coupaList.begin(), coupaList.end(),
+			[](const Image_::Coupa& c) { return !c.isAlive; }), coupaList.end());
 	}
 }
 
@@ -1740,6 +2147,8 @@ void Image_::ImageInit() {
 
 	FireballImage.Load(TEXT("Image/Fireball.png"));
 
+	coupaImage.Load(TEXT("Image/찐쿠파.png"));
+
 	tutorial = stage1 = stage2 = hidden = false;
 	currentStage = TUTORIAL;
 }
@@ -1761,6 +2170,7 @@ void Image_::BlockInit() {
 			holes[2].clear();
 			flagBlocks[2].clear();
 			monsters[2].clear();
+			coupas[2].clear();
 		}
 		if (!blocks[3].empty()) {
 			blocks[3].clear();
@@ -1857,6 +2267,7 @@ void Image_::BlockInit() {
 			tBlocks[2].clear();
 			holes[2].clear();
 			monsters[2].clear();
+			coupas[2].clear();
 		}
 		if (!blocks[3].empty()) {
 			blocks[3].clear();
@@ -2255,6 +2666,30 @@ void Image_::BlockInit() {
 			monster2_2.directionChangeInterval = static_cast<float>(rand() % 6 + 5); // 5~10초
 			monsters[2].push_back(monster2_2);
 
+		
+			
+			Coupa coupa;
+			coupa.x = 2140; // 테스트용, tblock2_11(x=560, width=594) 내
+			coupa.y = 250; // tblock2_11(y=336) - height(64)
+			coupa.width = 100;
+			coupa.height = 100;
+			coupa.direction = LEFT;
+			coupa.isAlive = true;
+			coupa.isJumping = false;
+			coupa.jumpVelocity = 0.0f;
+			coupa.coupaJumpVelocity = -10.0f;
+			coupa.jumpTimer = 0.0f;
+			coupa.fireballTimer = 0.0f;
+			coupa.health = 5;
+			coupa.invincibleTime = 0;
+			coupa.isInvincible = false;
+			coupa.isFalling = false;
+			coupa.fallProgress = 0.0f;
+			coupa.directionTimer = 0.0f;
+			coupa.directionChangeInterval = static_cast<float>(rand() % 6 + 5);
+			coupa.speed = 0.0f;
+			coupas[2].push_back(coupa);
+
 		}
 	}
 	else if (currentStage == HIDDEN) {
@@ -2278,6 +2713,7 @@ void Image_::BlockInit() {
 			tBlocks[2].clear();
 			holes[2].clear();
 			monsters[2].clear();
+			coupas[2].clear();
 		}
 		if (blocks[3].empty()) {
 			TBlock tblock3_1 = { 188, 346, 330, 126 };
@@ -2371,6 +2807,22 @@ void Image_::DrawBackGround(int x, int y, HDC targetDC) {
 			}
 		}
 	}
+	// 쿠파 그리기
+	if (!coupaImage.IsNull()) {
+		for (const auto& coupa : coupas[currentStage - 1]) {
+			if (!coupa.isAlive) continue;
+			int offsetX = coupa.x - cameraX;
+			WCHAR buffer[100];
+			swprintf_s(buffer, L"Coupa at x=%d, y=%d, cameraX=%d, offsetX=%d\n", coupa.x, coupa.y, cameraX, offsetX);
+			OutputDebugStringW(buffer);
+			if (offsetX + coupa.width > 0 && offsetX < wRect.right) {
+				if (!(coupa.isInvincible && (coupa.invincibleTime / 10) % 2 == 0)) {
+					coupaImage.TransparentBlt(targetDC, offsetX, coupa.y, coupa.width, coupa.height,
+						0, 0, coupaImage.GetWidth(), coupaImage.GetHeight(), RGB(255, 255, 255));
+				}
+			}
+		}
+	}
 }
 
 void Image_::NextStage() {
@@ -2425,6 +2877,10 @@ void Image_::Destroy() {
 			holes[i].clear();
 			flagBlocks[i].clear();
 		}
+	}
+	coupaImage.Destroy();
+	for (int i = 0; i < 4; ++i) {
+		coupas[i].clear();
 	}
 }
 
@@ -2551,6 +3007,20 @@ void Image_::DrawHitBox(HDC targetDC) {
 	}
 	DeleteObject(monsterPen);
 	DeleteObject(monsterBrush);
+
+	// 쿠파 히트박스 그리기
+	HPEN coupaPen = CreatePen(PS_DASH, 4, RGB(0, 0, 255)); // 파란색
+	HBRUSH coupaBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
+	SelectObject(targetDC, coupaPen);
+	SelectObject(targetDC, coupaBrush);
+	for (const auto& coupa : coupas[currentStage - 1]) {
+		if (coupa.isAlive) {
+			RECT screenHitbox = { coupa.x - cameraX, coupa.y, coupa.x + coupa.width - cameraX, coupa.y + coupa.height };
+			Rectangle(targetDC, screenHitbox.left, screenHitbox.top, screenHitbox.right, screenHitbox.bottom);
+		}
+	}
+	DeleteObject(coupaPen);
+	DeleteObject(coupaBrush);
 }
 
 int GetCameraX(int playerX, int stageWidth) {
