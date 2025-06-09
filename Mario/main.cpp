@@ -2534,6 +2534,8 @@ void Image_::ImageInit() {
 	Item_Flower.Load(TEXT("Image/꽃.png"));
 	Item_Mushroom.Load(TEXT("Image/버섯.png"));
 
+	mStartScreen.Load(TEXT("Image/시작.png"));
+
 	tutorial = stage1 = stage2 = hidden = false;
 	currentStage = TUTORIAL;
 }
