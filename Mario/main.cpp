@@ -5,8 +5,10 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
+#include <gdiplus.h> // GDI+ 추가
 
 #pragma comment (lib, "msimg32.lib")
+#pragma comment (lib, "gdiplus.lib")
 
 #define LEFT 1
 #define RIGHT 2
@@ -34,6 +36,9 @@
 
 std::mt19937 Item_type(std::random_device{}());
 std::uniform_int_distribution<int> Type(0, 1); // 0: 버섯, 1: 꽃
+
+Gdiplus::GdiplusStartupInput gdiplusStartupInput;
+ULONG_PTR gdiplusToken; // GDI+ 토큰
 
 HINSTANCE g_hInst;
 LPCTSTR lpszClass = L"Window Class Name";
@@ -339,6 +344,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 
 	switch (iMessage) {
 	case WM_CREATE: {
+		Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL); // GDI+ 초기화
 		hDC = GetDC(hWnd);
 		mDC = CreateCompatibleDC(hDC);
 		GetClientRect(hWnd, &wRect);
@@ -407,7 +413,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 			Player.Move();
 			if (Images.isTransitioning) {
 				Images.transitionTimer += 0.016f; // 16ms당 타이머 증가 (약 60fps 기준)
-				if (Images.transitionTimer >= 3.0f) {
+				if (Images.transitionTimer >= 2.0f && Images.transitionTimer < 2.016f) { // 2초에 도달 시 다음 스테이지로 전환
+					Images.NextStage();
+				}
+				if (Images.transitionTimer >= 4.0f) { // 4초 후 전환 종료
 					Images.isTransitioning = false;
 					Images.transitionTimer = 0.0f;
 				}
@@ -421,11 +430,42 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 	}
 	case WM_PAINT: {
 		hDC = BeginPaint(hWnd, &ps);
+		Gdiplus::Graphics graphics(mDC); // GDI+ 그래픽스 객체 추가
 		if (Images.isTransitioning) {
-			// 전환 중일 때 검정색 화면
-			HBRUSH blackBrush = CreateSolidBrush(RGB(0, 0, 0));
-			FillRect(mDC, &wRect, blackBrush);
-			DeleteObject(blackBrush);
+			if (Images.transitionTimer <= 2.0f) { // 0~2초: 어두워짐
+				float progress = Images.transitionTimer / 2.0f; // 0.0f ~ 1.0f
+				BYTE alpha = static_cast<BYTE>(progress * 255); // 0에서 255로 어두워짐
+				if (alpha > 255) alpha = 255;
+				if (alpha < 0) alpha = 0;
+				Gdiplus::SolidBrush brush(Gdiplus::Color(alpha, 0, 0, 0));
+				graphics.FillRectangle(&brush, 0, 0, wRect.right, wRect.bottom);
+			}
+			else if (Images.transitionTimer > 2.0f) { // 2~4초: 밝아짐
+				float brightProgress = (Images.transitionTimer - 2.0f) / 2.0f; // 0.0f ~ 1.0f
+				BYTE alpha = static_cast<BYTE>((1.0f - brightProgress) * 255); // 255에서 0으로 밝아짐
+				if (alpha > 255) alpha = 255;
+				if (alpha < 0) alpha = 0;
+				Gdiplus::SolidBrush brush(Gdiplus::Color(alpha, 0, 0, 0));
+				graphics.FillRectangle(&brush, 0, 0, wRect.right, wRect.bottom);
+
+				// 밝아지는 동안 다음 화면 그리기
+				HBRUSH whiteBrush = CreateSolidBrush(RGB(255, 255, 255));
+				FillRect(mDC, &wRect, whiteBrush);
+				DeleteObject(whiteBrush);
+				Images.DrawBackGround(Player.x(), Player.y(), mDC);
+				Player.DrawPlayer(mDC);
+
+				WCHAR buffer[100];
+				wsprintf(buffer, L"Mouse: (%d, %d)", mouseBackgroundX, mouseBackgroundY);
+				SetTextColor(mDC, RGB(255, 255, 255));
+				SetBkMode(mDC, TRANSPARENT);
+				TextOut(mDC, 10, 10, buffer, lstrlen(buffer));
+
+				if (DrawAllHitBox) {
+					Player.DrawHitbox(mDC);
+					Images.DrawHitBox(mDC);
+				}
+			}
 		}
 		else {
 			// 정상 화면
@@ -456,6 +496,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 		DeleteDC(mDC);
 		DeleteObject(hBitmap);
 		ReleaseDC(hWnd, hDC);
+		Gdiplus::GdiplusShutdown(gdiplusToken); // GDI+ 종료
 		PostQuitMessage(0);
 		return 0;
 	}
@@ -742,7 +783,7 @@ void Player_::Move() {
 		if (isTouchingFlag) {
 			Player.invincibleTime = 0;
 			Player.isInvincible = false;
-			if(Images.NowStage() == TUTORIAL) defaultGroundY_ = 447;
+			if (Images.NowStage() == TUTORIAL) defaultGroundY_ = 447;
 			const float slideSpeed = 4.0f;
 			flagSlideProgress += slideSpeed;
 			y_ += static_cast<int>(slideSpeed);
@@ -753,8 +794,6 @@ void Player_::Move() {
 				move_ = false;
 				isMovingRightAfterFlag = true;
 				flagSlideProgress = 0.0f;
-				Images.isTransitioning = true; // 깃발 충돌 시 전환 시작
-				Images.transitionTimer = 0.0f;
 			}
 		}
 		else if (isMovingRightAfterFlag) {
@@ -778,7 +817,7 @@ void Player_::Move() {
 				Images.NextStage();
 				isMovingRightAfterFlag = false;
 				flagMoveRightProgress = 0.0f;
-				Images.isTransitioning = true; // 다음 스테이지로 전환 시 전환 시작
+				Images.isTransitioning = true; // 이동 후 전환 시작
 				Images.transitionTimer = 0.0f;
 			}
 		}
