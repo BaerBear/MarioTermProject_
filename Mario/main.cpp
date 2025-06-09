@@ -414,6 +414,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 		else if (wParam == '3') {
 			Player.turnInvicible();
 		}
+	}
 	case WM_LBUTTONDOWN: {
 		if (Images.isStartScreen) {
 			int mouseX = LOWORD(lParam);
@@ -442,11 +443,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 				PostQuitMessage(0);
 			}
 		}
-		break;
-	}
-	case WM_KEYDOWN: {
-		if (Images.isStartScreen) break;
-		// ... (기존 키 처리 코드 유지)
 		break;
 	}
 	case WM_MOUSEMOVE: {
