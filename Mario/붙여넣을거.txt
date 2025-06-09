@@ -1,0 +1,24 @@
+// 전역 선언
+
+FMOD::System* ssystem;
+FMOD::Sound* sound_Jump, * sound_MainBgm, * sound_Stage2Bgm, * sound_Pipe, * sound_Fireball, * sound_Clear, * sound_PowerUp, * sound_PowerDown, * sound_Gameover;
+FMOD::Channel* channel = nullptr;
+FMOD::Channel* bgmChannel = nullptr;
+float BGM_V = 0.1f;
+
+// 크리에이트에
+// 사운드
+FMOD::System_Create(&ssystem);
+ssystem->init(512, FMOD_INIT_NORMAL, 0);
+ssystem->createSound("Sound/Main bgm.wav", FMOD_DEFAULT | FMOD_LOOP_NORMAL, 0, &sound_MainBgm);
+ssystem->createSound("Sound/Stage2 bgm.wav", FMOD_DEFAULT | FMOD_LOOP_NORMAL, 0, &sound_Stage2Bgm);
+ssystem->createSound("Sound/Stage Clear.wav", FMOD_DEFAULT, 0, &sound_Clear);
+ssystem->createSound("Sound/Game Over.wav", FMOD_DEFAULT, 0, &sound_Gameover);
+ssystem->createSound("Sound/Pipe.wav", FMOD_DEFAULT, 0, &sound_Pipe);
+ssystem->createSound("Sound/Jump.wav", FMOD_DEFAULT, 0, &sound_Jump);
+ssystem->createSound("Sound/Fireball.wav", FMOD_DEFAULT, 0, &sound_Fireball);
+ssystem->createSound("Sound/Power up.wav", FMOD_DEFAULT, 0, &sound_PowerUp);
+ssystem->createSound("Sound/Power down.wav", FMOD_DEFAULT, 0, &sound_PowerDown);
+
+bgmChannel->setVolume(BGM_V);
+ssystem->playSound(sound_PowerDown, 0, false, &bgmChannel);

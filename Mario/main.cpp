@@ -6,9 +6,15 @@
 #include <vector>
 #include <algorithm>
 #include <gdiplus.h> // GDI+ 추가
+#include "fmod.hpp"
+#include "fmod_errors.h"
+//#pragma comment(linker, "/entry:WinMainCRTStartup /subsystem:console")
 
 #pragma comment (lib, "msimg32.lib")
 #pragma comment (lib, "gdiplus.lib")
+#pragma comment (lib, "fmod_vc.lib")
+#pragma comment(lib, "winmm.lib")
+#pragma comment(lib, "Msimg32.lib")
 
 #define LEFT 1
 #define RIGHT 2
@@ -31,18 +37,21 @@
 #define MUSHROOM 0
 #define FLOWER 1
 
-#define LEFT 0
-#define RIGHT 1
-
 std::mt19937 Item_type(std::random_device{}());
 std::uniform_int_distribution<int> Type(0, 1); // 0: 버섯, 1: 꽃
 
 Gdiplus::GdiplusStartupInput gdiplusStartupInput;
 ULONG_PTR gdiplusToken; // GDI+ 토큰
 
+FMOD::System* ssystem;
+FMOD::Sound* sound_Jump, * sound_MainBgm, * sound_Stage2Bgm, * sound_Pipe, * sound_Fireball, * sound_Clear, * sound_PowerUp, * sound_PowerDown, * sound_Gameover;
+FMOD::Channel* channel = nullptr;
+FMOD::Channel* bgmChannel = nullptr;
+float BGM_V = 0.1f;
+
 HINSTANCE g_hInst;
 LPCTSTR lpszClass = L"Window Class Name";
-LPCTSTR lpszWindowName = L"Window Programming Lab";
+LPCTSTR lpszWindowName = L"Super Tino";
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam);
 
@@ -345,6 +354,22 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 
 	switch (iMessage) {
 	case WM_CREATE: {
+		// 사운드
+		FMOD::System_Create(&ssystem);
+		ssystem->init(512, FMOD_INIT_NORMAL, 0);
+		ssystem->createSound("Sound/Main bgm.wav", FMOD_DEFAULT | FMOD_LOOP_NORMAL, 0, &sound_MainBgm);
+		ssystem->createSound("Sound/Stage2 bgm.wav", FMOD_DEFAULT | FMOD_LOOP_NORMAL, 0, &sound_Stage2Bgm);
+		ssystem->createSound("Sound/Stage Clear.wav", FMOD_DEFAULT, 0, &sound_Clear);
+		ssystem->createSound("Sound/Game Over.wav", FMOD_DEFAULT, 0, &sound_Gameover);
+		ssystem->createSound("Sound/Pipe.wav", FMOD_DEFAULT, 0, &sound_Pipe);
+		ssystem->createSound("Sound/Jump.wav", FMOD_DEFAULT, 0, &sound_Jump);
+		ssystem->createSound("Sound/Fireball.wav", FMOD_DEFAULT, 0, &sound_Fireball);
+		ssystem->createSound("Sound/Power up.wav", FMOD_DEFAULT, 0, &sound_PowerUp);
+		ssystem->createSound("Sound/Power down.wav", FMOD_DEFAULT, 0, &sound_PowerDown);
+
+		bgmChannel->setVolume(BGM_V);
+		ssystem->playSound(sound_PowerDown, 0, false, &bgmChannel);
+
 		Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL); // GDI+ 초기화
 		hDC = GetDC(hWnd);
 		mDC = CreateCompatibleDC(hDC);
@@ -362,11 +387,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 	case WM_KEYDOWN: {
 		if (wParam == 'S' || wParam == 's') {
 			Images.NextStage();
-			InvalidateRect(hWnd, NULL, FALSE);
 		}
 		if (wParam == 'd' || wParam == 'D') {
 			Images.EnterHiddenStage();
-			InvalidateRect(hWnd, NULL, FALSE);
 		}
 		else if (wParam == 'q' || wParam == 'Q') {
 			PostQuitMessage(0);
@@ -420,6 +443,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 				}
 			}
 			Player.FireballMove();
+
+			ssystem->update();
+			bgmChannel->setVolume(BGM_V);
+
 			break;
 		}
 		}
@@ -1151,6 +1178,8 @@ void Player_::Move() {
 			[](const Image_::Coupa& c) { return !c.isAlive; }), coupaList.end());
 	}
 
+
+	// 몬스터
 	if (!Images.monsters[Images.currentStage - 1].empty() && !isInvincible) {
 		for (auto& monster : Images.monsters[Images.currentStage - 1]) {
 			if (!monster.isAlive) continue;
@@ -1746,11 +1775,11 @@ void Player_::Move() {
 		bool overlapX = playerRight > tblockLeft && playerLeft < tblockRight;
 
 		if (overlapX && y_ == tblockTop - playerHitboxHeight && GetAsyncKeyState(VK_DOWN) & 0x8000) {
-			
+
 			Images.isTransitioning = true;
 			Images.transitionTimer = 0.0f;
 			Images.EnterHiddenStage();
-			
+
 			//Player.ResetPosition(); // 초기 위치 설정만 유지
 		}
 	}
@@ -1781,11 +1810,11 @@ void Player_::Move() {
 			Images.stage1 = true;
 			x_ = 2605; // 1스테이지 파이프 출구 근처
 			y_ = 350;  // 적절한 y 좌표
-			
+
 			Images.isTransitioning = true;
 			Images.transitionTimer = 0.0f;
-			
-			
+
+
 			// ResetPosition() 호출 제거, 상태 유지
 		}
 	}
@@ -2451,6 +2480,7 @@ void Image_::ImageInit() {
 
 	tutorial = stage1 = stage2 = hidden = false;
 	currentStage = TUTORIAL;
+
 }
 
 void Image_::BlockInit() {
@@ -3169,6 +3199,11 @@ void Image_::NextStage() {
 		currentStage = STAGE2;
 		stage1 = false;
 		stage2 = true;
+	}
+	else if (currentStage == STAGE2) {
+		currentStage = TUTORIAL;
+		stage2 = false;
+		tutorial = true;
 	}
 	// 모든 스테이지의 객체 벡터 초기화
 	for (int i = 0; i < 4; ++i) {
