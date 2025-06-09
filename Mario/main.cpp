@@ -1833,9 +1833,11 @@ void Player_::Move() {
 
 			if (overlapX && overlapY && item.isActive) {
 				if (item.type == 0) { // 버섯
+					if (!eatMushroom_) {
+						groundY_ -= 15; // 크기 증가 반영
+						y_ -= 15;
+					}
 					eatMushroom_ = true;
-					groundY_ -= 15; // 크기 증가 반영
-					y_ -= 15;
 				}
 				else if (item.type == 1) { // 꽃
 					eatFlower_ = true;
@@ -2886,8 +2888,8 @@ void Image_::BlockInit() {
 			monster2_2.directionChangeInterval = static_cast<float>(rand() % 6 + 5); // 5~10초
 			monsters[2].push_back(monster2_2);
 
-		
-			
+
+
 			Coupa coupa;
 			coupa.x = 2140; // 테스트용, tblock2_11(x=560, width=594) 내
 			coupa.y = 250; // tblock2_11(y=336) - height(64)
