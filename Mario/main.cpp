@@ -225,6 +225,12 @@ public:
 		}
 	}
 
+	// isFallingIntoHole에 대한 접근자 및 설정자 추가
+	bool isFalling() const { return isFallingIntoHole; } // 상태 확인
+	void setFalling(bool value) { isFallingIntoHole = value; } // 상태 설정
+
+	float getFallProgress() const { return fallProgress_; }
+	void setFallProgress(float value) { fallProgress_ = value; }
 
 private:
 	int x_, y_;
@@ -414,9 +420,27 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 			Player.Move();
 			if (Images.isTransitioning) {
 				Images.transitionTimer += 0.016f; // 16ms당 타이머 증가 (약 60fps 기준)
-				if (Images.transitionTimer >= 2.0f) { // 4초 후 전환 종료
+				if (Images.transitionTimer >= 2.0f) { // 2초 후 전환 종료
 					Images.isTransitioning = false;
 					Images.transitionTimer = 0.0f;
+					// 구멍에 빠져 죽은 경우, 현재 스테이지만 초기화 및 플레이어 복원
+					if (Player.isFalling()) {
+						Player.setFalling(false); // isFallingIntoHole 초기화
+						Player.setFallProgress(0.0f); // fallProgress_ 초기화
+						// 현재 스테이지만 클리어
+						int currentIndex = Images.currentStage - 1;
+						Images.blocks[currentIndex].clear();
+						Images.questionBlocks[currentIndex].clear();
+						Images.tBlocks[currentIndex].clear();
+						Images.holes[currentIndex].clear();
+						Images.flagBlocks[currentIndex].clear();
+						Images.monsters[currentIndex].clear();
+						Images.items[currentIndex].clear();
+						Images.coupas[currentIndex].clear();
+						Images.fireballs.clear(); // 파이어볼 초기화
+						Player.ResetPosition(); // 플레이어 초기 위치로 복원
+						Images.BlockInit(); // 현재 스테이지 객체 재초기화
+					}
 				}
 			}
 			Player.FireballMove();
@@ -426,6 +450,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 		InvalidateRect(hWnd, NULL, FALSE);
 		break;
 	}
+		
 	case WM_PAINT: {
 		hDC = BeginPaint(hWnd, &ps);
 		Gdiplus::Graphics graphics(mDC); // GDI+ 그래픽스 객체 추가
@@ -761,7 +786,6 @@ void Player_::DrawPlayer(HDC targetDC) {
 }
 
 void Player_::Move() {
-
 	if (Images.isTransitioning) {
 		return;
 	}
@@ -771,7 +795,10 @@ void Player_::Move() {
 		fallProgress_ += fallSpeed;
 		y_ += static_cast<int>(fallSpeed);
 		if (fallProgress_ >= 100.0f) {
-			PostQuitMessage(0);
+			// 프로그램 종료 대신 화면 전환 시작
+			Images.isTransitioning = true;
+			Images.transitionTimer = 0.0f;
+			return; // 전환 중에는 더 이상 진행하지 않음
 		}
 		return;
 	}
@@ -1746,11 +1773,9 @@ void Player_::Move() {
 		bool overlapX = playerRight > tblockLeft && playerLeft < tblockRight;
 
 		if (overlapX && y_ == tblockTop - playerHitboxHeight && GetAsyncKeyState(VK_DOWN) & 0x8000) {
-			
 			Images.isTransitioning = true;
 			Images.transitionTimer = 0.0f;
 			Images.EnterHiddenStage();
-			
 			//Player.ResetPosition(); // 초기 위치 설정만 유지
 		}
 	}
@@ -1781,11 +1806,8 @@ void Player_::Move() {
 			Images.stage1 = true;
 			x_ = 2605; // 1스테이지 파이프 출구 근처
 			y_ = 350;  // 적절한 y 좌표
-			
 			Images.isTransitioning = true;
 			Images.transitionTimer = 0.0f;
-			
-			
 			// ResetPosition() 호출 제거, 상태 유지
 		}
 	}
