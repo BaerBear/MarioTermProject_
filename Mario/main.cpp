@@ -17,7 +17,7 @@
 #define LIZAMONG 4
 #define LARGETINO 5
 
-#define MOVE 7
+#define MOVE 13
 #define JUMP_VELOCITY -13
 #define GRAVITY 0.5
 
@@ -202,6 +202,19 @@ public:
 		eatMushroom_ = !eatMushroom_;
 		State();
 	};
+	void turnInvicible() {
+		if (!isTouchingFlag || !isMovingRightAfterFlag) {
+			return; // 깃발에 닿지 않았거나 깃발에서 내려온 후에는 무적 상태 전환 불가
+		}
+		isInvincible = !isInvincible;
+		if (isInvincible) {
+			invincibleTime = 3000;
+		}
+		else {
+			invincibleTime = 0; // 무적 해제
+		}
+	}
+
 
 private:
 	int x_, y_;
@@ -355,6 +368,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 		}
 		else if (wParam == '2') {
 			Player.turnMushroom();
+		}
+		else if (wParam == '3') {
+			Player.turnInvicible();
 		}
 		break;
 	}
@@ -706,6 +722,9 @@ void Player_::Move() {
 
 	if (isTouchingFlag || isMovingRightAfterFlag) {
 		if (isTouchingFlag) {
+			Player.invincibleTime = 0;
+			Player.isInvincible = false;
+			if(Images.NowStage() == TUTORIAL) defaultGroundY_ = 447;
 			const float slideSpeed = 4.0f;
 			flagSlideProgress += slideSpeed;
 			y_ += static_cast<int>(slideSpeed);
@@ -3092,6 +3111,7 @@ void Image_::NextStage() {
 		questionBlocks[i].clear();
 		monsters[i].clear();
 		items[i].clear();
+		coupas[i].clear();
 	}
 	Player.ResetPosition();
 	BlockInit();
@@ -3127,22 +3147,19 @@ void Image_::Destroy() {
 	blockImage.Destroy();
 	questionBlockImage[0].Destroy();
 	questionBlockImage[1].Destroy();
-	fireballs.clear();
-	for (int i = 0; i < 4; ++i) {
-		if (!blocks[i].empty()) {
-			blocks[i].clear();
-			questionBlocks[i].clear();
-			tBlocks[i].clear();
-			holes[i].clear();
-			flagBlocks[i].clear();
-		}
-	}
 	coupaImage.Destroy();
-	for (int i = 0; i < 4; ++i) {
-		coupas[i].clear();
-	}
 	Item_Mushroom.Destroy();
 	Item_Flower.Destroy();
+	fireballs.clear();
+	for (int i = 0; i < 4; ++i) {
+		blocks[i].clear();
+		questionBlocks[i].clear();
+		tBlocks[i].clear();
+		holes[i].clear();
+		flagBlocks[i].clear();
+		coupas[i].clear();
+		items[i].clear();
+	}
 }
 
 void Player_::DrawHitbox(HDC targetDC) {
