@@ -23,6 +23,7 @@
 #define JUMP_VELOCITY -13
 #define GRAVITY 0.5
 
+#define START_SCREEN 0
 #define TUTORIAL 1
 #define STAGE1 2
 #define STAGE2 3
@@ -51,10 +52,12 @@ int GetCameraX(int playerX, int stageWidth);
 class Image_ {
 public:
 	bool stage1, hidden, tutorial, stage2;
+	bool isStartScreen;
 	int currentStage;
 	bool isTransitioning; // 전환 중 여부
 	float transitionTimer; // 전환 타이머 (초 단위)
 
+	CImage mStartScreen;
 	CImage Player_Move_Tino, Player_Move_Pairi, Player_Move_Lizamong;
 	CImage Player_Attack_Tino, Player_Attack_Pairi, Player_Attack_Lizamong;
 	CImage Item_Mushroom, Item_Flower;
@@ -157,7 +160,8 @@ public:
 			coupas[i].clear();
 		}
 		fireballs.clear();
-		currentStage = TUTORIAL;
+		currentStage = START_SCREEN;
+		isStartScreen = true;
 		isTransitioning = false;
 		transitionTimer = 0.0f;
 	};
@@ -193,7 +197,7 @@ public:
 	void FireballMove();
 	bool Moving() { return move_; };
 	void DrawHitbox(HDC targetDC);
-
+	
 	int State();
 
 	int x() { return x_; };
@@ -351,7 +355,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 
 	switch (iMessage) {
 	case WM_CREATE: {
-		Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL); // GDI+ 초기화
+		Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
 		hDC = GetDC(hWnd);
 		mDC = CreateCompatibleDC(hDC);
 		GetClientRect(hWnd, &wRect);
@@ -360,12 +364,34 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 		hBitmap = CreateCompatibleBitmap(hDC, wRect.right, wRect.bottom);
 		SelectObject(mDC, hBitmap);
 		SetTimer(hWnd, 1, 16, NULL);
-		Images.tutorial = true;
-		Images.BlockInit();
 		ReleaseDC(hWnd, hDC);
 		break;
 	}
+	case WM_LBUTTONDOWN: {
+		if (Images.isStartScreen) {
+			int mouseX = LOWORD(lParam);
+			int mouseY = HIWORD(lParam);
+			
+			if (mouseX >= 310 && mouseX <= 500 && mouseY >= 480 && mouseY <= 520) {
+				Images.isStartScreen = false;
+				Images.currentStage = TUTORIAL;
+				Images.tutorial = true;
+				Images.isTransitioning = true;
+				Images.transitionTimer = 0.0f;
+				Images.BlockInit();
+				Player.PlayerInit();
+				InvalidateRect(hWnd, NULL, FALSE);
+			}
+			
+			else if (mouseX >= 310 && mouseX <= 500 && mouseY >= 525 && mouseY <= 555) {
+				PostQuitMessage(0);
+			}
+		}
+		break;
+	}
 	case WM_KEYDOWN: {
+		if (Images.isStartScreen) break;
+
 		if (wParam == 'S' || wParam == 's') {
 			Images.NextStage();
 			InvalidateRect(hWnd, NULL, FALSE);
@@ -415,19 +441,18 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 		break;
 	}
 	case WM_TIMER: {
+		if (Images.isStartScreen) break; // 시작 화면에서는 타이머 동작 중지
 		switch (wParam) {
 		case 1: {
 			Player.Move();
 			if (Images.isTransitioning) {
-				Images.transitionTimer += 0.016f; // 16ms당 타이머 증가 (약 60fps 기준)
-				if (Images.transitionTimer >= 2.0f) { // 2초 후 전환 종료
+				Images.transitionTimer += 0.016f;
+				if (Images.transitionTimer >= 2.0f) {
 					Images.isTransitioning = false;
 					Images.transitionTimer = 0.0f;
-					// 구멍에 빠져 죽은 경우, 현재 스테이지만 초기화 및 플레이어 복원
 					if (Player.isFalling()) {
-						Player.setFalling(false); // isFallingIntoHole 초기화
-						Player.setFallProgress(0.0f); // fallProgress_ 초기화
-						// 현재 스테이지만 클리어
+						Player.setFalling(false);
+						Player.setFallProgress(0.0f);
 						int currentIndex = Images.currentStage - 1;
 						Images.blocks[currentIndex].clear();
 						Images.questionBlocks[currentIndex].clear();
@@ -437,9 +462,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 						Images.monsters[currentIndex].clear();
 						Images.items[currentIndex].clear();
 						Images.coupas[currentIndex].clear();
-						Images.fireballs.clear(); // 파이어볼 초기화
-						Player.ResetPosition(); // 플레이어 초기 위치로 복원
-						Images.BlockInit(); // 현재 스테이지 객체 재초기화
+						Images.fireballs.clear();
+						Player.ResetPosition();
+						Images.BlockInit();
 					}
 				}
 			}
@@ -453,61 +478,33 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 		
 	case WM_PAINT: {
 		hDC = BeginPaint(hWnd, &ps);
-		Gdiplus::Graphics graphics(mDC); // GDI+ 그래픽스 객체 추가
+		Gdiplus::Graphics graphics(mDC);
 		if (Images.isTransitioning) {
-			if (Images.transitionTimer <= 2.0f) { // 0~2초: 어두워짐
-				float progress = Images.transitionTimer / 2.0f; // 0.0f ~ 1.0f
-				BYTE alpha = static_cast<BYTE>(progress * 255); // 0에서 255로 어두워짐
+			if (Images.transitionTimer <= 2.0f) {
+				float progress = Images.transitionTimer / 2.0f;
+				BYTE alpha = static_cast<BYTE>(progress * 255);
 				if (alpha > 255) alpha = 255;
 				if (alpha < 0) alpha = 0;
 				Gdiplus::SolidBrush brush(Gdiplus::Color(alpha, 0, 0, 0));
 				graphics.FillRectangle(&brush, 0, 0, wRect.right, wRect.bottom);
 			}
-			else if (Images.transitionTimer > 2.0f) { // 2~4초: 밝아짐
-				float brightProgress = (Images.transitionTimer - 2.0f) / 2.0f; // 0.0f ~ 1.0f
-				BYTE alpha = static_cast<BYTE>((1.0f - brightProgress) * 255); // 255에서 0으로 밝아짐
-				if (alpha > 255) alpha = 255;
-				if (alpha < 0) alpha = 0;
-				Gdiplus::SolidBrush brush(Gdiplus::Color(alpha, 0, 0, 0));
-				graphics.FillRectangle(&brush, 0, 0, wRect.right, wRect.bottom);
-
-				// 밝아지는 동안 다음 화면 그리기
-				HBRUSH whiteBrush = CreateSolidBrush(RGB(255, 255, 255));
-				FillRect(mDC, &wRect, whiteBrush);
-				DeleteObject(whiteBrush);
-				Images.DrawBackGround(Player.x(), Player.y(), mDC);
+		}
+		else {
+			HBRUSH whiteBrush = CreateSolidBrush(RGB(255, 255, 255));
+			FillRect(mDC, &wRect, whiteBrush);
+			DeleteObject(whiteBrush);
+			Images.DrawBackGround(Player.x(), Player.y(), mDC);
+			if (!Images.isStartScreen) {
 				Player.DrawPlayer(mDC);
-
 				WCHAR buffer[100];
 				wsprintf(buffer, L"Mouse: (%d, %d)", mouseBackgroundX, mouseBackgroundY);
 				SetTextColor(mDC, RGB(255, 255, 255));
 				SetBkMode(mDC, TRANSPARENT);
 				TextOut(mDC, 10, 10, buffer, lstrlen(buffer));
-
 				if (DrawAllHitBox) {
 					Player.DrawHitbox(mDC);
 					Images.DrawHitBox(mDC);
 				}
-			}
-		}
-		else {
-			// 정상 화면
-			HBRUSH whiteBrush = CreateSolidBrush(RGB(255, 255, 255));
-			FillRect(mDC, &wRect, whiteBrush);
-			DeleteObject(whiteBrush);
-
-			Images.DrawBackGround(Player.x(), Player.y(), mDC);
-			Player.DrawPlayer(mDC);
-
-			WCHAR buffer[100];
-			wsprintf(buffer, L"Mouse: (%d, %d)", mouseBackgroundX, mouseBackgroundY);
-			SetTextColor(mDC, RGB(255, 255, 255));
-			SetBkMode(mDC, TRANSPARENT);
-			TextOut(mDC, 10, 10, buffer, lstrlen(buffer));
-
-			if (DrawAllHitBox) {
-				Player.DrawHitbox(mDC);
-				Images.DrawHitBox(mDC);
 			}
 		}
 		BitBlt(hDC, 0, 0, wRect.right, wRect.bottom, mDC, 0, 0, SRCCOPY);
@@ -519,7 +516,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 		DeleteDC(mDC);
 		DeleteObject(hBitmap);
 		ReleaseDC(hWnd, hDC);
-		Gdiplus::GdiplusShutdown(gdiplusToken); // GDI+ 종료
+		Gdiplus::GdiplusShutdown(gdiplusToken);
 		PostQuitMessage(0);
 		return 0;
 	}
@@ -786,6 +783,8 @@ void Player_::DrawPlayer(HDC targetDC) {
 }
 
 void Player_::Move() {
+	if (Pimage.isStartScreen || Pimage.isTransitioning) return;
+
 	if (Images.isTransitioning) {
 		return;
 	}
@@ -2445,6 +2444,7 @@ int Player_::State() {
 }
 
 void Image_::ImageInit() {
+	mStartScreen.Load(TEXT("Image/시작.png"));
 	Player_Move_Tino.Load(TEXT("Image/티노 스프라이트.png"));
 	Player_Move_Pairi.Load(TEXT("Image/파이리 스프라이트.png"));
 	Player_Move_Lizamong.Load(TEXT("Image/리자몽 스프라이트.png"));
@@ -3073,6 +3073,24 @@ void Image_::BlockInit() {
 }
 
 void Image_::DrawBackGround(int x, int y, HDC targetDC) {
+	if (isStartScreen) {
+		if (!mStartScreen.IsNull()) {
+			mStartScreen.StretchBlt(targetDC, 0, 0, wRect.right, wRect.bottom, 0, 0, mStartScreen.GetWidth(), mStartScreen.GetHeight(), SRCCOPY);
+			// 투명 버튼 히트박스 (디버깅용, DrawAllHitBox 활성화 시 표시)
+			if (DrawAllHitBox) {
+				HPEN buttonPen = CreatePen(PS_DASH, 2, RGB(255, 0, 0));
+				HBRUSH buttonBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
+				SelectObject(targetDC, buttonPen);
+				SelectObject(targetDC, buttonBrush);
+				Rectangle(targetDC, 310, 480, 500, 520); // 시작하기 버튼
+				Rectangle(targetDC, 310, 525, 500, 555); // 나가기 버튼
+				DeleteObject(buttonPen);
+				DeleteObject(buttonBrush);
+			}
+		}
+		return;
+	}
+
 	int cameraX = x - 400;
 	if (cameraX < 0) cameraX = 0;
 
@@ -3227,6 +3245,7 @@ void Image_::QuitHiddenStage() {
 }
 
 void Image_::Destroy() {
+	mStartScreen.Destroy();
 	Player_Move_Pairi.Destroy();
 	Player_Move_Lizamong.Destroy();
 	Player_Attack_Pairi.Destroy();
