@@ -93,6 +93,7 @@ public:
 		int width, height;
 		int imageNum{};
 		int time{};
+		bool isPlayerFireball;
 	};
 	struct Monster {
 		int x, y;
@@ -413,10 +414,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 			Player.Move();
 			if (Images.isTransitioning) {
 				Images.transitionTimer += 0.016f; // 16ms당 타이머 증가 (약 60fps 기준)
-				if (Images.transitionTimer >= 2.0f && Images.transitionTimer < 2.016f) { // 2초에 도달 시 다음 스테이지로 전환
-					Images.NextStage();
-				}
-				if (Images.transitionTimer >= 4.0f) { // 4초 후 전환 종료
+				if (Images.transitionTimer >= 2.0f) { // 4초 후 전환 종료
 					Images.isTransitioning = false;
 					Images.transitionTimer = 0.0f;
 				}
@@ -763,6 +761,11 @@ void Player_::DrawPlayer(HDC targetDC) {
 }
 
 void Player_::Move() {
+
+	if (Images.isTransitioning) {
+		return;
+	}
+
 	if (isFallingIntoHole) {
 		const float fallSpeed = 2.0f;
 		fallProgress_ += fallSpeed;
@@ -815,10 +818,10 @@ void Player_::Move() {
 			}
 			if (flagMoveRightProgress >= moveRightDistance) {
 				Images.NextStage();
+				Images.isTransitioning = true;
+				Images.transitionTimer = 0.0f;
 				isMovingRightAfterFlag = false;
 				flagMoveRightProgress = 0.0f;
-				Images.isTransitioning = true; // 이동 후 전환 시작
-				Images.transitionTimer = 0.0f;
 			}
 		}
 		return;
@@ -1076,11 +1079,12 @@ void Player_::Move() {
 				fireball.width = 20;
 				fireball.height = 20;
 				fireball.active = true;
+				fireball.isPlayerFireball = false; // 쿠파 파이어볼로 설정
 				fireball.x = (coupa.direction == RIGHT) ? coupa.x + coupa.width : coupa.x - fireball.width;
 				fireball.y = coupa.y + coupa.height / 4;
 				fireball.velocityX = (coupa.direction == RIGHT) ? 6.0f : -6.0f;
 				fireball.velocityY = 0.0f;
-				Images.fireballs.push_back(fireball);
+				Images.fireballs.push_back(fireball); // Pimage 대신 Images 사용
 				coupa.fireballTimer = 0.0f;
 			}
 
@@ -1620,8 +1624,6 @@ void Player_::Move() {
 					jumpVelocity_ = 0.0f;
 					onBlock = true;
 					newGroundY = qblockTop - playerHitboxHeight;
-
-
 				}
 				else if (prevPlayerTop >= qblockBottom && jumpVelocity_ < 0) {
 					if (!qblock.hit) {
@@ -1730,6 +1732,61 @@ void Player_::Move() {
 				direct_ = RIGHT;
 				break;
 			}
+		}
+	}
+
+	if (!isFallingIntoHole && !Images.tBlocks[Images.currentStage - 1].empty() && Images.tBlocks[Images.currentStage - 1].size() >= 4) {
+		const auto& tblock4 = Images.tBlocks[Images.currentStage - 1][3];
+		int tblockLeft = tblock4.x;
+		int tblockRight = tblock4.x + tblock4.width;
+		int tblockTop = tblock4.y;
+
+		int playerLeft = playerHitboxX;
+		int playerRight = playerHitboxX + playerHitboxWidth;
+		bool overlapX = playerRight > tblockLeft && playerLeft < tblockRight;
+
+		if (overlapX && y_ == tblockTop - playerHitboxHeight && GetAsyncKeyState(VK_DOWN) & 0x8000) {
+			
+			Images.isTransitioning = true;
+			Images.transitionTimer = 0.0f;
+			Images.EnterHiddenStage();
+			
+			//Player.ResetPosition(); // 초기 위치 설정만 유지
+		}
+	}
+
+	if (!isFallingIntoHole && Images.currentStage == HIDDEN && !Images.tBlocks[Images.currentStage - 1].empty()) {
+		const auto& tblock3 = Images.tBlocks[Images.currentStage - 1][2];
+		int tblockLeft = tblock3.x;
+		int tblockTop = tblock3.y;
+		int tblockBottom = tblock3.y + tblock3.height;
+
+		int playerRight = hitbox_.right;
+		int playerTop = hitbox_.top;
+		int playerBottom = hitbox_.bottom;
+
+		int prevHitboxX, prevHitboxY, prevHitboxWidth, prevHitboxHeight;
+		int tempX = x_;
+		x_ = prevX;
+		GetHitbox(prevHitboxX, prevHitboxY, prevHitboxWidth, prevHitboxHeight);
+		int prevPlayerRight = prevHitboxX + prevHitboxWidth;
+		x_ = tempX;
+
+		bool collideWithLeftFace = intendToMoveRight && playerRight + 5 >= tblockLeft && prevPlayerRight < tblockLeft;
+		bool yOverlap = playerBottom > tblockTop && playerTop < tblockBottom;
+
+		if (collideWithLeftFace && yOverlap) {
+			Images.currentStage = STAGE1;
+			Images.hidden = false;
+			Images.stage1 = true;
+			x_ = 2605; // 1스테이지 파이프 출구 근처
+			y_ = 350;  // 적절한 y 좌표
+			
+			Images.isTransitioning = true;
+			Images.transitionTimer = 0.0f;
+			
+			
+			// ResetPosition() 호출 제거, 상태 유지
 		}
 	}
 
@@ -1921,50 +1978,6 @@ void Player_::Move() {
 			[](const Image_::Item& i) { return !i.isActive; }), itemList.end());
 	}
 
-	if (!isFallingIntoHole && !Images.tBlocks[Images.currentStage - 1].empty() && Images.tBlocks[Images.currentStage - 1].size() >= 4) {
-		const auto& tblock4 = Images.tBlocks[Images.currentStage - 1][3];
-		int tblockLeft = tblock4.x;
-		int tblockRight = tblock4.x + tblock4.width;
-		int tblockTop = tblock4.y;
-
-		int playerLeft = playerHitboxX;
-		int playerRight = playerHitboxX + playerHitboxWidth;
-		bool overlapX = playerRight > tblockLeft && playerLeft < tblockRight;
-
-		if (overlapX && y_ == tblockTop - playerHitboxHeight && GetAsyncKeyState(VK_DOWN) & 0x8000) {
-			Images.EnterHiddenStage();
-			Images.isTransitioning = true; // 파이프 입장 시 전환 시작
-			Images.transitionTimer = 0.0f;
-		}
-	}
-
-	if (!isFallingIntoHole && Images.currentStage == HIDDEN && !Images.tBlocks[Images.currentStage - 1].empty()) {
-		const auto& tblock3 = Images.tBlocks[Images.currentStage - 1][2];
-		int tblockLeft = tblock3.x;
-		int tblockTop = tblock3.y;
-		int tblockBottom = tblock3.y + tblock3.height;
-
-		int playerRight = hitbox_.right;
-		int playerTop = hitbox_.top;
-		int playerBottom = hitbox_.bottom;
-
-		int prevHitboxX, prevHitboxY, prevHitboxWidth, prevHitboxHeight;
-		int tempX = x_;
-		x_ = prevX;
-		GetHitbox(prevHitboxX, prevHitboxY, prevHitboxWidth, prevHitboxHeight);
-		int prevPlayerRight = prevHitboxX + prevHitboxWidth;
-		x_ = tempX;
-
-		bool collideWithLeftFace = intendToMoveRight && playerRight + 5 >= tblockLeft && prevPlayerRight < tblockLeft;
-		bool yOverlap = playerBottom > tblockTop && playerTop < tblockBottom;
-
-		if (collideWithLeftFace && yOverlap) {
-			Images.QuitHiddenStage();
-			Images.isTransitioning = true; // 히든 퇴장 시 전환 시작
-			Images.transitionTimer = 0.0f;
-		}
-	}
-
 	if (!isFallingIntoHole && groundY_ != defaultGroundY_) {
 		bool stillOnBlock = false;
 
@@ -2086,6 +2099,7 @@ void Player_::Move() {
 	State();
 }
 
+
 void Player_::Attack() {
 	if (!eatFlower_) return;
 
@@ -2096,6 +2110,7 @@ void Player_::Attack() {
 	fireball.width = 20;
 	fireball.height = 20;
 	fireball.active = true;
+	fireball.isPlayerFireball = true; // 플레이어 파이어볼로 설정
 
 	if (direct_ == RIGHT) {
 		fireball.x = hitbox_.right - fireball.width;
@@ -2108,7 +2123,7 @@ void Player_::Attack() {
 	fireball.y = playerHitboxY + playerHitboxHeight / 4;
 	fireball.velocityY = 0.0f;
 
-	Images.fireballs.push_back(fireball);
+	Images.fireballs.push_back(fireball); // Pimage 대신 Images 사용
 	fireballCooldown = 15;
 
 	WCHAR buffer[100];
@@ -2183,7 +2198,7 @@ void Player_::FireballMove() {
 				bool overlapX = fireballRight > coupaLeft && fireballLeft < coupaRight;
 				bool overlapY = fireballBottom > coupaTop && fireballTop < coupaBottom;
 
-				if (overlapX && overlapY) {
+				if (overlapX && overlapY && it->isPlayerFireball) { // 플레이어 파이어볼만 쿠파에 영향
 					coupa.health--;
 					coupa.isInvincible = true;
 					coupa.invincibleTime = 120; // 2초
@@ -2196,7 +2211,7 @@ void Player_::FireballMove() {
 			}
 
 			// 파이어볼과 플레이어 충돌 체크 (쿠파의 파이어볼)
-			if (!isInvincible) {
+			if (!isInvincible && !it->isPlayerFireball) { // 쿠파 파이어볼만 플레이어에 영향
 				int fireballLeft = it->x;
 				int fireballRight = it->x + it->width;
 				int fireballTop = it->y;
@@ -3145,20 +3160,30 @@ void Image_::DrawBackGround(int x, int y, HDC targetDC) {
 }
 
 void Image_::NextStage() {
-	currentStage++;
-	if (currentStage > 3) currentStage = 1;
-	tutorial = (currentStage == TUTORIAL);
-	stage1 = (currentStage == STAGE1);
-	stage2 = (currentStage == STAGE2);
-	hidden = (currentStage == HIDDEN);
+	if (currentStage == TUTORIAL) {
+		currentStage = STAGE1;
+		tutorial = false;
+		stage1 = true;
+	}
+	else if (currentStage == STAGE1) {
+		currentStage = STAGE2;
+		stage1 = false;
+		stage2 = true;
+	}
+	// 모든 스테이지의 객체 벡터 초기화
 	for (int i = 0; i < 4; ++i) {
+		blocks[i].clear();
 		questionBlocks[i].clear();
+		tBlocks[i].clear();
+		holes[i].clear();
+		flagBlocks[i].clear();
 		monsters[i].clear();
 		items[i].clear();
 		coupas[i].clear();
 	}
+	fireballs.clear();
 	Player.ResetPosition();
-	BlockInit();
+	BlockInit(); // 새 스테이지 객체 로드
 }
 
 void Image_::EnterHiddenStage() {
