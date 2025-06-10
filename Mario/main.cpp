@@ -3597,7 +3597,7 @@ void Image_::QuitHiddenStage() {
 	stage2 = (currentStage == STAGE2);
 	hidden = (currentStage == HIDDEN);
 }
-
+//
 void Image_::Destroy() {
 	Player_Move_Pairi.Destroy();
 	Player_Move_Lizamong.Destroy();
