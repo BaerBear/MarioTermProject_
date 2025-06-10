@@ -1223,6 +1223,19 @@ void Player_::Move() {
 						jumpVelocity_ = JUMP_VELOCITY / 2;
 						if (coupa.health <= 0) {
 							coupa.isAlive = false;
+							// 쿠파가 죽었을 때 Stage2의 Block2_1, Block2_2, Block2_3 제거
+							if (Images.currentStage == STAGE2) {
+								auto& blocks = Images.blocks[2];
+								blocks.erase(
+									std::remove_if(blocks.begin(), blocks.end(),
+										[](const Image_::Block& b) {
+											return b.x == 2272 && b.y == 222 ||
+												b.x == 2272 && b.y == 262 ||
+												b.x == 2272 && b.y == 302;
+										}),
+									blocks.end()
+								);
+							}
 						}
 					}
 					else {
@@ -3222,6 +3235,13 @@ void Image_::BlockInit() {
 			coupa.directionChangeInterval = static_cast<float>(rand() % 6 + 5);
 			coupa.speed = 0.0f;
 			coupas[2].push_back(coupa);
+
+			Block block2_1 = { 2272, 222, 32, 40 };
+			blocks[2].push_back(block2_1);
+			Block block2_2 = { 2272, 262, 32, 40 };
+			blocks[2].push_back(block2_2);
+			Block block2_3 = { 2272, 302, 32, 40 };
+			blocks[2].push_back(block2_3);
 
 		}
 	}
