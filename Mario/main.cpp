@@ -67,6 +67,7 @@ public:
 	bool isTransitioning; // 전환 중 여부
 	float transitionTimer; // 전환 타이머 (초 단위)
 
+	CImage girlfriendImage;
 	CImage mStartScreen;
 	CImage Player_Move_Tino, Player_Move_Pairi, Player_Move_Lizamong;
 	CImage Player_Attack_Tino, Player_Attack_Pairi, Player_Attack_Lizamong;
@@ -148,6 +149,12 @@ public:
 		float directionChangeInterval; // 방향 변경 간격
 		float speed; // 이동 속도
 	};
+	struct Girlfriend {
+		int x, y;
+		int width, height;
+		bool isActive;
+	};
+	std::vector<Girlfriend> girlfriends[4]{};
 	std::vector<Coupa> coupas[4]{}; // 스테이지별 쿠파
 
 	std::vector<Monster> monsters[4]{};
@@ -468,29 +475,26 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 			Player.Move();
 			if (Images.isTransitioning) {
 				Images.transitionTimer += 0.016f; // 16ms당 타이머 증가 (약 60fps 기준)
-				if (Images.transitionTimer >= 2.0f) { // 2초 후 전환 종료
+				// 기존 페이드아웃 (스테이지 전환, 구멍 낙하 등)
+				if (Images.transitionTimer >= 2.0f) {
 					if (Images.currentStage == TUTORIAL && sound_MainBgm && ssystem && bgmChannel) {
-						bgmChannel->stop(); // 기존 BGM 정지 (필요 시)
-						ssystem->playSound(sound_MainBgm, 0, false, &bgmChannel); // MainBgm 재생
+						bgmChannel->stop();
+						ssystem->playSound(sound_MainBgm, 0, false, &bgmChannel);
 						bgmChannel->setVolume(BGM_V);
 					}
 					else if (Images.currentStage == STAGE1 && sound_MainBgm && ssystem && bgmChannel) {
-						bgmChannel->stop(); // 기존 BGM 정지 (필요 시)
-						ssystem->playSound(sound_MainBgm, 0, false, &bgmChannel); // MainBgm 재생
+						bgmChannel->stop();
+						ssystem->playSound(sound_MainBgm, 0, false, &bgmChannel);
 						bgmChannel->setVolume(BGM_V);
 					}
 					else if (Images.currentStage == STAGE2 && sound_Stage2Bgm && ssystem && bgmChannel) {
-						bgmChannel->stop(); // 기존 BGM 정지
-						ssystem->playSound(sound_Stage2Bgm, 0, false, &bgmChannel); // Stage2Bgm 재생
+						bgmChannel->stop();
+						ssystem->playSound(sound_Stage2Bgm, 0, false, &bgmChannel);
 						bgmChannel->setVolume(BGM_V);
 					}
-					Images.isTransitioning = false;
-					Images.transitionTimer = 0.0f;
-					// 구멍에 빠져 죽은 경우, 현재 스테이지만 초기화 및 플레이어 복원
 					if (Player.isFalling()) {
-						Player.setFalling(false); // isFallingIntoHole 초기화
-						Player.setFallProgress(0.0f); // fallProgress_ 초기화
-						// 현재 스테이지만 클리어
+						Player.setFalling(false);
+						Player.setFallProgress(0.0f);
 						int currentIndex = Images.currentStage - 1;
 						Images.blocks[currentIndex].clear();
 						Images.questionBlocks[currentIndex].clear();
@@ -500,10 +504,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 						Images.monsters[currentIndex].clear();
 						Images.items[currentIndex].clear();
 						Images.coupas[currentIndex].clear();
-						Images.fireballs.clear(); // 파이어볼 초기화
-						Player.ResetPosition(); // 플레이어 초기 위치로 복원
-						Images.BlockInit(); // 현재 스테이지 객체 재초기화
+						Images.fireballs.clear();
+						Player.ResetPosition();
+						Images.BlockInit();
 					}
+					Images.isTransitioning = false;
+					Images.transitionTimer = 0.0f;
+				}
+				// 걸프렌드 충돌 시 4초 후 종료
+				else if (Images.transitionTimer >= 4.0f) {
+					PostQuitMessage(0); // 프로그램 종료
 				}
 			}
 			Player.FireballMove();
@@ -945,6 +955,37 @@ void Player_::Move() {
 		}
 	}
 
+	// 여자친구 충돌체크
+	// 여자친구 충돌체크
+	if (!Images.girlfriends[Images.currentStage - 1].empty() && !isInvincible) {
+		for (auto& girlfriend : Images.girlfriends[Images.currentStage - 1]) {
+			if (girlfriend.isActive) {
+				int gfLeft = girlfriend.x;
+				int gfRight = girlfriend.x + girlfriend.width;
+				int gfTop = girlfriend.y;
+				int gfBottom = girlfriend.y + girlfriend.height;
+
+				int playerLeft = hitbox_.left;
+				int playerRight = hitbox_.right;
+				int playerTop = hitbox_.top;
+				int playerBottom = hitbox_.bottom;
+
+				bool overlapX = playerRight > gfLeft && playerLeft < gfRight;
+				bool overlapY = playerBottom > gfTop && playerTop < gfBottom;
+
+				if (overlapX && overlapY) {
+					Images.isTransitioning = true;
+					Images.transitionTimer = 0.0f; // 4초 페이드아웃 시작
+					if (sound_Clear && ssystem) {
+						ssystem->playSound(sound_Clear, 0, false, &channel); // Clear 사운드 재생
+					}
+					return;
+					
+				}
+			}
+		}
+	}
+
 	// 쿠파 동작 처리
 	if (!Images.coupas[Images.currentStage - 1].empty()) {
 		for (auto& coupa : Images.coupas[Images.currentStage - 1]) {
@@ -1224,18 +1265,18 @@ void Player_::Move() {
 						if (coupa.health <= 0) {
 							coupa.isAlive = false;
 							// 쿠파가 죽었을 때 Stage2의 Block2_1, Block2_2, Block2_3 제거
-							if (Images.currentStage == STAGE2) {
+							
 								auto& blocks = Images.blocks[2];
 								blocks.erase(
 									std::remove_if(blocks.begin(), blocks.end(),
 										[](const Image_::Block& b) {
-											return b.x == 2272 && b.y == 222 ||
-												b.x == 2272 && b.y == 262 ||
-												b.x == 2272 && b.y == 302;
+											return (b.x == 2272 && b.y == 222 && b.width == 32 && b.height == 40) ||
+												(b.x == 2272 && b.y == 262 && b.width == 32 && b.height == 40) ||
+												(b.x == 2272 && b.y == 302 && b.width == 32 && b.height == 40);
 										}),
 									blocks.end()
 								);
-							}
+							
 						}
 					}
 					else {
@@ -2402,8 +2443,19 @@ void Player_::FireballMove() {
 					it->active = false;
 					if (coupa.health <= 0) {
 						coupa.isAlive = false;
+						if (Images.currentStage == STAGE2) {
+							auto& blocks = Images.blocks[2];
+							blocks.erase(
+								std::remove_if(blocks.begin(), blocks.end(),
+									[](const Image_::Block& b) {
+										return (b.x == 2272 && b.y == 222 && b.width == 32 && b.height == 40) ||
+											(b.x == 2272 && b.y == 262 && b.width == 32 && b.height == 40) ||
+											(b.x == 2272 && b.y == 302 && b.width == 32 && b.height == 40);
+									}),
+								blocks.end()
+							);
+						}
 					}
-					break;
 				}
 			}
 
@@ -2634,6 +2686,10 @@ void Image_::ImageInit() {
 	Player_Move_Tino.Load(TEXT("Image/티노 스프라이트.png"));
 	Player_Move_Pairi.Load(TEXT("Image/파이리 스프라이트.png"));
 	Player_Move_Lizamong.Load(TEXT("Image/리자몽 스프라이트.png"));
+
+	
+	girlfriendImage.Load(TEXT("Image/티노여자친구.png"));
+	girlfriends[2].push_back({ 2480, 434, 50, 50, true });
 
 	Player_Attack_Tino.Load(TEXT("Image/티노 스프라이트.png"));
 	Player_Attack_Pairi.Load(TEXT("Image/파이리 스프라이트.png"));
@@ -3350,6 +3406,20 @@ void Image_::DrawBackGround(int x, int y, HDC targetDC) {
 			}
 		}
 
+		if (!isStartScreen) {
+			// 기존 블록, 물음표 블록, 몬스터, 아이템, 쿠파 그리기...
+			if (!girlfriendImage.IsNull()) {
+				for (const auto& girlfriend : girlfriends[currentStage - 1]) {
+					if (girlfriend.isActive) {
+						int offsetX = girlfriend.x - cameraX;
+						if (offsetX + girlfriend.width > 0 && offsetX < wRect.right) {
+							girlfriendImage.TransparentBlt(targetDC, offsetX, girlfriend.y, girlfriend.width, girlfriend.height,
+								0, 0, girlfriendImage.GetWidth(), girlfriendImage.GetHeight(), RGB(255, 255, 255));
+						}
+					}
+				}
+			}
+		}
 
 		if (!questionBlockImage[0].IsNull() && !questionBlockImage[1].IsNull()) {
 			for (const auto& qblock : questionBlocks[currentStage - 1]) {
@@ -3524,6 +3594,10 @@ void Image_::Destroy() {
 		flagBlocks[i].clear();
 		coupas[i].clear();
 		items[i].clear();
+	}
+	girlfriendImage.Destroy();
+	for (int i = 0; i < 4; ++i) {
+		girlfriends[i].clear();
 	}
 }
 
