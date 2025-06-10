@@ -15,7 +15,7 @@
 #pragma comment (lib, "fmod_vc.lib")
 #pragma comment(lib, "winmm.lib")
 #pragma comment(lib, "Msimg32.lib")
-
+	
 #define LEFT 1
 #define RIGHT 2
 
@@ -365,15 +365,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 		// 사운드
 		FMOD::System_Create(&ssystem);
 		ssystem->init(512, FMOD_INIT_NORMAL, 0);
-		ssystem->createSound("Sound/Main bgm.wav", FMOD_DEFAULT | FMOD_LOOP_NORMAL, 0, &sound_MainBgm);
-		ssystem->createSound("Sound/Stage2 bgm.wav", FMOD_DEFAULT | FMOD_LOOP_NORMAL, 0, &sound_Stage2Bgm);
-		ssystem->createSound("Sound/Stage Clear.wav", FMOD_DEFAULT, 0, &sound_Clear);
+		ssystem->createSound("Sound/Main bgm.wav", FMOD_DEFAULT | FMOD_LOOP_NORMAL, 0, &sound_MainBgm);  // 됐고
+		ssystem->createSound("Sound/Stage2 bgm.wav", FMOD_DEFAULT | FMOD_LOOP_NORMAL, 0, &sound_Stage2Bgm); // 됐고
+		ssystem->createSound("Sound/Stage Clear.wav", FMOD_DEFAULT, 0, &sound_Clear); // 됐고
 		ssystem->createSound("Sound/Game Over.wav", FMOD_DEFAULT, 0, &sound_Gameover);
-		ssystem->createSound("Sound/Pipe.wav", FMOD_DEFAULT, 0, &sound_Pipe);
-		ssystem->createSound("Sound/Jump.wav", FMOD_DEFAULT, 0, &sound_Jump);
+		ssystem->createSound("Sound/Pipe.wav", FMOD_DEFAULT, 0, &sound_Pipe); // 됐고
+		ssystem->createSound("Sound/Jump.wav", FMOD_DEFAULT, 0, &sound_Jump);   // 됐고
 		ssystem->createSound("Sound/Fireball.wav", FMOD_DEFAULT, 0, &sound_Fireball);
-		ssystem->createSound("Sound/Power up.wav", FMOD_DEFAULT, 0, &sound_PowerUp);
-		ssystem->createSound("Sound/Power down.wav", FMOD_DEFAULT, 0, &sound_PowerDown);
+		ssystem->createSound("Sound/Power up.wav", FMOD_DEFAULT, 0, &sound_PowerUp); // 됐고
+		ssystem->createSound("Sound/Power down.wav", FMOD_DEFAULT, 0, &sound_PowerDown); // 됐고
 
 		bgmChannel->setVolume(BGM_V);
 		ssystem->playSound(sound_MainBgm, 0, false, &bgmChannel);
@@ -475,6 +475,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 			if (Images.isTransitioning) {
 				Images.transitionTimer += 0.016f; // 16ms당 타이머 증가 (약 60fps 기준)
 				if (Images.transitionTimer >= 2.0f) { // 2초 후 전환 종료
+					if (Images.currentStage == STAGE1 && sound_MainBgm && ssystem && bgmChannel) {
+						bgmChannel->stop(); // 기존 BGM 정지 (필요 시)
+						ssystem->playSound(sound_MainBgm, 0, false, &bgmChannel); // MainBgm 재생
+						bgmChannel->setVolume(BGM_V);
+					}
+					else if (Images.currentStage == STAGE2 && sound_Stage2Bgm && ssystem && bgmChannel) {
+						bgmChannel->stop(); // 기존 BGM 정지
+						ssystem->playSound(sound_Stage2Bgm, 0, false, &bgmChannel); // Stage2Bgm 재생
+						bgmChannel->setVolume(BGM_V);
+					}
 					Images.isTransitioning = false;
 					Images.transitionTimer = 0.0f;
 					// 구멍에 빠져 죽은 경우, 현재 스테이지만 초기화 및 플레이어 복원
@@ -850,13 +860,18 @@ void Player_::Move() {
 	}
 
 	if (isFallingIntoHole) {
+
 		const float fallSpeed = 2.0f;
 		fallProgress_ += fallSpeed;
 		y_ += static_cast<int>(fallSpeed);
 		if (fallProgress_ >= 100.0f) {
 			// 프로그램 종료 대신 화면 전환 시작
+			if (sound_Gameover && ssystem) {
+				ssystem->playSound(sound_Gameover, 0, false, &channel); // 구멍에 빠졌을 때 Gameover 사운드
+			}
 			Images.isTransitioning = true;
 			Images.transitionTimer = 0.0f;
+
 			return; // 전환 중에는 더 이상 진행하지 않음
 		}
 		return;
@@ -869,7 +884,9 @@ void Player_::Move() {
 	bool intendToAttack = (GetAsyncKeyState(VK_SPACE) & 0x8000) != 0 && !attackKeyPressed;
 
 	if (isTouchingFlag || isMovingRightAfterFlag) {
+
 		if (isTouchingFlag) {
+
 			Player.invincibleTime = 0;
 			Player.isInvincible = false;
 			if (Images.NowStage() == TUTORIAL) defaultGroundY_ = 447;
@@ -1208,22 +1225,36 @@ void Player_::Move() {
 					}
 					else {
 						if (State() == TINO) {
-							ResetPosition();
+							isFallingIntoHole = true;
+							fallProgress_ = 0.0f;
+							if (sound_Gameover && ssystem) {
+								ssystem->playSound(sound_Gameover, 0, false, &channel); // TINO에서 몬스터에 맞았을 때 Gameover 사운드
+							}
+							return;
 						}
 						else if (State() == LARGETINO) {
 							eatMushroom_ = false;
+							if (sound_PowerDown && ssystem) {
+								ssystem->playSound(sound_PowerDown, 0, false, &channel); // LARGETINO -> TINO PowerDown 사운드
+							}
 							isInvincible = true;
 							invincibleTime = 180;
 						}
 						else if (State() == PAIRI) {
 							eatFlower_ = false;
 							eatMushroom_ = false;
+							if (sound_PowerDown && ssystem) {
+								ssystem->playSound(sound_PowerDown, 0, false, &channel); // LARGETINO -> TINO PowerDown 사운드
+							}
 							isInvincible = true;
 							invincibleTime = 180;
 						}
 						else if (State() == LIZAMONG) {
 							eatFlower_ = true;
 							eatMushroom_ = false;
+							if (sound_PowerDown && ssystem) {
+								ssystem->playSound(sound_PowerDown, 0, false, &channel); // LARGETINO -> TINO PowerDown 사운드
+							}
 							isInvincible = true;
 							invincibleTime = 180;
 						}
@@ -1477,22 +1508,31 @@ void Player_::Move() {
 					if (State() == TINO) {
 						isFallingIntoHole = true;
 						fallProgress_ = 0.0f;
-						return; // 즉시 낙하 처리로 전환
+						return;
 					}
 					else if (State() == LARGETINO) {
 						eatMushroom_ = false;
+						if (sound_PowerDown && ssystem) {
+							ssystem->playSound(sound_PowerDown, 0, false, &channel); // LARGETINO -> TINO PowerDown 사운드
+						}
 						isInvincible = true;
 						invincibleTime = 180;
 					}
 					else if (State() == PAIRI) {
 						eatFlower_ = false;
 						eatMushroom_ = false;
+						if (sound_PowerDown && ssystem) {
+							ssystem->playSound(sound_PowerDown, 0, false, &channel); // LARGETINO -> TINO PowerDown 사운드
+						}
 						isInvincible = true;
 						invincibleTime = 180;
 					}
 					else if (State() == LIZAMONG) {
 						eatFlower_ = true;
 						eatMushroom_ = false;
+						if (sound_PowerDown && ssystem) {
+							ssystem->playSound(sound_PowerDown, 0, false, &channel); // LARGETINO -> TINO PowerDown 사운드
+						}
 						isInvincible = true;
 						invincibleTime = 180;
 					}
@@ -1519,6 +1559,9 @@ void Player_::Move() {
 		isJumping_ = true;
 		jumpVelocity_ = JUMP_VELOCITY;
 		jumpKeyPressed = true;
+		if (sound_Jump && ssystem) {
+			ssystem->playSound(sound_Jump, 0, false, &channel);
+		}
 	}
 	if (intendToAttack && fireballCooldown <= 0) {
 		Attack();
@@ -1820,6 +1863,12 @@ void Player_::Move() {
 				isJumping_ = false;
 				move_ = false;
 				direct_ = RIGHT;
+				if (bgmChannel) {
+					bgmChannel->stop(); // MainBgm 정지
+				}
+				if (sound_Clear && ssystem) {
+					ssystem->playSound(sound_Clear, 0, false, &channel); // sound_Clear 재생
+				}
 				break;
 			}
 		}
@@ -1839,7 +1888,9 @@ void Player_::Move() {
 			Images.isTransitioning = true;
 			Images.transitionTimer = 0.0f;
 			Images.EnterHiddenStage();
-			//Player.ResetPosition(); // 초기 위치 설정만 유지
+			if (sound_Pipe && ssystem) {
+				ssystem->playSound(sound_Pipe, 0, false, &channel); // Stage1 -> HIDDEN 이동 시 Pipe 사운드
+			}
 		}
 	}
 
@@ -1871,7 +1922,9 @@ void Player_::Move() {
 			y_ = 350;  // 적절한 y 좌표
 			Images.isTransitioning = true;
 			Images.transitionTimer = 0.0f;
-			// ResetPosition() 호출 제거, 상태 유지
+			if (sound_Pipe && ssystem) {
+				ssystem->playSound(sound_Pipe, 0, false, &channel); // HIDDEN -> Stage1 이동 시 Pipe 사운드
+			}
 		}
 	}
 
@@ -2049,9 +2102,15 @@ void Player_::Move() {
 						y_ -= 15;
 					}
 					eatMushroom_ = true;
+					if (sound_PowerUp && ssystem) {
+						ssystem->playSound(sound_PowerUp, 0, false, &channel); // 버섯 먹을 때 PowerUp 사운드
+					}
 				}
 				else if (item.type == 1) { // 꽃
 					eatFlower_ = true;
+					if (sound_PowerUp && ssystem) {
+						ssystem->playSound(sound_PowerUp, 0, false, &channel); // 버섯 먹을 때 PowerUp 사운드
+					}
 				}
 				item.isActive = false;
 			}
@@ -2210,6 +2269,10 @@ void Player_::Attack() {
 
 	Images.fireballs.push_back(fireball); // Pimage 대신 Images 사용
 	fireballCooldown = 15;
+
+	if (sound_Fireball && ssystem) {
+		ssystem->playSound(sound_Fireball, 0, false, &channel); // 파이어볼 쏠 때 Fireball 사운드
+	}
 
 	WCHAR buffer[100];
 	swprintf_s(buffer, L"Fireball shot: x=%d, y=%d, velocityX=%.2f\n", fireball.x, fireball.y, fireball.velocityX);
@@ -2960,6 +3023,15 @@ void Image_::BlockInit() {
 			QuestionBlock qblock2_1 = { 480, 226, 16, 36, false };
 			questionBlocks[2].push_back(qblock2_1);
 
+			QuestionBlock qblock2_2 = { 1308, 246, 16, 36, false };
+			questionBlocks[2].push_back(qblock2_2);
+
+			QuestionBlock qblock2_3 = { 1356, 246, 16, 36, false };
+			questionBlocks[2].push_back(qblock2_3);
+
+			QuestionBlock qblock2_4 = { 1404, 246, 16, 36, false };
+			questionBlocks[2].push_back(qblock2_4);
+
 			TBlock tblock2_1 = { 0, 262, 48, 36 };
 			TBlock tblock2_2 = { 48, 300, 16, 36 };
 			TBlock tblock2_3 = { 64, 336, 16, 36 };
@@ -3040,7 +3112,7 @@ void Image_::BlockInit() {
 			monsters[2].push_back(monster2_1);
 
 			Monster monster2_2;
-			monster2_2.x = 690; // 초기 위치Add commentMore actions
+			monster2_2.x = 720; // 초기 위치Add commentMore actions
 			monster2_2.y = 295; // 바닥에 위치
 			monster2_2.width = 32;
 			monster2_2.height = 32;
@@ -3053,7 +3125,34 @@ void Image_::BlockInit() {
 			monster2_2.directionChangeInterval = static_cast<float>(rand() % 6 + 5); // 5~10초
 			monsters[2].push_back(monster2_2);
 
+			Monster monster2_3;
+			monster2_3.x = 1308; // 초기 위치Add commentMore actions
+			monster2_3.y = 246; // 바닥에 위치
+			monster2_3.width = 32;
+			monster2_3.height = 32;
+			monster2_3.direction = LEFT;
+			monster2_3.speed = 1.0f;
+			monster2_3.isAlive = true;
+			monster2_3.isFalling = false;
+			monster2_3.fallProgress = 0.0f;
+			monster2_3.directionTimer = 0.0f;
+			monster2_3.directionChangeInterval = static_cast<float>(rand() % 6 + 5); // 5~10초
+			monsters[2].push_back(monster2_3);
 
+			Monster monster2_4;
+			monster2_4.x = 1720; // 초기 위치Add commentMore actions
+			monster2_4.y = 428; // 바닥에 위치
+			monster2_4.width = 32;
+			monster2_4.height = 32;
+			monster2_4.direction = LEFT;
+			monster2_4.speed = 1.0f;
+			monster2_4.isAlive = true;
+			monster2_4.isFalling = false;
+			monster2_4.fallProgress = 0.0f;
+			monster2_4.directionTimer = 0.0f;
+			monster2_4.directionChangeInterval = static_cast<float>(rand() % 6 + 5); // 5~10초
+			monsters[2].push_back(monster2_4);
+			
 
 			Coupa coupa;
 			coupa.x = 2140; // 테스트용, tblock2_11(x=560, width=594) 내
@@ -3251,11 +3350,24 @@ void Image_::NextStage() {
 		currentStage = STAGE1;
 		tutorial = false;
 		stage1 = true;
+		// sound_Clear가 끝날 때까지 대기 후 MainBgm 재생 (2초로 가정)
+		if (sound_MainBgm && ssystem && bgmChannel) {
+			// sound_Clear의 길이를 가정 (실제 길이를 알아야 함, 여기서는 2초로 설정)
+			float clearDuration = 2.0f; // 실제 사운드 길이로 변경 필요
+			// 타이머를 사용해 대기 (WM_TIMER에서 처리)
+			isTransitioning = true;
+			transitionTimer = clearDuration; // clear 사운드 끝난 후 전환
+		}
 	}
 	else if (currentStage == STAGE1) {
 		currentStage = STAGE2;
 		stage1 = false;
 		stage2 = true;
+		if (sound_Stage2Bgm && ssystem && bgmChannel) {
+			float clearDuration = 2.0f; // 실제 sound_Clear 길이로 변경 필요
+			isTransitioning = true;
+			transitionTimer = clearDuration; // clear 사운드 끝난 후 전환
+		}
 	}
 	else if (currentStage == STAGE2) {
 		currentStage = TUTORIAL;
