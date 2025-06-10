@@ -71,12 +71,18 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>C:\Users\turbo\source\repos\MarioTermProject_\Mario\FMOD_API\core\inc</IncludePath>
+    <IncludePath>$(ProjectDir)MarioTermProject_\Mario\FMOD_API\core\inc;$(ProjectDir)MarioTermProject_\Mario\FMOD_API\core\lib\x64</IncludePath>
     <LibraryPath>C:\Users\turbo\source\repos\MarioTermProject_\Mario\FMOD_API\core\lib\x64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>C:\Users\turbo\source\repos\MarioTermProject_\Mario\FMOD_API\core\inc</IncludePath>
+    <IncludePath>$(ProjectDir)MarioTermProject_\Mario\FMOD_API\core\inc;$(ProjectDir)MarioTermProject_\Mario\FMOD_API\core\lib\x64</IncludePath>
     <LibraryPath>C:\Users\turbo\source\repos\MarioTermProject_\Mario\FMOD_API\core\lib\x64;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <IncludePath>$(ProjectDir)MarioTermProject_\Mario\FMOD_API\core\inc;$(ProjectDir)MarioTermProject_\Mario\FMOD_API\core\lib\x64</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <IncludePath>$(ProjectDir)MarioTermProject_\Mario\FMOD_API\core\inc;$(ProjectDir)MarioTermProject_\Mario\FMOD_API\core\lib\x64</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
