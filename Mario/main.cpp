@@ -423,6 +423,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 			else if (wParam == 'h' || wParam == 'H') {
 				DrawAllHitBox = !DrawAllHitBox;
 			}
+			else if (wParam == 'q' || wParam == 'Q') {
+				return 0;
+			}
 			else if (wParam == '1') {
 				Player.turnFlower();
 			}
@@ -446,7 +449,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 				Images.isStartScreen = false;
 				Images.NextStage();
 				Player.PlayerInit();
-				Images.BlockInit();
 				SetTimer(hWnd, 1, 16, NULL);
 				Images.isTransitioning = true;
 				Images.transitionTimer = 0.0f;
@@ -526,7 +528,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 					Images.transitionTimer = 0.0f;
 				}
 				// 걸프렌드 충돌 시 4초 후 종료
-				else if (Images.transitionTimer >= 4.0f) {
+				if (Images.transitionTimer >= 4.0f) {
 					Images.CheckKillTimer = true;
 				}
 			}
@@ -990,6 +992,7 @@ void Player_::Move() {
 					Images.isTransitioning = true;
 					Images.transitionTimer = 0.0f; // 4초 페이드아웃 시작
 					if (sound_Clear && ssystem) {
+						bgmChannel->stop();
 						ssystem->playSound(sound_Clear, 0, false, &channel); // Clear 사운드 재생
 					}
 					Images.EndingScreen();
@@ -2728,7 +2731,7 @@ void Image_::ImageInit() {
 	Item_Mushroom.Load(TEXT("Image/버섯.png"));
 
 	mStartScreen.Load(TEXT("Image/시작.png"));
-	mEndingScreen.Load(TEXT("Image/종료.png"));
+	mEndingScreen.Load(TEXT("Image/찐종료.png"));
 
 	tutorial = stage1 = stage2 = hidden = false;
 	currentStage = START;
