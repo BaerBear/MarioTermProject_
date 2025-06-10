@@ -68,6 +68,7 @@ public:
 	bool isEndingScreen;
 	bool isTransitioning; // 전환 중 여부
 	float transitionTimer; // 전환 타이머 (초 단위)
+	bool CheckKillTimer;
 
 	CImage girlfriendImage;
 	CImage mStartScreen, mEndingScreen;
@@ -156,17 +157,16 @@ public:
 		int width, height;
 		bool isActive;
 	};
-	std::vector<Girlfriend> girlfriends[4]{};
-	std::vector<Coupa> coupas[4]{}; // 스테이지별 쿠파
-
-	std::vector<Monster> monsters[4]{};
-	std::vector<Block> blocks[4]{};
-	std::vector<QuestionBlock> questionBlocks[4]{};
-	std::vector<TBlock> tBlocks[4]{};
-	std::vector<Hole> holes[4]{};
-	std::vector<FlagBlock> flagBlocks[4]{};
+	std::vector<Girlfriend> girlfriends[5]{};
+	std::vector<Coupa> coupas[5]{}; // 스테이지별 쿠파
+	std::vector<Monster> monsters[5]{};
+	std::vector<Block> blocks[5]{};
+	std::vector<QuestionBlock> questionBlocks[5]{};
+	std::vector<TBlock> tBlocks[5]{};
+	std::vector<Hole> holes[5]{};
+	std::vector<FlagBlock> flagBlocks[5]{};
 	std::vector<Fireball> fireballs;
-	std::vector<Item> items[4]{};
+	std::vector<Item> items[5]{};
 
 	Image_() {
 		for (int i = 0; i < 4; ++i) {
@@ -182,6 +182,7 @@ public:
 		isStartScreen = true;
 		isTransitioning = false;
 		transitionTimer = 0.0f;
+		CheckKillTimer = false;
 	};
 	~Image_() {};
 
@@ -484,6 +485,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 	case WM_TIMER: {
 		switch (wParam) {
 		case 1: {
+			if (Images.CheckKillTimer) KillTimer(hWnd, 1);
 			Player.Move();
 			if (Images.isTransitioning) {
 				Images.transitionTimer += 0.016f; // 16ms당 타이머 증가 (약 60fps 기준)
@@ -525,7 +527,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 				}
 				// 걸프렌드 충돌 시 4초 후 종료
 				else if (Images.transitionTimer >= 4.0f) {
-					PostQuitMessage(0); // 프로그램 종료
+					Images.CheckKillTimer = true;
 				}
 			}
 			Player.FireballMove();
@@ -3554,7 +3556,7 @@ void Image_::NextStage() {
 		}
 	}
 	// 모든 스테이지의 객체 벡터 초기화
-	for (int i = 0; i < 4; ++i) {
+	for (int i = 0; i < 5; ++i) {
 		blocks[i].clear();
 		questionBlocks[i].clear();
 		tBlocks[i].clear();
@@ -3571,7 +3573,7 @@ void Image_::NextStage() {
 
 void Image_::EndingScreen() {
 	if (currentStage == STAGE2) {
-		currentStage = TUTORIAL;
+		currentStage = GAMEOVER;
 		isStartScreen = tutorial = stage1 = stage2 = hidden = false;
 		isEndingScreen = true;
 		DrawAllHitBox = false;
@@ -3785,6 +3787,9 @@ int GetCameraX(int playerX, int stageWidth) {
 	if (stageWidth < 800) stageWidth = 800; // 최소 너비 보장
 	if (stageWidth > 800 && cameraX > stageWidth - 800) {
 		cameraX = stageWidth - 800;
+	}
+	if (Images.currentStage == HIDDEN) {
+		cameraX = 0;
 	}
 	return cameraX;
 }
