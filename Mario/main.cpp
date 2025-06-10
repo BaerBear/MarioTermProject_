@@ -8,14 +8,14 @@
 #include <gdiplus.h> // GDI+ 추가
 #include "fmod.hpp"
 #include "fmod_errors.h"
-//#pragma comment(linker, "/entry:WinMainCRTStartup /subsystem:console")
+#pragma comment(linker, "/entry:WinMainCRTStartup /subsystem:console")
 
 #pragma comment (lib, "msimg32.lib")
 #pragma comment (lib, "gdiplus.lib")
 #pragma comment (lib, "fmod_vc.lib")
 #pragma comment(lib, "winmm.lib")
 #pragma comment(lib, "Msimg32.lib")
-	
+
 #define LEFT 1
 #define RIGHT 2
 
@@ -29,6 +29,7 @@
 #define JUMP_VELOCITY -13
 #define GRAVITY 0.5
 
+#define START 0
 #define TUTORIAL 1
 #define STAGE1 2
 #define STAGE2 3
@@ -48,6 +49,7 @@ FMOD::Sound* sound_Jump, * sound_MainBgm, * sound_Stage2Bgm, * sound_Pipe, * sou
 FMOD::Channel* channel = nullptr;
 FMOD::Channel* bgmChannel = nullptr;
 float BGM_V = 0.1f;
+float Effect_V = 0.35f;
 
 HINSTANCE g_hInst;
 LPCTSTR lpszClass = L"Window Class Name";
@@ -168,7 +170,7 @@ public:
 			coupas[i].clear();
 		}
 		fireballs.clear();
-		currentStage = TUTORIAL;
+		isStartScreen = true;
 		isTransitioning = false;
 		transitionTimer = 0.0f;
 	};
@@ -375,45 +377,46 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 		ssystem->createSound("Sound/Power up.wav", FMOD_DEFAULT, 0, &sound_PowerUp); // 됐고
 		ssystem->createSound("Sound/Power down.wav", FMOD_DEFAULT, 0, &sound_PowerDown); // 됐고
 
-		bgmChannel->setVolume(BGM_V);
 		ssystem->playSound(sound_MainBgm, 0, false, &bgmChannel);
+		bgmChannel->setVolume(BGM_V);
+		channel->setVolume(BGM_V);
+		ssystem->update();
 
 		Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL); // GDI+ 초기화
 		hDC = GetDC(hWnd);
 		mDC = CreateCompatibleDC(hDC);
 		GetClientRect(hWnd, &wRect);
 		Images.ImageInit();
-		Player.PlayerInit();
 		hBitmap = CreateCompatibleBitmap(hDC, wRect.right, wRect.bottom);
 		SelectObject(mDC, hBitmap);
-		SetTimer(hWnd, 1, 16, NULL);
-		Images.tutorial = true;
-		Images.BlockInit();
 		ReleaseDC(hWnd, hDC);
 		break;
 	}
 	case WM_KEYDOWN: {
-		if (wParam == 'S' || wParam == 's') {
-			Images.NextStage();
+		if (!Images.isStartScreen) {
+			if (wParam == 'S' || wParam == 's') {
+				Images.NextStage();
+			}
+			if (wParam == 'd' || wParam == 'D') {
+				Images.EnterHiddenStage();
+			}
+			else if (wParam == 'q' || wParam == 'Q') {
+				PostQuitMessage(0);
+			}
+			else if (wParam == 'h' || wParam == 'H') {
+				DrawAllHitBox = !DrawAllHitBox;
+			}
+			else if (wParam == '1') {
+				Player.turnFlower();
+			}
+			else if (wParam == '2') {
+				Player.turnMushroom();
+			}
+			else if (wParam == '3') {
+				Player.turnInvicible();
+			}
 		}
-		if (wParam == 'd' || wParam == 'D') {
-			Images.EnterHiddenStage();
-		}
-		else if (wParam == 'q' || wParam == 'Q') {
-			PostQuitMessage(0);
-		}
-		else if (wParam == 'h' || wParam == 'H') {
-			DrawAllHitBox = !DrawAllHitBox;
-		}
-		else if (wParam == '1') {
-			Player.turnFlower();
-		}
-		else if (wParam == '2') {
-			Player.turnMushroom();
-		}
-		else if (wParam == '3') {
-			Player.turnInvicible();
-		}
+		break;
 	}
 	case WM_LBUTTONDOWN: {
 		if (Images.isStartScreen) {
@@ -421,22 +424,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 			int mouseY = HIWORD(lParam);
 			if (mouseX >= 310 && mouseX <= 500 && mouseY >= 480 && mouseY <= 520) { // Start 버튼
 				Images.isStartScreen = false;
-				Images.currentStage = TUTORIAL;
-				Images.tutorial = true;
-				Images.stage1 = Images.stage2 = Images.hidden = false;
-				Images.isTransitioning = false;
-				Images.transitionTimer = 0.0f;
-				Images.blocks[0].clear();
-				Images.questionBlocks[0].clear();
-				Images.tBlocks[0].clear();
-				Images.holes[0].clear();
-				Images.flagBlocks[0].clear();
-				Images.monsters[0].clear();
-				Images.items[0].clear();
-				Images.coupas[0].clear();
-				Images.fireballs.clear();
+				Images.NextStage();
 				Player.PlayerInit();
 				Images.BlockInit();
+				SetTimer(hWnd, 1, 16, NULL);
+				Images.isTransitioning = true;
+				Images.transitionTimer = 0.0f;
+				ssystem->playSound(sound_Pipe, 0, false, &channel);
 				InvalidateRect(hWnd, NULL, FALSE);
 			}
 			else if (mouseX >= 310 && mouseX <= 500 && mouseY >= 525 && mouseY <= 555) { // Quit 버튼
@@ -451,7 +445,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 
 		int cameraX = Player.x() - 400;
 		if (cameraX < 0) cameraX = 0;
-		int stageWidth = (Images.NowStage() == TUTORIAL ? Images.mStageTutorial.GetWidth() :
+		int stageWidth = (Images.NowStage() == START ? Images.mStartScreen.GetWidth() :
+			Images.NowStage() == TUTORIAL ? Images.mStageTutorial.GetWidth() :
 			Images.NowStage() == STAGE1 ? Images.mStage1.GetWidth() :
 			Images.NowStage() == STAGE2 ? Images.mStage2.GetWidth() :
 			Images.NowStage() == HIDDEN ? Images.mStageHidden.GetWidth() : 0);
@@ -464,8 +459,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 
 		mouseBackgroundX = mouseX + cameraX;
 		mouseBackgroundY = mouseY;
-		if (Images.isStartScreen) break;
-		// ... (기존 마우스 이동 코드 유지)
+		if (Images.isStartScreen) InvalidateRect(hWnd, NULL, FALSE);
 		break;
 	}
 	case WM_TIMER: {
@@ -475,7 +469,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 			if (Images.isTransitioning) {
 				Images.transitionTimer += 0.016f; // 16ms당 타이머 증가 (약 60fps 기준)
 				if (Images.transitionTimer >= 2.0f) { // 2초 후 전환 종료
-					if (Images.currentStage == STAGE1 && sound_MainBgm && ssystem && bgmChannel) {
+					if (Images.currentStage == TUTORIAL && sound_MainBgm && ssystem && bgmChannel) {
+						bgmChannel->stop(); // 기존 BGM 정지 (필요 시)
+						ssystem->playSound(sound_MainBgm, 0, false, &bgmChannel); // MainBgm 재생
+						bgmChannel->setVolume(BGM_V);
+					}
+					else if (Images.currentStage == STAGE1 && sound_MainBgm && ssystem && bgmChannel) {
 						bgmChannel->stop(); // 기존 BGM 정지 (필요 시)
 						ssystem->playSound(sound_MainBgm, 0, false, &bgmChannel); // MainBgm 재생
 						bgmChannel->setVolume(BGM_V);
@@ -511,6 +510,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 
 			ssystem->update();
 			bgmChannel->setVolume(BGM_V);
+			channel->setVolume(Effect_V);
 
 			InvalidateRect(hWnd, NULL, FALSE);
 			break;
@@ -532,32 +532,32 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 				Gdiplus::SolidBrush brush(Gdiplus::Color(alpha, 0, 0, 0));
 				graphics.FillRectangle(&brush, 0, 0, wRect.right, wRect.bottom);
 			}
-			else if (Images.transitionTimer > 2.0f) { // 2~4초: 밝아짐
-				float brightProgress = (Images.transitionTimer - 2.0f) / 2.0f; // 0.0f ~ 1.0f
-				BYTE alpha = static_cast<BYTE>((1.0f - brightProgress) * 255); // 255에서 0으로 밝아짐
-				if (alpha > 255) alpha = 255;
-				if (alpha < 0) alpha = 0;
-				Gdiplus::SolidBrush brush(Gdiplus::Color(alpha, 0, 0, 0));
-				graphics.FillRectangle(&brush, 0, 0, wRect.right, wRect.bottom);
+			//else if (Images.transitionTimer > 2.0f) { // 2~4초: 밝아짐
+			//	float brightProgress = (Images.transitionTimer - 2.0f) / 2.0f; // 0.0f ~ 1.0f
+			//	BYTE alpha = static_cast<BYTE>((1.0f - brightProgress) * 255); // 255에서 0으로 밝아짐
+			//	if (alpha > 255) alpha = 255;
+			//	if (alpha < 0) alpha = 0;
+			//	Gdiplus::SolidBrush brush(Gdiplus::Color(alpha, 0, 0, 0));
+			//	graphics.FillRectangle(&brush, 0, 0, wRect.right, wRect.bottom);
 
-				// 밝아지는 동안 다음 화면 그리기
-				HBRUSH whiteBrush = CreateSolidBrush(RGB(255, 255, 255));
-				FillRect(mDC, &wRect, whiteBrush);
-				DeleteObject(whiteBrush);
-				Images.DrawBackGround(Player.x(), Player.y(), mDC);
-				Player.DrawPlayer(mDC);
+			//	// 밝아지는 동안 다음 화면 그리기
+			//	HBRUSH whiteBrush = CreateSolidBrush(RGB(255, 255, 255));
+			//	FillRect(mDC, &wRect, whiteBrush);
+			//	DeleteObject(whiteBrush);
+			//	Images.DrawBackGround(Player.x(), Player.y(), mDC);
+			//	Player.DrawPlayer(mDC);
 
-				WCHAR buffer[100];
-				wsprintf(buffer, L"Mouse: (%d, %d)", mouseBackgroundX, mouseBackgroundY);
-				SetTextColor(mDC, RGB(255, 255, 255));
-				SetBkMode(mDC, TRANSPARENT);
-				TextOut(mDC, 10, 10, buffer, lstrlen(buffer));
+			//	WCHAR buffer[100];
+			//	wsprintf(buffer, L"Mouse: (%d, %d)", mouseBackgroundX, mouseBackgroundY);
+			//	SetTextColor(mDC, RGB(255, 255, 255));
+			//	SetBkMode(mDC, TRANSPARENT);
+			//	TextOut(mDC, 10, 10, buffer, lstrlen(buffer));
 
-				if (DrawAllHitBox) {
-					Player.DrawHitbox(mDC);
-					Images.DrawHitBox(mDC);
-				}
-			}
+			//	if (DrawAllHitBox) {
+			//		Player.DrawHitbox(mDC);
+			//		Images.DrawHitBox(mDC);
+			//	}
+			//}
 		}
 		else {
 			// 정상 화면
@@ -886,11 +886,13 @@ void Player_::Move() {
 	if (isTouchingFlag || isMovingRightAfterFlag) {
 
 		if (isTouchingFlag) {
-
 			Player.invincibleTime = 0;
 			Player.isInvincible = false;
-			if (Images.NowStage() == TUTORIAL) defaultGroundY_ = 447;
-			const float slideSpeed = 4.0f;
+			if (Images.NowStage() == TUTORIAL) {
+				defaultGroundY_ = 447;
+				if(State() == LARGETINO || State() == LIZAMONG) defaultGroundY_ = 432;
+			}
+				const float slideSpeed = 4.0f;
 			flagSlideProgress += slideSpeed;
 			y_ += static_cast<int>(slideSpeed);
 			if (y_ >= defaultGroundY_) {
@@ -1503,6 +1505,7 @@ void Player_::Move() {
 				if (prevPlayerBottom <= monsterTop + 10 && jumpVelocity_ > 0) {
 					monster.isAlive = false;
 					jumpVelocity_ = JUMP_VELOCITY / 2;
+					ssystem->playSound(sound_Jump, 0, false, &channel);
 				}
 				else {
 					if (State() == TINO) {
@@ -1774,6 +1777,7 @@ void Player_::Move() {
 						item.directionTimer = 0.0f;
 						item.directionChangeInterval = static_cast<float>(rand() % 6 + 5);
 						Images.items[Images.currentStage - 1].push_back(item);
+						ssystem->playSound(sound_Pipe, 0, false, &channel);
 					}
 					y_ = qblockBottom;
 					jumpVelocity_ = 0.0f;
@@ -2043,7 +2047,39 @@ void Player_::Move() {
 					break;
 				}
 			}
+			if (canMove) {
+				// tblock과의 좌우 충돌 체크
+				for (const auto& tblock : Images.tBlocks[Images.currentStage - 1]) {
+					int tblockLeft = tblock.x;
+					int tblockRight = tblock.x + tblock.width;
+					int tblockTop = tblock.y;
+					int tblockBottom = tblock.y + tblock.height;
 
+					int itemLeft = static_cast<int>(newItemX);
+					int itemRight = static_cast<int>(newItemX) + item.width;
+					int itemTop = item.y;
+					int itemBottom = item.y + item.height;
+
+					bool overlapX = itemRight > tblockLeft && itemLeft < tblockRight;
+					bool overlapY = itemBottom > tblockTop && itemTop < tblockBottom;
+
+					if (overlapX && overlapY) {
+						int prevItemRight = item.x + item.width;
+						int prevItemLeft = item.x;
+						if (item.direction == RIGHT && prevItemRight <= tblockLeft && itemRight > tblockLeft) {
+							item.direction = LEFT;
+							newItemX = tblockLeft - item.width;
+							canMove = false;
+						}
+						else if (item.direction == LEFT && prevItemLeft >= tblockRight && itemLeft < tblockRight) {
+							item.direction = RIGHT;
+							newItemX = tblockRight;
+							canMove = false;
+						}
+						break;
+					}
+				}
+			}
 			if (canMove) {
 				for (const auto& qblock : Images.questionBlocks[Images.currentStage - 1]) {
 					int qblockLeft = qblock.x;
@@ -2376,22 +2412,33 @@ void Player_::FireballMove() {
 				if (overlapX && overlapY) {
 					it->active = false;
 					if (State() == TINO) {
-						ResetPosition();
+						isFallingIntoHole = true;
+						fallProgress_ = 0.0f;
+						return;
 					}
 					else if (State() == LARGETINO) {
 						eatMushroom_ = false;
+						if (sound_PowerDown && ssystem) {
+							ssystem->playSound(sound_PowerDown, 0, false, &channel); // LARGETINO -> TINO PowerDown 사운드
+						}
 						isInvincible = true;
 						invincibleTime = 180;
 					}
 					else if (State() == PAIRI) {
 						eatFlower_ = false;
 						eatMushroom_ = false;
+						if (sound_PowerDown && ssystem) {
+							ssystem->playSound(sound_PowerDown, 0, false, &channel); // LARGETINO -> TINO PowerDown 사운드
+						}
 						isInvincible = true;
 						invincibleTime = 180;
 					}
 					else if (State() == LIZAMONG) {
 						eatFlower_ = true;
 						eatMushroom_ = false;
+						if (sound_PowerDown && ssystem) {
+							ssystem->playSound(sound_PowerDown, 0, false, &channel); // LARGETINO -> TINO PowerDown 사운드
+						}
 						isInvincible = true;
 						invincibleTime = 180;
 					}
@@ -2600,7 +2647,7 @@ void Image_::ImageInit() {
 	mStartScreen.Load(TEXT("Image/시작.png"));
 
 	tutorial = stage1 = stage2 = hidden = false;
-	currentStage = TUTORIAL;
+	currentStage = START;
 }
 
 void Image_::BlockInit() {
@@ -3152,7 +3199,7 @@ void Image_::BlockInit() {
 			monster2_4.directionTimer = 0.0f;
 			monster2_4.directionChangeInterval = static_cast<float>(rand() % 6 + 5); // 5~10초
 			monsters[2].push_back(monster2_4);
-			
+
 
 			Coupa coupa;
 			coupa.x = 2140; // 테스트용, tblock2_11(x=560, width=594) 내
@@ -3255,7 +3302,10 @@ void Image_::DrawBackGround(int x, int y, HDC targetDC) {
 	int destWidth = wRect.right;
 	int destHeight = wRect.bottom;
 
-	if (tutorial && !mStageTutorial.IsNull()) {
+	if (isStartScreen && !mStartScreen.IsNull()) {
+		mStartScreen.StretchBlt(targetDC, 0, 0, destWidth, destHeight, 0, 0, mStartScreen.GetWidth(), mStartScreen.GetHeight(), SRCCOPY);
+	}
+	else if (tutorial && !mStageTutorial.IsNull()) {
 		mStageTutorial.StretchBlt(targetDC, 0, 0, destWidth, destHeight, cameraX, 0, wRect.right, srcHeight, SRCCOPY);
 	}
 	else if (stage1 && !mStage1.IsNull()) {
@@ -3270,75 +3320,76 @@ void Image_::DrawBackGround(int x, int y, HDC targetDC) {
 	else {
 		OutputDebugString(L"No valid background image\n");
 	}
-
-	if (!blockImage.IsNull()) {
-		for (const auto& block : blocks[currentStage - 1]) {
-			int offsetX = block.x - cameraX;
-			if (offsetX + block.width > 0 && offsetX < wRect.right) {
-				blockImage.StretchBlt(targetDC, offsetX, block.y, block.width, 42, 0, 0, blockImage.GetWidth(), blockImage.GetHeight(), SRCCOPY);
-			}
-		}
-	}
-
-
-	if (!questionBlockImage[0].IsNull() && !questionBlockImage[1].IsNull()) {
-		for (const auto& qblock : questionBlocks[currentStage - 1]) {
-			int offsetX = qblock.x - cameraX;
-			if (offsetX + qblock.width > 0 && offsetX < wRect.right && !qblock.hit) {
-				questionBlockImage[0].StretchBlt(targetDC, offsetX, qblock.y, qblock.width, qblock.height, 0, 0, questionBlockImage[0].GetWidth(), questionBlockImage[0].GetHeight(), SRCCOPY);
-			}
-			else if (offsetX + qblock.width > 0 && offsetX < wRect.right && qblock.hit) {
-				questionBlockImage[1].StretchBlt(targetDC, offsetX, qblock.y, qblock.width, qblock.height, 0, 0, questionBlockImage[0].GetWidth(), questionBlockImage[0].GetHeight(), SRCCOPY);
-			}
-		}
-	}
-
-	// 몬스터 그리기 추가
-	if (!monster.IsNull()) {
-		for (const auto& m : monsters[currentStage - 1]) {
-			if (!m.isAlive) continue; // 죽은 몬스터는 그리지 않음
-
-			int offsetX = m.x - cameraX;
-			if (offsetX + m.width > 0 && offsetX < wRect.right) {
-				if (m.direction == RIGHT) {
-					// 오른쪽 방향: 원본 이미지 그대로
-					monster.TransparentBlt(targetDC, offsetX, m.y, m.width, m.height, 0, 0, monster.GetWidth(), monster.GetHeight(), RGB(0, 255, 0));
+	if (!isStartScreen) {
+		if (!blockImage.IsNull()) {
+			for (const auto& block : blocks[currentStage - 1]) {
+				int offsetX = block.x - cameraX;
+				if (offsetX + block.width > 0 && offsetX < wRect.right) {
+					blockImage.StretchBlt(targetDC, offsetX, block.y, block.width, 42, 0, 0, blockImage.GetWidth(), blockImage.GetHeight(), SRCCOPY);
 				}
-				else if (m.direction == LEFT) {
-					// 왼쪽 방향: 이미지 좌우 반전
-					monster.TransparentBlt(targetDC, offsetX, m.y, m.width, m.height, 0, 0, monster.GetWidth(), monster.GetHeight(), RGB(0, 255, 0));
-				}
-
 			}
 		}
-	}
 
-	// 아이템
-	for (const auto& item : items[currentStage - 1]) {
-		if (item.isActive) {
-			int offsetX = item.x - cameraX;
-			bool mushroom = (item.type == 0); // 0: 버섯, 1: 꽃
-			bool flower = (item.type == 1); // 0: 버섯, 1: 꽃
-			if (mushroom)
-				Item_Mushroom.TransparentBlt(targetDC, offsetX, item.y, item.width, item.height,
-					0, 0, Item_Mushroom.GetWidth(), Item_Mushroom.GetHeight(), RGB(146, 144, 255));
-			else if (flower)
-				Item_Flower.TransparentBlt(targetDC, offsetX, item.y, item.width, item.height,
-					0, 0, Item_Flower.GetWidth(), Item_Flower.GetHeight(), RGB(146, 144, 255));
+
+		if (!questionBlockImage[0].IsNull() && !questionBlockImage[1].IsNull()) {
+			for (const auto& qblock : questionBlocks[currentStage - 1]) {
+				int offsetX = qblock.x - cameraX;
+				if (offsetX + qblock.width > 0 && offsetX < wRect.right && !qblock.hit) {
+					questionBlockImage[0].StretchBlt(targetDC, offsetX, qblock.y, qblock.width, qblock.height, 0, 0, questionBlockImage[0].GetWidth(), questionBlockImage[0].GetHeight(), SRCCOPY);
+				}
+				else if (offsetX + qblock.width > 0 && offsetX < wRect.right && qblock.hit) {
+					questionBlockImage[1].StretchBlt(targetDC, offsetX, qblock.y, qblock.width, qblock.height, 0, 0, questionBlockImage[0].GetWidth(), questionBlockImage[0].GetHeight(), SRCCOPY);
+				}
+			}
 		}
-	}
-	// 쿠파 그리기
-	if (!coupaImage.IsNull()) {
-		for (const auto& coupa : coupas[currentStage - 1]) {
-			if (!coupa.isAlive) continue;
-			int offsetX = coupa.x - cameraX;
-			WCHAR buffer[100];
-			swprintf_s(buffer, L"Coupa at x=%d, y=%d, cameraX=%d, offsetX=%d\n", coupa.x, coupa.y, cameraX, offsetX);
-			OutputDebugStringW(buffer);
-			if (offsetX + coupa.width > 0 && offsetX < wRect.right) {
-				if (!(coupa.isInvincible && (coupa.invincibleTime / 10) % 2 == 0)) {
-					coupaImage.TransparentBlt(targetDC, offsetX, coupa.y, coupa.width, coupa.height,
-						0, 0, coupaImage.GetWidth(), coupaImage.GetHeight(), RGB(255, 255, 255));
+
+		// 몬스터 그리기 추가
+		if (!monster.IsNull()) {
+			for (const auto& m : monsters[currentStage - 1]) {
+				if (!m.isAlive) continue; // 죽은 몬스터는 그리지 않음
+
+				int offsetX = m.x - cameraX;
+				if (offsetX + m.width > 0 && offsetX < wRect.right) {
+					if (m.direction == RIGHT) {
+						// 오른쪽 방향: 원본 이미지 그대로
+						monster.TransparentBlt(targetDC, offsetX, m.y, m.width, m.height, 0, 0, monster.GetWidth(), monster.GetHeight(), RGB(0, 255, 0));
+					}
+					else if (m.direction == LEFT) {
+						// 왼쪽 방향: 이미지 좌우 반전
+						monster.TransparentBlt(targetDC, offsetX, m.y, m.width, m.height, 0, 0, monster.GetWidth(), monster.GetHeight(), RGB(0, 255, 0));
+					}
+
+				}
+			}
+		}
+
+		// 아이템
+		for (const auto& item : items[currentStage - 1]) {
+			if (item.isActive) {
+				int offsetX = item.x - cameraX;
+				bool mushroom = (item.type == 0); // 0: 버섯, 1: 꽃
+				bool flower = (item.type == 1); // 0: 버섯, 1: 꽃
+				if (mushroom)
+					Item_Mushroom.TransparentBlt(targetDC, offsetX, item.y, item.width, item.height,
+						0, 0, Item_Mushroom.GetWidth(), Item_Mushroom.GetHeight(), RGB(146, 144, 255));
+				else if (flower)
+					Item_Flower.TransparentBlt(targetDC, offsetX, item.y, item.width, item.height,
+						0, 0, Item_Flower.GetWidth(), Item_Flower.GetHeight(), RGB(146, 144, 255));
+			}
+		}
+		// 쿠파 그리기
+		if (!coupaImage.IsNull()) {
+			for (const auto& coupa : coupas[currentStage - 1]) {
+				if (!coupa.isAlive) continue;
+				int offsetX = coupa.x - cameraX;
+				WCHAR buffer[100];
+				swprintf_s(buffer, L"Coupa at x=%d, y=%d, cameraX=%d, offsetX=%d\n", coupa.x, coupa.y, cameraX, offsetX);
+				OutputDebugStringW(buffer);
+				if (offsetX + coupa.width > 0 && offsetX < wRect.right) {
+					if (!(coupa.isInvincible && (coupa.invincibleTime / 10) % 2 == 0)) {
+						coupaImage.TransparentBlt(targetDC, offsetX, coupa.y, coupa.width, coupa.height,
+							0, 0, coupaImage.GetWidth(), coupaImage.GetHeight(), RGB(255, 255, 255));
+					}
 				}
 			}
 		}
@@ -3346,7 +3397,20 @@ void Image_::DrawBackGround(int x, int y, HDC targetDC) {
 }
 
 void Image_::NextStage() {
-	if (currentStage == TUTORIAL) {
+	if (currentStage == START) {
+		currentStage = TUTORIAL;
+		isStartScreen = false;
+		tutorial = true;
+		// sound_Clear가 끝날 때까지 대기 후 MainBgm 재생 (2초로 가정)
+		if (sound_MainBgm && ssystem && bgmChannel) {
+			// sound_Clear의 길이를 가정 (실제 길이를 알아야 함, 여기서는 2초로 설정)
+			float clearDuration = 2.0f; // 실제 사운드 길이로 변경 필요
+			// 타이머를 사용해 대기 (WM_TIMER에서 처리)
+			isTransitioning = true;
+			transitionTimer = clearDuration; // clear 사운드 끝난 후 전환
+		}
+	}
+	else if (currentStage == TUTORIAL) {
 		currentStage = STAGE1;
 		tutorial = false;
 		stage1 = true;
@@ -3373,6 +3437,14 @@ void Image_::NextStage() {
 		currentStage = TUTORIAL;
 		stage2 = false;
 		tutorial = true;
+		// sound_Clear가 끝날 때까지 대기 후 MainBgm 재생 (2초로 가정)
+		if (sound_MainBgm && ssystem && bgmChannel) {
+			// sound_Clear의 길이를 가정 (실제 길이를 알아야 함, 여기서는 2초로 설정)
+			float clearDuration = 2.0f; // 실제 사운드 길이로 변경 필요
+			// 타이머를 사용해 대기 (WM_TIMER에서 처리)
+			isTransitioning = true;
+			transitionTimer = clearDuration; // clear 사운드 끝난 후 전환
+		}
 	}
 	// 모든 스테이지의 객체 벡터 초기화
 	for (int i = 0; i < 4; ++i) {
