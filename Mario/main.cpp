@@ -2728,7 +2728,7 @@ void Image_::ImageInit() {
 	Item_Mushroom.Load(TEXT("Image/버섯.png"));
 
 	mStartScreen.Load(TEXT("Image/시작.png"));
-	mEndingScreen.Load(TEXT("Image/시작.png"));
+	mEndingScreen.Load(TEXT("Image/종료.png"));
 
 	tutorial = stage1 = stage2 = hidden = false;
 	currentStage = START;
@@ -2762,6 +2762,7 @@ void Image_::BlockInit() {
 			monsters[3].clear();
 		}
 		if (blocks[0].empty()) {
+			monsters[0].clear();
 			TBlock tblock0_1 = { 291, 450, 57, 32 };
 			TBlock tblock0_2 = { 386, 338, 122, 32 };
 			TBlock tblock0_3 = { 419, 188, 73, 32 };
