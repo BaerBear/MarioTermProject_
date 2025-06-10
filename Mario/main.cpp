@@ -8,7 +8,7 @@
 #include <gdiplus.h> // GDI+ 추가
 #include "fmod.hpp"
 #include "fmod_errors.h"
-#pragma comment(linker, "/entry:WinMainCRTStartup /subsystem:console")
+//#pragma comment(linker, "/entry:WinMainCRTStartup /subsystem:console")
 
 #pragma comment (lib, "msimg32.lib")
 #pragma comment (lib, "gdiplus.lib")
@@ -25,7 +25,7 @@
 #define LIZAMONG 4
 #define LARGETINO 5
 
-#define MOVE 13
+#define MOVE 15
 #define JUMP_VELOCITY -13
 #define GRAVITY 0.5
 
@@ -34,6 +34,7 @@
 #define STAGE1 2
 #define STAGE2 3
 #define HIDDEN 4
+#define GAMEOVER 5
 
 #define MUSHROOM 0
 #define FLOWER 1
@@ -64,11 +65,13 @@ public:
 	bool stage1, hidden, tutorial, stage2;
 	int currentStage;
 	bool isStartScreen;
+	bool isEndingScreen;
 	bool isTransitioning; // 전환 중 여부
 	float transitionTimer; // 전환 타이머 (초 단위)
+	bool CheckKillTimer;
 
 	CImage girlfriendImage;
-	CImage mStartScreen;
+	CImage mStartScreen, mEndingScreen;
 	CImage Player_Move_Tino, Player_Move_Pairi, Player_Move_Lizamong;
 	CImage Player_Attack_Tino, Player_Attack_Pairi, Player_Attack_Lizamong;
 	CImage Item_Mushroom, Item_Flower;
@@ -154,17 +157,16 @@ public:
 		int width, height;
 		bool isActive;
 	};
-	std::vector<Girlfriend> girlfriends[4]{};
-	std::vector<Coupa> coupas[4]{}; // 스테이지별 쿠파
-
-	std::vector<Monster> monsters[4]{};
-	std::vector<Block> blocks[4]{};
-	std::vector<QuestionBlock> questionBlocks[4]{};
-	std::vector<TBlock> tBlocks[4]{};
-	std::vector<Hole> holes[4]{};
-	std::vector<FlagBlock> flagBlocks[4]{};
+	std::vector<Girlfriend> girlfriends[5]{};
+	std::vector<Coupa> coupas[5]{}; // 스테이지별 쿠파
+	std::vector<Monster> monsters[5]{};
+	std::vector<Block> blocks[5]{};
+	std::vector<QuestionBlock> questionBlocks[5]{};
+	std::vector<TBlock> tBlocks[5]{};
+	std::vector<Hole> holes[5]{};
+	std::vector<FlagBlock> flagBlocks[5]{};
 	std::vector<Fireball> fireballs;
-	std::vector<Item> items[4]{};
+	std::vector<Item> items[5]{};
 
 	Image_() {
 		for (int i = 0; i < 4; ++i) {
@@ -180,6 +182,7 @@ public:
 		isStartScreen = true;
 		isTransitioning = false;
 		transitionTimer = 0.0f;
+		CheckKillTimer = false;
 	};
 	~Image_() {};
 
@@ -192,6 +195,7 @@ public:
 	void DrawHitBox(HDC targetDC);
 	void EnterHiddenStage();
 	void QuitHiddenStage();
+	void EndingScreen();
 };
 
 class Player_ {
@@ -242,6 +246,15 @@ public:
 		}
 		else {
 			invincibleTime = 0; // 무적 해제
+		}
+	}
+	void Debug_Invincible() {
+		isInvincible = !isInvincible;
+		if (isInvincible) {
+			invincibleTime = 3000; // 무적 해제
+		}
+		else {
+			invincibleTime = 0; // 무적 시간 설정
 		}
 	}
 
@@ -353,7 +366,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdPa
 	WndClass.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
 	RegisterClassEx(&WndClass);
 
-	hWnd = CreateWindow(lpszClass, lpszWindowName, WS_OVERLAPPEDWINDOW, 0, 0, 800, 600, NULL, (HMENU)NULL, hInstance, NULL);
+	hWnd = CreateWindow(lpszClass, lpszWindowName, WS_OVERLAPPEDWINDOW, 0, 0, 1200, 875, NULL, (HMENU)NULL, hInstance, NULL);
 
 	ShowWindow(hWnd, nCmdShow);
 	UpdateWindow(hWnd);
@@ -407,9 +420,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 			if (wParam == 'd' || wParam == 'D') {
 				Images.EnterHiddenStage();
 			}
-			else if (wParam == 'q' || wParam == 'Q') {
-				PostQuitMessage(0);
-			}
 			else if (wParam == 'h' || wParam == 'H') {
 				DrawAllHitBox = !DrawAllHitBox;
 			}
@@ -420,8 +430,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 				Player.turnMushroom();
 			}
 			else if (wParam == '3') {
-				Player.turnInvicible();
+				Player.Debug_Invincible();
 			}
+		}
+		if (wParam == 'q' || wParam == 'Q') {
+			PostQuitMessage(0);
 		}
 		break;
 	}
@@ -429,7 +442,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 		if (Images.isStartScreen) {
 			int mouseX = LOWORD(lParam);
 			int mouseY = HIWORD(lParam);
-			if (mouseX >= 310 && mouseX <= 500 && mouseY >= 480 && mouseY <= 520) { // Start 버튼
+			if (mouseX >= 470 && mouseX <= 740 && mouseY >= 715 && mouseY <= 770) { // Start 버튼
 				Images.isStartScreen = false;
 				Images.NextStage();
 				Player.PlayerInit();
@@ -440,7 +453,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 				ssystem->playSound(sound_Pipe, 0, false, &channel);
 				InvalidateRect(hWnd, NULL, FALSE);
 			}
-			else if (mouseX >= 310 && mouseX <= 500 && mouseY >= 525 && mouseY <= 555) { // Quit 버튼
+			else if (mouseX >= 545 && mouseX <= 665 && mouseY >= 795 && mouseY <= 830) { // Quit 버튼
 				PostQuitMessage(0);
 			}
 		}
@@ -457,11 +470,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 			Images.NowStage() == STAGE1 ? Images.mStage1.GetWidth() :
 			Images.NowStage() == STAGE2 ? Images.mStage2.GetWidth() :
 			Images.NowStage() == HIDDEN ? Images.mStageHidden.GetWidth() : 0);
-		if (stageWidth <= wRect.right) {
+		if (stageWidth <= 800) {
 			cameraX = 0;
 		}
-		else if (cameraX > stageWidth - wRect.right) {
-			cameraX = stageWidth - wRect.right;
+		else if (cameraX > stageWidth - 800) {
+			cameraX = stageWidth - 800;
 		}
 
 		mouseBackgroundX = mouseX + cameraX;
@@ -472,6 +485,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 	case WM_TIMER: {
 		switch (wParam) {
 		case 1: {
+			if (Images.CheckKillTimer) KillTimer(hWnd, 1);
 			Player.Move();
 			if (Images.isTransitioning) {
 				Images.transitionTimer += 0.016f; // 16ms당 타이머 증가 (약 60fps 기준)
@@ -513,7 +527,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 				}
 				// 걸프렌드 충돌 시 4초 후 종료
 				else if (Images.transitionTimer >= 4.0f) {
-					PostQuitMessage(0); // 프로그램 종료
+					Images.CheckKillTimer = true;
 				}
 			}
 			Player.FireballMove();
@@ -589,7 +603,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 				Images.DrawHitBox(mDC);
 			}
 		}
-		BitBlt(hDC, 0, 0, wRect.right, wRect.bottom, mDC, 0, 0, SRCCOPY);
+		StretchBlt(hDC, 0, 0, 1200, 900, mDC, 0, 0, 800, 600, SRCCOPY);
 		EndPaint(hWnd, &ps);
 		break;
 	}
@@ -608,7 +622,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 
 void Player_::PlayerInit() {
 	x_ = 35;
-	y_ = 447;
+	y_ = 440;
 	direct_ = RIGHT;
 	move_ = false;
 	eatFlower_ = false;
@@ -648,7 +662,7 @@ void Player_::ResetPosition() {
 	attackKeyPressed = false;
 	if (Images.NowStage() == TUTORIAL) {
 		x_ = 35;
-		y_ = 449;
+		y_ = 440;
 		groundY_ = 449;
 		defaultGroundY_ = 465;
 	}
@@ -693,11 +707,11 @@ void Player_::DrawPlayer(HDC targetDC) {
 			Images.NowStage() == STAGE2 ? Pimage.mStage2.GetWidth() :
 			Images.NowStage() == HIDDEN ? Pimage.mStageHidden.GetWidth() : 0);
 
-		if (stageWidth <= wRect.right) {
+		if (stageWidth <= 800) {
 			cameraX = 0;
 		}
-		else if (cameraX > stageWidth - wRect.right) {
-			cameraX = stageWidth - wRect.right;
+		else if (cameraX > stageWidth - 800) {
+			cameraX = stageWidth - 800;
 		}
 		int playerWidth = 0;
 		switch (State()) {
@@ -710,8 +724,8 @@ void Player_::DrawPlayer(HDC targetDC) {
 		}
 
 		int offsetX = x_ - cameraX;
-		if (offsetX + playerWidth > wRect.right) {
-			offsetX = wRect.right - playerWidth;
+		if (offsetX + playerWidth > 800) {
+			offsetX = 800 - playerWidth;
 		}
 		if (offsetX < 0) {
 			offsetX = 0;
@@ -721,7 +735,7 @@ void Player_::DrawPlayer(HDC targetDC) {
 			for (auto& fireball : Images.fireballs) {
 				if (fireball.active) {
 					int fireballOffsetX = fireball.x - cameraX;
-					if (fireballOffsetX + fireball.width > 0 && fireballOffsetX < wRect.right) {
+					if (fireballOffsetX + fireball.width > 0 && fireballOffsetX < 800) {
 						Images.FireballImage.TransparentBlt(targetDC, fireballOffsetX, fireball.y, fireball.width, fireball.height,
 							fireball.imageNum * 8, 0, 8, 8, RGB(146, 144, 255));
 					}
@@ -900,9 +914,9 @@ void Player_::Move() {
 			Player.isInvincible = false;
 			if (Images.NowStage() == TUTORIAL) {
 				defaultGroundY_ = 447;
-				if(State() == LARGETINO || State() == LIZAMONG) defaultGroundY_ = 432;
+				if (State() == LARGETINO || State() == LIZAMONG) defaultGroundY_ = 432;
 			}
-				const float slideSpeed = 4.0f;
+			const float slideSpeed = 4.0f;
 			flagSlideProgress += slideSpeed;
 			y_ += static_cast<int>(slideSpeed);
 			if (y_ >= defaultGroundY_) {
@@ -956,7 +970,6 @@ void Player_::Move() {
 	}
 
 	// 여자친구 충돌체크
-	// 여자친구 충돌체크
 	if (!Images.girlfriends[Images.currentStage - 1].empty() && !isInvincible) {
 		for (auto& girlfriend : Images.girlfriends[Images.currentStage - 1]) {
 			if (girlfriend.isActive) {
@@ -979,8 +992,9 @@ void Player_::Move() {
 					if (sound_Clear && ssystem) {
 						ssystem->playSound(sound_Clear, 0, false, &channel); // Clear 사운드 재생
 					}
+					Images.EndingScreen();
 					return;
-					
+
 				}
 			}
 		}
@@ -1265,18 +1279,18 @@ void Player_::Move() {
 						if (coupa.health <= 0) {
 							coupa.isAlive = false;
 							// 쿠파가 죽었을 때 Stage2의 Block2_1, Block2_2, Block2_3 제거
-							
-								auto& blocks = Images.blocks[2];
-								blocks.erase(
-									std::remove_if(blocks.begin(), blocks.end(),
-										[](const Image_::Block& b) {
-											return (b.x == 2272 && b.y == 222 && b.width == 32 && b.height == 40) ||
-												(b.x == 2272 && b.y == 262 && b.width == 32 && b.height == 40) ||
-												(b.x == 2272 && b.y == 302 && b.width == 32 && b.height == 40);
-										}),
-									blocks.end()
-								);
-							
+
+							auto& blocks = Images.blocks[2];
+							blocks.erase(
+								std::remove_if(blocks.begin(), blocks.end(),
+									[](const Image_::Block& b) {
+										return (b.x == 2272 && b.y == 222 && b.width == 32 && b.height == 40) ||
+											(b.x == 2272 && b.y == 262 && b.width == 32 && b.height == 40) ||
+											(b.x == 2272 && b.y == 302 && b.width == 32 && b.height == 40);
+									}),
+								blocks.end()
+							);
+
 						}
 					}
 					else {
@@ -2388,8 +2402,8 @@ void Player_::FireballMove() {
 				Images.NowStage() == STAGE1 ? Images.mStage1.GetWidth() :
 				Images.NowStage() == STAGE2 ? Images.mStage2.GetWidth() :
 				Images.NowStage() == HIDDEN ? Images.mStageHidden.GetWidth() : 0);
-			if (cameraX > stageWidth - wRect.right) {
-				cameraX = stageWidth - wRect.right;
+			if (cameraX > stageWidth - 800) {
+				cameraX = stageWidth - 800;
 			}
 
 			int playerHitboxX, playerHitboxY, playerHitboxWidth, playerHitboxHeight;
@@ -2414,7 +2428,7 @@ void Player_::FireballMove() {
 			}
 
 			int fireballScreenX = it->x - cameraX;
-			if (fireballScreenX + it->width < 0 || fireballScreenX > wRect.right) {
+			if (fireballScreenX + it->width < 0 || fireballScreenX > 800) {
 				it = fireballs.erase(it);
 				continue;
 			}
@@ -2687,7 +2701,7 @@ void Image_::ImageInit() {
 	Player_Move_Pairi.Load(TEXT("Image/파이리 스프라이트.png"));
 	Player_Move_Lizamong.Load(TEXT("Image/리자몽 스프라이트.png"));
 
-	
+
 	girlfriendImage.Load(TEXT("Image/티노여자친구.png"));
 	girlfriends[2].push_back({ 2480, 434, 50, 50, true });
 
@@ -2714,6 +2728,7 @@ void Image_::ImageInit() {
 	Item_Mushroom.Load(TEXT("Image/버섯.png"));
 
 	mStartScreen.Load(TEXT("Image/시작.png"));
+	mEndingScreen.Load(TEXT("Image/시작.png"));
 
 	tutorial = stage1 = stage2 = hidden = false;
 	currentStage = START;
@@ -2765,7 +2780,7 @@ void Image_::BlockInit() {
 			TBlock tblock0_16 = { 1858, 339, 58, 32 };
 			TBlock tblock0_17 = { 1666, 263, 122, 32 };
 			TBlock tblock0_18 = { 1954, 339, 58, 32 };
-			TBlock tblock0_19 = { 0, 488, 252, 32 };
+			TBlock tblock0_19 = { 0, 484, 252, 32 };
 			TBlock tblock0_20 = { 2209, 338, 93, 150 };
 			TBlock tblock0_21 = { 2241, 261, 62, 78 };
 			TBlock tblock0_22 = { 2271, 188, 32, 72 };
@@ -3360,7 +3375,7 @@ void Image_::BlockInit() {
 }
 
 void Image_::DrawBackGround(int x, int y, HDC targetDC) {
-	int cameraX = x - 400;
+	int cameraX = x - 400; // 800x600 기준
 	if (cameraX < 0) cameraX = 0;
 
 	int srcWidth = (stage1 ? mStage1.GetWidth() : tutorial ? mStageTutorial.GetWidth() :
@@ -3368,54 +3383,63 @@ void Image_::DrawBackGround(int x, int y, HDC targetDC) {
 	int srcHeight = (stage1 ? mStage1.GetHeight() : tutorial ? mStageTutorial.GetHeight() :
 		stage2 ? mStage2.GetHeight() : mStageHidden.GetHeight());
 
-	if (srcWidth <= wRect.right) {
+	// 디버깅: 히든 스테이지 배경 크기 및 카메라 위치 출력
+	WCHAR buffer[100];
+	swprintf_s(buffer, L"Stage: hidden=%d, srcWidth=%d, srcHeight=%d, cameraX=%d\n", hidden, srcWidth, srcHeight, cameraX);
+	OutputDebugStringW(buffer);
+
+	if (srcWidth <= 800) {
 		cameraX = 0;
 	}
-	else if (cameraX > srcWidth - wRect.right) {
-		cameraX = srcWidth - wRect.right;
+	else if (cameraX > srcWidth - 800) {
+		cameraX = srcWidth - 800;
 	}
 
-	int destWidth = wRect.right;
-	int destHeight = wRect.bottom;
+	int destWidth = 800;  // 800x600 기준 유지
+	int destHeight = 560; // 높이 조정 유지
 
 	if (isStartScreen && !mStartScreen.IsNull()) {
 		mStartScreen.StretchBlt(targetDC, 0, 0, destWidth, destHeight, 0, 0, mStartScreen.GetWidth(), mStartScreen.GetHeight(), SRCCOPY);
 	}
 	else if (tutorial && !mStageTutorial.IsNull()) {
-		mStageTutorial.StretchBlt(targetDC, 0, 0, destWidth, destHeight, cameraX, 0, wRect.right, srcHeight, SRCCOPY);
+		mStageTutorial.StretchBlt(targetDC, 0, 0, destWidth, destHeight, cameraX, 0, destWidth, srcHeight, SRCCOPY);
 	}
 	else if (stage1 && !mStage1.IsNull()) {
-		mStage1.StretchBlt(targetDC, 0, 0, destWidth, destHeight, cameraX, 0, wRect.right, srcHeight, SRCCOPY);
+		mStage1.StretchBlt(targetDC, 0, 0, destWidth, destHeight, cameraX, 0, destWidth, srcHeight, SRCCOPY);
 	}
 	else if (stage2 && !mStage2.IsNull()) {
-		mStage2.StretchBlt(targetDC, 0, 0, destWidth, destHeight, cameraX, 0, wRect.right, srcHeight, SRCCOPY);
+		mStage2.StretchBlt(targetDC, 0, 0, destWidth, destHeight, cameraX, 0, destWidth, srcHeight, SRCCOPY);
 	}
 	else if (hidden && !mStageHidden.IsNull()) {
-		mStageHidden.StretchBlt(targetDC, 0, 0, destWidth, destHeight, cameraX, 0, wRect.right, srcHeight, SRCCOPY);
+		mStageHidden.StretchBlt(targetDC, 0, 0, destWidth, destHeight, cameraX, 0, destWidth, srcHeight, SRCCOPY);
+	}
+	else if (isEndingScreen && !mEndingScreen.IsNull()) {
+		mEndingScreen.StretchBlt(targetDC, 0, 0, destWidth, destHeight, 0, 0, mEndingScreen.GetWidth(), mEndingScreen.GetHeight(), SRCCOPY);
 	}
 	else {
 		OutputDebugString(L"No valid background image\n");
 	}
+
 	if (!isStartScreen) {
 		if (!blockImage.IsNull()) {
 			for (const auto& block : blocks[currentStage - 1]) {
 				int offsetX = block.x - cameraX;
-				if (offsetX + block.width > 0 && offsetX < wRect.right) {
+				// 디버깅: 블록 좌표 출력
+				swprintf_s(buffer, L"Block: x=%d, offsetX=%d\n", block.x, offsetX);
+				OutputDebugStringW(buffer);
+				if (offsetX + block.width > 0 && offsetX < 800) {
 					blockImage.StretchBlt(targetDC, offsetX, block.y, block.width, 42, 0, 0, blockImage.GetWidth(), blockImage.GetHeight(), SRCCOPY);
 				}
 			}
 		}
 
-		if (!isStartScreen) {
-			// 기존 블록, 물음표 블록, 몬스터, 아이템, 쿠파 그리기...
-			if (!girlfriendImage.IsNull()) {
-				for (const auto& girlfriend : girlfriends[currentStage - 1]) {
-					if (girlfriend.isActive) {
-						int offsetX = girlfriend.x - cameraX;
-						if (offsetX + girlfriend.width > 0 && offsetX < wRect.right) {
-							girlfriendImage.TransparentBlt(targetDC, offsetX, girlfriend.y, girlfriend.width, girlfriend.height,
-								0, 0, girlfriendImage.GetWidth(), girlfriendImage.GetHeight(), RGB(255, 255, 255));
-						}
+		if (!girlfriendImage.IsNull()) {
+			for (const auto& girlfriend : girlfriends[currentStage - 1]) {
+				if (girlfriend.isActive) {
+					int offsetX = girlfriend.x - cameraX;
+					if (offsetX + girlfriend.width > 0 && offsetX < 800) {
+						girlfriendImage.TransparentBlt(targetDC, offsetX, girlfriend.y, girlfriend.width, girlfriend.height,
+							0, 0, girlfriendImage.GetWidth(), girlfriendImage.GetHeight(), RGB(0, 255, 0));
 					}
 				}
 			}
@@ -3424,58 +3448,53 @@ void Image_::DrawBackGround(int x, int y, HDC targetDC) {
 		if (!questionBlockImage[0].IsNull() && !questionBlockImage[1].IsNull()) {
 			for (const auto& qblock : questionBlocks[currentStage - 1]) {
 				int offsetX = qblock.x - cameraX;
-				if (offsetX + qblock.width > 0 && offsetX < wRect.right && !qblock.hit) {
+				if (offsetX + qblock.width > 0 && offsetX < 800 && !qblock.hit) {
 					questionBlockImage[0].StretchBlt(targetDC, offsetX, qblock.y, qblock.width, qblock.height, 0, 0, questionBlockImage[0].GetWidth(), questionBlockImage[0].GetHeight(), SRCCOPY);
 				}
-				else if (offsetX + qblock.width > 0 && offsetX < wRect.right && qblock.hit) {
-					questionBlockImage[1].StretchBlt(targetDC, offsetX, qblock.y, qblock.width, qblock.height, 0, 0, questionBlockImage[0].GetWidth(), questionBlockImage[0].GetHeight(), SRCCOPY);
+				else if (offsetX + qblock.width > 0 && offsetX < 800 && qblock.hit) {
+					questionBlockImage[1].StretchBlt(targetDC, offsetX, qblock.y, qblock.width, qblock.height, 0, 0, questionBlockImage[1].GetWidth(), questionBlockImage[1].GetHeight(), SRCCOPY);
 				}
 			}
 		}
 
-		// 몬스터 그리기 추가
 		if (!monster.IsNull()) {
 			for (const auto& m : monsters[currentStage - 1]) {
-				if (!m.isAlive) continue; // 죽은 몬스터는 그리지 않음
-
+				if (!m.isAlive) continue;
 				int offsetX = m.x - cameraX;
-				if (offsetX + m.width > 0 && offsetX < wRect.right) {
+				if (offsetX + m.width > 0 && offsetX < 800) {
 					if (m.direction == RIGHT) {
-						// 오른쪽 방향: 원본 이미지 그대로
 						monster.TransparentBlt(targetDC, offsetX, m.y, m.width, m.height, 0, 0, monster.GetWidth(), monster.GetHeight(), RGB(0, 255, 0));
 					}
 					else if (m.direction == LEFT) {
-						// 왼쪽 방향: 이미지 좌우 반전
 						monster.TransparentBlt(targetDC, offsetX, m.y, m.width, m.height, 0, 0, monster.GetWidth(), monster.GetHeight(), RGB(0, 255, 0));
 					}
-
 				}
 			}
 		}
 
-		// 아이템
 		for (const auto& item : items[currentStage - 1]) {
 			if (item.isActive) {
 				int offsetX = item.x - cameraX;
-				bool mushroom = (item.type == 0); // 0: 버섯, 1: 꽃
-				bool flower = (item.type == 1); // 0: 버섯, 1: 꽃
-				if (mushroom)
+				bool mushroom = (item.type == 0);
+				bool flower = (item.type == 1);
+				if (mushroom) {
 					Item_Mushroom.TransparentBlt(targetDC, offsetX, item.y, item.width, item.height,
 						0, 0, Item_Mushroom.GetWidth(), Item_Mushroom.GetHeight(), RGB(146, 144, 255));
-				else if (flower)
+				}
+				else if (flower) {
 					Item_Flower.TransparentBlt(targetDC, offsetX, item.y, item.width, item.height,
 						0, 0, Item_Flower.GetWidth(), Item_Flower.GetHeight(), RGB(146, 144, 255));
+				}
 			}
 		}
-		// 쿠파 그리기
+
 		if (!coupaImage.IsNull()) {
 			for (const auto& coupa : coupas[currentStage - 1]) {
 				if (!coupa.isAlive) continue;
 				int offsetX = coupa.x - cameraX;
-				WCHAR buffer[100];
-				swprintf_s(buffer, L"Coupa at x=%d, y=%d, cameraX=%d, offsetX=%d\n", coupa.x, coupa.y, cameraX, offsetX);
+				swprintf_s(buffer, L"Coupa: x=%d, offsetX=%d\n", coupa.x, offsetX);
 				OutputDebugStringW(buffer);
-				if (offsetX + coupa.width > 0 && offsetX < wRect.right) {
+				if (offsetX + coupa.width > 0 && offsetX < 800) {
 					if (!(coupa.isInvincible && (coupa.invincibleTime / 10) % 2 == 0)) {
 						coupaImage.TransparentBlt(targetDC, offsetX, coupa.y, coupa.width, coupa.height,
 							0, 0, coupaImage.GetWidth(), coupaImage.GetHeight(), RGB(255, 255, 255));
@@ -3537,7 +3556,7 @@ void Image_::NextStage() {
 		}
 	}
 	// 모든 스테이지의 객체 벡터 초기화
-	for (int i = 0; i < 4; ++i) {
+	for (int i = 0; i < 5; ++i) {
 		blocks[i].clear();
 		questionBlocks[i].clear();
 		tBlocks[i].clear();
@@ -3552,6 +3571,15 @@ void Image_::NextStage() {
 	BlockInit(); // 새 스테이지 객체 로드
 }
 
+void Image_::EndingScreen() {
+	if (currentStage == STAGE2) {
+		currentStage = GAMEOVER;
+		isStartScreen = tutorial = stage1 = stage2 = hidden = false;
+		isEndingScreen = true;
+		DrawAllHitBox = false;
+	}
+	Destroy();
+}
 void Image_::EnterHiddenStage() {
 	currentStage = HIDDEN;
 	tutorial = (currentStage == TUTORIAL);
@@ -3586,6 +3614,7 @@ void Image_::Destroy() {
 	Item_Mushroom.Destroy();
 	Item_Flower.Destroy();
 	fireballs.clear();
+	girlfriendImage.Destroy();
 	for (int i = 0; i < 4; ++i) {
 		blocks[i].clear();
 		questionBlocks[i].clear();
@@ -3594,9 +3623,6 @@ void Image_::Destroy() {
 		flagBlocks[i].clear();
 		coupas[i].clear();
 		items[i].clear();
-	}
-	girlfriendImage.Destroy();
-	for (int i = 0; i < 4; ++i) {
 		girlfriends[i].clear();
 	}
 }
@@ -3756,10 +3782,14 @@ void Image_::DrawHitBox(HDC targetDC) {
 }
 
 int GetCameraX(int playerX, int stageWidth) {
-	int cameraX = playerX - 400; // 플레이어가 화면 중앙에 오도록 설정
-	if (cameraX < 0) cameraX = 0; // 스테이지 왼쪽 경계
-	if (stageWidth > wRect.right && cameraX > stageWidth - wRect.right) {
-		cameraX = stageWidth - wRect.right; // 스테이지 오른쪽 경계
+	int cameraX = playerX - 400;
+	if (cameraX < 0) cameraX = 0;
+	if (stageWidth < 800) stageWidth = 800; // 최소 너비 보장
+	if (stageWidth > 800 && cameraX > stageWidth - 800) {
+		cameraX = stageWidth - 800;
+	}
+	if (Images.currentStage == HIDDEN) {
+		cameraX = 0;
 	}
 	return cameraX;
 }
