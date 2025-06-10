@@ -3414,7 +3414,7 @@ void Image_::DrawBackGround(int x, int y, HDC targetDC) {
 						int offsetX = girlfriend.x - cameraX;
 						if (offsetX + girlfriend.width > 0 && offsetX < wRect.right) {
 							girlfriendImage.TransparentBlt(targetDC, offsetX, girlfriend.y, girlfriend.width, girlfriend.height,
-								0, 0, girlfriendImage.GetWidth(), girlfriendImage.GetHeight(), RGB(255, 255, 255));
+								0, 0, girlfriendImage.GetWidth(), girlfriendImage.GetHeight(), RGB(0, 255, 0));
 						}
 					}
 				}
