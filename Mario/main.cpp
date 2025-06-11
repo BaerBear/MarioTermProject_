@@ -25,7 +25,7 @@
 #define LIZAMONG 4
 #define LARGETINO 5
 
-#define MOVE 15
+#define MOVE 7
 #define JUMP_VELOCITY -13
 #define GRAVITY 0.5
 
@@ -422,9 +422,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 			}
 			else if (wParam == 'h' || wParam == 'H') {
 				DrawAllHitBox = !DrawAllHitBox;
-			}
-			else if (wParam == 'q' || wParam == 'Q') {
-				return 0;
 			}
 			else if (wParam == '1') {
 				Player.turnFlower();
